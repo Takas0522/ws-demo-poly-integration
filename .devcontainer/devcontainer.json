@@ -2,7 +2,7 @@
   "name": "SaaS Management Application",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
-  "workspaceFolder": "/workspace",
+  "workspaceFolder": "/workspaces/ws-demo-poly-integration",
   
   // Configure VS Code settings
   "customizations": {
@@ -109,10 +109,5 @@
   },
   
   // Keep container running
-  "remoteUser": "node",
-  
-  // Mount workspace and preserve git
-  "mounts": [
-    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
-  ]
+  "remoteUser": "node"
 }
