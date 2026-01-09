@@ -264,6 +264,7 @@ npm run type-check      # TypeScriptの型チェック
 - **[DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md)**: 詳細な開発ロードマップとissue分類
 - **[docs/ENVIRONMENT_CONFIGURATION.md](./docs/ENVIRONMENT_CONFIGURATION.md)**: 環境設定とフィーチャーフラグの完全ガイド
 - **[docs/CONFIGURATION_VALIDATION.md](./docs/CONFIGURATION_VALIDATION.md)**: 設定検証の実装ガイド
+- **[docs/AZURE_APP_SERVICE_CONFIGURATION.md](./docs/AZURE_APP_SERVICE_CONFIGURATION.md)**: Azure App Serviceでの環境設定ガイド
 - **[docs/api/](./docs/api/)**: 各サービスのAPIドキュメント
 - **[docs/adr/](./docs/adr/)**: アーキテクチャ決定記録
 - **[docs/templates/](./docs/templates/)**: 新しいサービスとドキュメントのテンプレート
