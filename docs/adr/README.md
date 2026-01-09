@@ -52,9 +52,7 @@
 |---|---------|-----------|------|
 | [001](./001-polyrepo-architecture.md) | Gitサブモジュールを使用したPolyrepoアーキテクチャの採用 | 承認 | 2026-01-07 |
 | [002](./002-trunk-based-development.md) | トランクベース開発ワークフローの採用 | 承認 | 2026-01-07 |
-| [003](./003-cosmosdb-multi-tenancy.md) | テナントパーティショニング付きCosmosDBの使用 | 承認 | 2026-01-07 |
-| [004](./004-jwt-authentication.md) | 認証にJWTを使用 | 承認 | 2026-01-07 |
-| [005](./005-dot-notation-permissions.md) | ドット記法権限システムの使用 | 承認 | 2026-01-07 |
+| [003](./003-cosmosdb-schema-tenant-partitioning.md) | CosmosDB スキーマ設計とテナントパーティショニング | 承認 | 2026-01-09 |
 
 ## 新しいADRの作成
 
