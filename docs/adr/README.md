@@ -1,114 +1,114 @@
-# Architecture Decision Records (ADR)
+# アーキテクチャ決定記録（ADR）
 
-This directory contains Architecture Decision Records (ADRs) documenting significant architectural decisions made in this project.
+このディレクトリには、このプロジェクトで行われた重要なアーキテクチャ決定を文書化したアーキテクチャ決定記録（ADR）が含まれています。
 
-## What is an ADR?
+## ADRとは？
 
-An Architecture Decision Record (ADR) is a document that captures an important architectural decision made along with its context and consequences.
+アーキテクチャ決定記録（ADR）は、そのコンテキストと結果とともに行われた重要なアーキテクチャ決定を記録するドキュメントです。
 
-## ADR Format
+## ADRの形式
 
-Each ADR follows this structure:
+各ADRは以下の構造に従います：
 
 ```markdown
-# [Number]. [Title]
+# [番号]. [タイトル]
 
-Date: YYYY-MM-DD
-Status: [Proposed | Accepted | Deprecated | Superseded]
-Deciders: [List of people involved]
+日付: YYYY-MM-DD
+ステータス: [提案 | 承認 | 非推奨 | 置き換え]
+決定者: [関係者のリスト]
 
-## Context
+## コンテキスト
 
-What is the issue that we're seeing that is motivating this decision or change?
+この決定または変更を動機付ける問題は何ですか？
 
-## Decision
+## 決定
 
-What is the change that we're proposing and/or doing?
+私たちが提案および/または実行している変更は何ですか？
 
-## Consequences
+## 結果
 
-What becomes easier or more difficult to do because of this change?
+この変更によって何が簡単または困難になりますか？
 
-### Positive Consequences
-- [Positive consequence 1]
-- [Positive consequence 2]
+### ポジティブな結果
+- [ポジティブな結果1]
+- [ポジティブな結果2]
 
-### Negative Consequences
-- [Negative consequence 1]
-- [Negative consequence 2]
+### ネガティブな結果
+- [ネガティブな結果1]
+- [ネガティブな結果2]
 
-## Alternatives Considered
+## 検討した代替案
 
-What other options were considered and why were they rejected?
+他にどのような選択肢が検討され、なぜ却下されたのですか？
 
-## References
+## 参考資料
 
-- [Link to related resources]
+- [関連リソースへのリンク]
 ```
 
-## Index of ADRs
+## ADRインデックス
 
-| # | Title | Status | Date |
-|---|-------|--------|------|
-| [001](./001-polyrepo-architecture.md) | Use Polyrepo Architecture with Git Submodules | Accepted | 2026-01-07 |
-| [002](./002-trunk-based-development.md) | Adopt Trunk-Based Development Workflow | Accepted | 2026-01-07 |
-| [003](./003-cosmosdb-multi-tenancy.md) | Use CosmosDB with Tenant Partitioning | Accepted | 2026-01-07 |
-| [004](./004-jwt-authentication.md) | Use JWT for Authentication | Accepted | 2026-01-07 |
-| [005](./005-dot-notation-permissions.md) | Use Dot-Notation Permission System | Accepted | 2026-01-07 |
+| # | タイトル | ステータス | 日付 |
+|---|---------|-----------|------|
+| [001](./001-polyrepo-architecture.md) | Gitサブモジュールを使用したPolyrepoアーキテクチャの採用 | 承認 | 2026-01-07 |
+| [002](./002-trunk-based-development.md) | トランクベース開発ワークフローの採用 | 承認 | 2026-01-07 |
+| [003](./003-cosmosdb-multi-tenancy.md) | テナントパーティショニング付きCosmosDBの使用 | 承認 | 2026-01-07 |
+| [004](./004-jwt-authentication.md) | 認証にJWTを使用 | 承認 | 2026-01-07 |
+| [005](./005-dot-notation-permissions.md) | ドット記法権限システムの使用 | 承認 | 2026-01-07 |
 
-## Creating a New ADR
+## 新しいADRの作成
 
-1. Copy the template from [template.md](./template.md)
-2. Number it sequentially (next available number)
-3. Fill in all sections with context and reasoning
-4. Submit as part of your Pull Request
-5. Update the index table above
+1. [template.md](./template.md)からテンプレートをコピー
+2. 連番で番号付け（次の利用可能な番号）
+3. コンテキストと理由を含めてすべてのセクションを記入
+4. プルリクエストの一部として提出
+5. 上記のインデックステーブルを更新
 
-## ADR Lifecycle
+## ADRライフサイクル
 
-### Proposed
-Initial draft under discussion. Not yet implemented.
+### 提案
+議論中の初期草案。まだ実装されていません。
 
-### Accepted
-Decision has been made and is being implemented or has been implemented.
+### 承認
+決定が下され、実装中または実装済みです。
 
-### Deprecated
-Decision is no longer relevant but kept for historical context.
+### 非推奨
+決定はもはや関連性がありませんが、歴史的コンテキストのために保持されます。
 
-### Superseded
-Decision has been replaced by a newer ADR. Link to the superseding ADR.
+### 置き換え
+決定は新しいADRに置き換えられました。置き換えるADRへのリンク。
 
-## Best Practices
+## ベストプラクティス
 
-1. **Write ADRs when**:
-   - Making a significant architectural decision
-   - Choosing between multiple viable options
-   - Adopting a new technology or pattern
-   - Changing an existing architectural approach
+1. **ADRを書くとき**：
+   - 重要なアーキテクチャ決定を行うとき
+   - 複数の実行可能な選択肢から選ぶとき
+   - 新しい技術またはパターンを採用するとき
+   - 既存のアーキテクチャアプローチを変更するとき
 
-2. **Don't write ADRs for**:
-   - Trivial decisions
-   - Decisions that are easily reversible
-   - Implementation details that don't affect architecture
+2. **ADRを書かないとき**：
+   - 些細な決定
+   - 簡単に元に戻せる決定
+   - アーキテクチャに影響を与えない実装の詳細
 
-3. **Keep ADRs**:
-   - Concise but complete
-   - Focused on "why" not "how"
-   - Immutable once accepted (create new ADR if changes needed)
-   - Easy to understand for future team members
+3. **ADRを保つ**：
+   - 簡潔だが完全
+   - 「どのように」ではなく「なぜ」に焦点を当てる
+   - 承認されたら不変（変更が必要な場合は新しいADRを作成）
+   - 将来のチームメンバーが理解しやすい
 
-4. **Include**:
-   - Context that led to the decision
-   - Alternatives that were considered
-   - Trade-offs and consequences
-   - References to relevant resources
+4. **含める**：
+   - 決定に至ったコンテキスト
+   - 検討された代替案
+   - トレードオフと結果
+   - 関連リソースへの参照
 
-## References
+## 参考資料
 
-- [Michael Nygard's ADR article](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)
-- [ADR GitHub Organization](https://adr.github.io/)
+- [Michael NygardのADR記事](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)
+- [ADR GitHub組織](https://adr.github.io/)
 - [Markdown Architectural Decision Records](https://adr.github.io/madr/)
 
 ---
 
-**Last Updated**: 2026-01-07
+**最終更新**: 2026-01-07

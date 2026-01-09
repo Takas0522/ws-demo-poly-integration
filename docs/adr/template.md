@@ -1,146 +1,146 @@
-# [Number]. [Decision Title]
+# [番号]. [決定タイトル]
 
-**Date**: YYYY-MM-DD  
-**Status**: [Proposed | Accepted | Deprecated | Superseded]  
-**Deciders**: [Names or roles of people involved in the decision]
+**日付**: YYYY-MM-DD  
+**ステータス**: [提案 | 承認 | 非推奨 | 置き換え]  
+**決定者**: [決定に関与した人物の名前または役割]
 
-## Context
+## コンテキスト
 
-Describe the context and problem statement that leads to this decision. What forces are at play? What constraints exist? What is the current situation?
+この決定に至る背景と問題の説明。どのような力が働いていますか？どのような制約が存在しますか？現在の状況は何ですか？
 
-Include relevant background information:
-- Current architecture or approach
-- Pain points or limitations
-- Requirements driving the decision
-- Technical or business constraints
+関連する背景情報を含める：
+- 現在のアーキテクチャまたはアプローチ
+- 苦痛点または制限
+- 決定を促す要件
+- 技術的またはビジネス上の制約
 
-## Decision
+## 決定
 
-Clearly state the decision that was made. What approach or solution are we adopting?
+行われた決定を明確に述べる。どのアプローチまたはソリューションを採用しているか？
 
-Be specific about:
-- What technology, pattern, or approach was chosen
-- How it will be implemented
-- What components or systems are affected
-- Timeline for implementation (if applicable)
+具体的に：
+- 選択した技術、パターン、またはアプローチ
+- どのように実装されるか
+- 影響を受けるコンポーネントまたはシステム
+- 実装のタイムライン（該当する場合）
 
-## Consequences
+## 結果
 
-Describe the resulting context after applying the decision. What becomes easier or more difficult?
+決定を適用した後の結果のコンテキストを説明する。何が簡単または困難になりますか？
 
-### Positive Consequences
+### ポジティブな結果
 
-List the benefits and improvements from this decision:
-- Benefit 1
-- Benefit 2
-- Benefit 3
+この決定からの利点と改善をリスト：
+- 利点1
+- 利点2
+- 利点3
 
-### Negative Consequences
+### ネガティブな結果
 
-List the drawbacks, limitations, or trade-offs:
-- Trade-off 1
-- Trade-off 2
-- Trade-off 3
+欠点、制限、またはトレードオフをリスト：
+- トレードオフ1
+- トレードオフ2
+- トレードオフ3
 
-### Neutral Consequences
+### 中立的な結果
 
-List changes that are neither positive nor negative:
-- Change 1
-- Change 2
+ポジティブでもネガティブでもない変更をリスト：
+- 変更1
+- 変更2
 
-## Alternatives Considered
+## 検討した代替案
 
-Document the other options that were evaluated and explain why they were not chosen.
+評価された他のオプションを文書化し、選択されなかった理由を説明する。
 
-### Alternative 1: [Name]
+### 代替案1: [名前]
 
-**Description**: Brief description of this alternative.
+**説明**: この代替案の簡単な説明。
 
-**Pros**:
-- Pro 1
-- Pro 2
+**長所**:
+- 長所1
+- 長所2
 
-**Cons**:
-- Con 1
-- Con 2
+**短所**:
+- 短所1
+- 短所2
 
-**Why rejected**: Explanation of why this wasn't chosen.
+**却下理由**: これが選択されなかった理由の説明。
 
-### Alternative 2: [Name]
+### 代替案2: [名前]
 
-**Description**: Brief description of this alternative.
+**説明**: この代替案の簡単な説明。
 
-**Pros**:
-- Pro 1
-- Pro 2
+**長所**:
+- 長所1
+- 長所2
 
-**Cons**:
-- Con 1
-- Con 2
+**短所**:
+- 短所1
+- 短所2
 
-**Why rejected**: Explanation of why this wasn't chosen.
+**却下理由**: これが選択されなかった理由の説明。
 
-## Implementation Notes
+## 実装ノート
 
-Any specific notes about how to implement this decision:
-- Migration path from current state
-- Dependencies that need to be installed
-- Configuration changes required
-- Team training needs
-- Documentation to create
+この決定を実装する方法に関する具体的なメモ：
+- 現在の状態からの移行パス
+- インストールが必要な依存関係
+- 必要な設定変更
+- チームのトレーニングニーズ
+- 作成するドキュメント
 
-## Validation
+## 検証
 
-How will we validate that this decision was correct?
-- Success metrics
-- Performance benchmarks
-- User feedback mechanisms
-- Timeline for review
+この決定が正しかったかどうかをどのように検証しますか？
+- 成功メトリクス
+- パフォーマンスベンチマーク
+- ユーザーフィードバックメカニズム
+- レビューのタイムライン
 
-## References
+## 参考資料
 
-Links to supporting resources:
-- Technical documentation
-- Research papers or articles
-- Related ADRs
-- Discussion threads or meeting notes
-- Proof of concept code
-- External examples or case studies
-
----
-
-## Template Usage Guide
-
-### When to Create an ADR
-
-Create an ADR when:
-- Choosing between multiple technology options
-- Adopting a new architectural pattern
-- Making infrastructure decisions
-- Defining coding standards or practices
-- Changing existing architecture significantly
-
-### How to Fill Out This Template
-
-1. **Number**: Use sequential numbering (001, 002, etc.)
-2. **Title**: Clear, descriptive title starting with a verb (e.g., "Use PostgreSQL for Primary Database")
-3. **Date**: Date when decision was made or proposed
-4. **Status**: 
-   - Proposed: Under discussion
-   - Accepted: Approved and being implemented
-   - Deprecated: No longer relevant
-   - Superseded: Replaced by another ADR (link to it)
-5. **Deciders**: List people or roles who made the decision
-
-### Tips for Writing Good ADRs
-
-- **Be concise**: Keep each section focused and to the point
-- **Be specific**: Include concrete details, not vague statements
-- **Think long-term**: Consider how this decision affects future development
-- **Document trade-offs**: Be honest about the downsides
-- **Link to evidence**: Include references to research or prototypes
-- **Keep it immutable**: Once accepted, don't modify. Create a new ADR if changes are needed.
+サポートリソースへのリンク：
+- 技術ドキュメント
+- 研究論文または記事
+- 関連ADR
+- ディスカッションスレッドまたはミーティングノート
+- 概念実証コード
+- 外部の例またはケーススタディ
 
 ---
 
-**Last Updated**: 2026-01-07
+## テンプレート使用ガイド
+
+### ADRを作成するタイミング
+
+以下の場合にADRを作成：
+- 複数の技術オプションから選択するとき
+- 新しいアーキテクチャパターンを採用するとき
+- インフラストラクチャの決定を行うとき
+- コーディング標準または慣行を定義するとき
+- 既存のアーキテクチャを大幅に変更するとき
+
+### このテンプレートの記入方法
+
+1. **番号**: 連番を使用（001、002など）
+2. **タイトル**: 動詞で始まる明確で説明的なタイトル（例：「プライマリデータベースにPostgreSQLを使用」）
+3. **日付**: 決定が行われたまたは提案された日付
+4. **ステータス**: 
+   - 提案: 議論中
+   - 承認: 承認され実装中
+   - 非推奨: もはや関連性がない
+   - 置き換え: 別のADRに置き換えられた（それにリンク）
+5. **決定者**: 決定を行った人物または役割をリスト
+
+### 良いADRを書くためのヒント
+
+- **簡潔に**: 各セクションを焦点を絞って要点を押さえる
+- **具体的に**: 曖昧な声明ではなく、具体的な詳細を含める
+- **長期的に考える**: この決定が将来の開発にどのように影響するかを考慮
+- **トレードオフを文書化**: 欠点について正直に
+- **証拠にリンク**: 研究またはプロトタイプへの参照を含める
+- **不変に保つ**: 承認されたら変更しない。変更が必要な場合は新しいADRを作成。
+
+---
+
+**最終更新**: 2026-01-07

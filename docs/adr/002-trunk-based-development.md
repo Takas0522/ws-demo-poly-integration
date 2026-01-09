@@ -1,96 +1,96 @@
-# 002. Adopt Trunk-Based Development Workflow
+# 002. トランクベース開発ワークフローの採用
 
-**Date**: 2026-01-07  
-**Status**: Accepted  
-**Deciders**: Development Team, DevOps Team
+**日付**: 2026-01-07  
+**ステータス**: 承認  
+**決定者**: 開発チーム、DevOpsチーム
 
-## Context
+## コンテキスト
 
-We need to establish a branching strategy and development workflow that:
+以下をサポートするブランチ戦略と開発ワークフローを確立する必要があります：
 
-- Supports continuous integration and continuous delivery
-- Keeps the main branch always deployable
-- Minimizes merge conflicts and integration problems
-- Enables rapid feature development and deployment
-- Works well with our polyrepo architecture
-- Supports feature flags for progressive rollouts
+- 継続的インテグレーションと継続的デリバリー
+- メインブランチを常にデプロイ可能に保つ
+- マージコンフリクトと統合問題を最小化
+- 迅速な機能開発とデプロイを可能にする
+- polyrepoアーキテクチャとうまく機能する
+- 段階的ロールアウトのための機能フラグをサポート
 
-Common branching strategies include:
-- Git Flow: Long-lived feature and release branches
-- GitHub Flow: Feature branches merged to main
-- Trunk-Based Development: Short-lived feature branches with feature flags
+一般的なブランチ戦略：
+- Git Flow: 長期的な機能とリリースブランチ
+- GitHub Flow: メインにマージされる機能ブランチ
+- トランクベース開発: 機能フラグ付きの短期的な機能ブランチ
 
-## Decision
+## 決定
 
-We will adopt **Trunk-Based Development** with the following practices:
+以下のプラクティスで**トランクベース開発**を採用します：
 
-### Core Principles
+### コア原則
 
-1. **Main Branch is Always Deployable**
-   - Protected with required reviews and CI checks
-   - All code merged to main must be production-ready
-   - Automated tests must pass before merge
+1. **メインブランチは常にデプロイ可能**
+   - 必須のレビューとCIチェックで保護
+   - メインにマージされるすべてのコードは本番環境対応
+   - マージ前に自動テストが成功する必要
 
-2. **Short-Lived Feature Branches**
-   - Maximum lifetime: 2-3 days (ideally < 1 day)
-   - Branch from latest main
-   - Merge back to main via Pull Request
-   - Delete after merge
+2. **短期的な機能ブランチ**
+   - 最大寿命：2-3日（理想的には1日未満）
+   - 最新のメインからブランチ
+   - プルリクエスト経由でメインにマージ
+   - マージ後に削除
 
-3. **Feature Flags for Incomplete Features**
-   - Features taking > 2 days hidden behind feature flags
-   - Environment-variable controlled flags
-   - Remove flags after feature stabilizes (1-2 releases)
+3. **未完成機能の機能フラグ**
+   - 2日以上かかる機能は機能フラグの後ろに隠す
+   - 環境変数制御のフラグ
+   - 機能が安定したらフラグを削除（1-2リリース後）
 
-4. **Continuous Integration**
-   - Automated testing on every commit
-   - Build verification for every PR
-   - Code review required for all changes
+4. **継続的インテグレーション**
+   - すべてのコミットで自動テスト
+   - すべてのPRでビルド検証
+   - すべての変更にコードレビューが必要
 
-### Branch Naming Convention
+### ブランチ命名規則
 
 ```
-feature/description     # New features
-fix/description        # Bug fixes
-docs/description       # Documentation
-refactor/description   # Code refactoring
-test/description       # Test additions
-chore/description      # Maintenance tasks
+feature/description     # 新機能
+fix/description        # バグ修正
+docs/description       # ドキュメント
+refactor/description   # コードリファクタリング
+test/description       # テスト追加
+chore/description      # メンテナンスタスク
 ```
 
-### Workflow Example
+### ワークフロー例
 
 ```bash
-# 1. Start from main
+# 1. メインから開始
 git checkout main
 git pull --recurse-submodules
 
-# 2. Create short-lived feature branch
+# 2. 短期的な機能ブランチを作成
 git checkout -b feature/user-profile-api
 
-# 3. Develop and commit frequently
-git commit -m "feat(user): add profile endpoint"
-git commit -m "test(user): add profile tests"
+# 3. 開発し頻繁にコミット
+git commit -m "feat(user): プロファイルエンドポイントを追加"
+git commit -m "test(user): プロファイルテストを追加"
 
-# 4. Keep branch updated (if needed)
+# 4. ブランチを最新に保つ（必要な場合）
 git checkout main && git pull
 git checkout feature/user-profile-api
 git rebase main
 
-# 5. Push and create PR (within 2 days)
+# 5. プッシュしてPRを作成（2日以内）
 git push origin feature/user-profile-api
-# Create PR on GitHub
+# GitHubでPRを作成
 
-# 6. Merge and delete branch
-# (Done via GitHub after approval)
+# 6. マージしてブランチを削除
+# （承認後GitHubで実行）
 ```
 
-### Feature Flag Pattern
+### 機能フラグパターン
 
-For features requiring more time:
+より多くの時間を必要とする機能の場合：
 
 ```typescript
-// In code
+// コードで
 if (process.env.FEATURE_NEW_DASHBOARD === 'enabled') {
   return <NewDashboard />;
 }
@@ -98,167 +98,150 @@ return <OldDashboard />;
 ```
 
 ```bash
-# .env.local (development)
+# .env.local（開発環境）
 FEATURE_NEW_DASHBOARD=enabled
 
-# .env.staging (staging)
+# .env.staging（ステージング環境）
 FEATURE_NEW_DASHBOARD=enabled
 
-# .env.production (production)
-FEATURE_NEW_DASHBOARD=disabled  # Until ready
+# .env.production（本番環境）
+FEATURE_NEW_DASHBOARD=disabled  # 準備ができるまで
 ```
 
-## Consequences
+## 結果
 
-### Positive Consequences
+### ポジティブな結果
 
-- **Faster Integration**: Changes integrated continuously, reducing merge conflicts
-- **Always Deployable**: Main branch can be released at any time
-- **Reduced Risk**: Small, frequent merges are easier to review and less risky
-- **Faster Feedback**: Developers get quick feedback on their changes
-- **Simplified Process**: Fewer branches to manage and maintain
-- **Better Collaboration**: Team sees changes quickly, improving coordination
-- **Supports CI/CD**: Natural fit for automated deployment pipelines
-- **Easier Rollback**: Smaller changes make issues easier to identify and revert
+- **高速な統合**: 変更が継続的に統合され、マージコンフリクトが減少
+- **常にデプロイ可能**: メインブランチはいつでもリリース可能
+- **リスク削減**: 小さく頻繁なマージはレビューが容易でリスクが低い
+- **高速なフィードバック**: 開発者は変更に対して迅速なフィードバックを得る
+- **簡素化されたプロセス**: 管理および維持するブランチが少ない
+- **より良いコラボレーション**: チームは変更を迅速に確認し、調整が改善
+- **CI/CDをサポート**: 自動デプロイパイプラインに自然にフィット
+- **ロールバックが容易**: 小さな変更は問題の特定と復元が容易
 
-### Negative Consequences
+### ネガティブな結果
 
-- **Discipline Required**: Team must commit to short-lived branches
-- **Feature Flag Overhead**: Managing feature flags adds some complexity
-- **Requires Good Tests**: Inadequate tests can let bugs into main
-- **Cultural Shift**: Teams used to long-lived branches need to adapt
-- **Code Review Pressure**: Quick PR turnaround expected to maintain flow
+- **規律が必要**: チームは短期的なブランチにコミットする必要
+- **機能フラグのオーバーヘッド**: 機能フラグの管理には複雑性が追加
+- **良いテストが必要**: 不十分なテストではバグがメインに入る可能性
+- **文化的シフト**: 長期的なブランチに慣れたチームは適応が必要
+- **コードレビューのプレッシャー**: フローを維持するために迅速なPRターンアラウンドが期待される
 
-### Neutral Consequences
+### 中立的な結果
 
-- Feature flags need cleanup after features stabilize
-- Requires strong automated testing infrastructure
-- Team needs training on trunk-based practices
+- 機能が安定した後、機能フラグのクリーンアップが必要
+- 強力な自動テストインフラストラクチャが必要
+- チームはトランクベースのプラクティスのトレーニングが必要
 
-## Alternatives Considered
+## 検討した代替案
 
-### Alternative 1: Git Flow
+### 代替案1: Git Flow
 
-**Description**: Long-lived develop branch, release branches, feature branches can live for weeks.
+**説明**: 長期的な開発ブランチ、リリースブランチ、機能ブランチは数週間存在可能。
 
-**Pros**:
-- Familiar to many developers
-- Clear separation of development and production code
-- Structured release process
-- Multiple releases can be prepared in parallel
+**長所**:
+- 多くの開発者に馴染みがある
+- 開発コードと本番コードの明確な分離
+- 構造化されたリリースプロセス
+- 複数のリリースを並行して準備可能
 
-**Cons**:
-- Complex branching model with many branch types
-- Longer-lived branches lead to more merge conflicts
-- Delayed integration increases risk
-- Harder to maintain always-deployable state
-- Release branches add overhead
-- Not ideal for continuous delivery
+**短所**:
+- 多くのブランチタイプで複雑なブランチモデル
+- 長期的なブランチはマージコンフリクトを増やす
+- 遅延した統合はリスクを増やす
+- 常にデプロイ可能な状態の維持が難しい
+- リリースブランチがオーバーヘッドを追加
+- 継続的デリバリーには理想的でない
 
-**Why rejected**: Too complex for our needs and conflicts with our goal of continuous delivery. Long-lived branches increase integration risk and slow down development velocity.
+**却下理由**: 私たちのニーズには複雑すぎて、継続的デリバリーの目標と矛盾。長期的なブランチは統合リスクを増やし、開発速度を遅くする。
 
-### Alternative 2: GitHub Flow
+### 代替案2: GitHub Flow
 
-**Description**: Feature branches merged directly to main, no develop branch.
+**説明**: 機能ブランチが直接メインにマージされる、開発ブランチなし。
 
-**Pros**:
-- Simpler than Git Flow
-- Main branch is deployable
-- Good for continuous delivery
-- Easy to understand
+**長所**:
+- Git Flowよりシンプル
+- メインブランチはデプロイ可能
+- 継続的デリバリーに適している
+- 理解しやすい
 
-**Cons**:
-- No guidance on feature branch lifetime
-- Can lead to long-lived branches without discipline
-- No explicit feature flag strategy
-- Less structured than trunk-based
+**短所**:
+- 機能ブランチの寿命に関するガイダンスなし
+- 規律なしで長期的なブランチにつながる可能性
+- 明示的な機能フラグ戦略なし
+- トランクベースより規定的でない
 
-**Why rejected**: Similar to trunk-based but less prescriptive. We prefer trunk-based development's explicit guidance on short-lived branches and feature flags.
+**却下理由**: トランクベースに似ているが、より規定的でない。短期的なブランチと機能フラグに関するトランクベース開発の明示的なガイダンスを好みます。
 
-### Alternative 3: Direct Commits to Main
+## 実装ノート
 
-**Description**: Developers commit directly to main branch.
+### チームオンボーディング
 
-**Pros**:
-- Ultimate simplicity
-- No branching overhead
-- Immediate integration
+1. **トレーニングセッション**: トランクベース開発に関するワークショップを実施
+2. **ドキュメント**: このADRとCONTRIBUTING.mdを参照
+3. **ペアプログラミング**: 新しいチームメンバーは経験豊富な開発者とペア
+4. **PRテンプレート**: ブランチ寿命を思い出させるPRテンプレートを使用
 
-**Cons**:
-- No code review process
-- High risk of breaking main
-- Difficult to coordinate multiple developers
-- No chance to run CI before merge
+### 機能フラグ実装
 
-**Why rejected**: Too risky and eliminates important quality gates like code review and CI checks.
+1. **環境変数**: フラグ設定に`.env`ファイルを使用
+2. **命名規則**: すべての機能フラグに`FEATURE_<NAME>`
+3. **ドキュメント**: 中央の場所ですべてのアクティブなフラグをドキュメント化
+4. **クリーンアップスケジュール**: 四半期ごとにフラグをレビューして削除
+5. **フラグタイプ**:
+   - 開発フラグ（機能完了後に削除）
+   - 運用フラグ（永続的、システム動作を制御）
 
-## Implementation Notes
+### CI/CDパイプライン
 
-### Team Onboarding
+1. **PRチェック**（マージ前に必須）:
+   - リンティング
+   - 型チェック
+   - ユニットテスト（80%以上のカバレッジ）
+   - 統合テスト
+   - ビルド検証
 
-1. **Training Session**: Conduct workshop on trunk-based development
-2. **Documentation**: Reference this ADR and CONTRIBUTING.md
-3. **Pair Programming**: New team members pair with experienced developers
-4. **PR Template**: Use PR template that reminds about branch lifetime
+2. **マージ後**（自動）:
+   - ステージングにデプロイ
+   - スモークテストを実行
+   - 本番デプロイには手動承認
 
-### Feature Flag Implementation
+### 監視
 
-1. **Environment Variables**: Use `.env` files for flag configuration
-2. **Naming Convention**: `FEATURE_<NAME>` for all feature flags
-3. **Documentation**: Document all active flags in a central location
-4. **Cleanup Schedule**: Review and remove flags quarterly
-5. **Flag Types**:
-   - Development flags (removed after feature completion)
-   - Operational flags (permanent, control system behavior)
+- ブランチ寿命メトリクスを追跡
+- メインブランチの安定性を監視（ビルド成功率）
+- コミットから本番までの時間を測定
+- 機能フラグの使用とクリーンアップを追跡
 
-### CI/CD Pipeline
+## 検証
 
-1. **PR Checks** (Required before merge):
-   - Linting
-   - Type checking
-   - Unit tests (80%+ coverage)
-   - Integration tests
-   - Build verification
+以下によってこの決定を検証します：
 
-2. **Post-Merge** (Automatic):
-   - Deploy to staging
-   - Run smoke tests
-   - Manual approval for production deployment
+**成功メトリクス**:
+- 平均ブランチ寿命 < 2日
+- メインブランチビルド成功率 > 95%
+- コミットから本番までの時間 < 1日
+- マージコンフリクト率 < 5%
+- 開発者満足度スコア
 
-### Monitoring
+**レビュータイムライン**: 採用後3か月
 
-- Track branch lifetime metrics
-- Monitor main branch stability (build success rate)
-- Measure time from commit to production
-- Track feature flag usage and cleanup
+**レビュー基準**:
+- 開発者は短期的なブランチを維持できていますか？
+- メインブランチの安定性は維持されていますか？
+- 機能フラグは適切に管理されていますか？
+- チームはワークフローに満足していますか？
 
-## Validation
-
-We will validate this decision by:
-
-**Success Metrics**:
-- Average branch lifetime < 2 days
-- Main branch build success rate > 95%
-- Time from commit to production < 1 day
-- Merge conflict rate < 5%
-- Developer satisfaction scores
-
-**Review Timeline**: 3 months after adoption
-
-**Review Criteria**:
-- Are developers able to maintain short-lived branches?
-- Is main branch stability maintained?
-- Are feature flags being managed properly?
-- Is the team satisfied with the workflow?
-
-## References
+## 参考資料
 
 - [Trunk-Based Development](https://trunkbaseddevelopment.com/)
 - [Feature Flags Best Practices](https://martinfowler.com/articles/feature-toggles.html)
 - [Continuous Integration by Martin Fowler](https://martinfowler.com/articles/continuousIntegration.html)
 - [Git Flow vs Trunk-Based Development](https://www.toptal.com/software/trunk-based-development-git-flow)
-- CONTRIBUTING.md in this repository
+- このリポジトリのCONTRIBUTING.md
 
 ---
 
-**Last Updated**: 2026-01-07
+**最終更新**: 2026-01-07

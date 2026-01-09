@@ -1,140 +1,140 @@
-# 001. Use Polyrepo Architecture with Git Submodules
+# 001. Gitサブモジュールを使用したPolyrepoアーキテクチャの採用
 
-**Date**: 2026-01-07  
-**Status**: Accepted  
-**Deciders**: Development Team, Architecture Team
+**日付**: 2026-01-07  
+**ステータス**: 承認  
+**決定者**: 開発チーム、アーキテクチャチーム
 
-## Context
+## コンテキスト
 
-We are building a multi-service SaaS administration platform with several independent services (Frontend, Auth Service, User Management Service, Service Settings Service). We need to decide on a repository strategy that:
+複数の独立したサービス（フロントエンド、認証サービス、ユーザー管理サービス、サービス設定サービス）を持つマルチサービスSaaS管理プラットフォームを構築しています。以下を可能にするリポジトリ戦略が必要です：
 
-- Allows independent development and deployment of services
-- Maintains clear service boundaries
-- Enables coordinated releases when needed
-- Supports different teams working on different services
-- Provides a unified view of the entire system
+- サービスの独立した開発とデプロイ
+- 明確なサービス境界の維持
+- 必要に応じた調整されたリリース
+- 異なるチームが異なるサービスに取り組むことのサポート
+- システム全体の統一されたビューの提供
 
-The main options are:
-1. Monorepo: Single repository containing all services
-2. Polyrepo: Separate repositories for each service with an integration repository
-3. Multirepo: Completely separate repositories with no integration layer
+主な選択肢：
+1. モノレポ：すべてのサービスを含む単一のリポジトリ
+2. Polyrepo：統合リポジトリを持つサービスごとの個別リポジトリ
+3. マルチレポ：統合レイヤーのない完全に独立したリポジトリ
 
-## Decision
+## 決定
 
-We will use a **polyrepo architecture** implemented with Git submodules:
+**Gitサブモジュールで実装されたpolyrepoアーキテクチャ**を使用します：
 
-- Each service (frontend, auth-service, user-management-service, service-setting-service) has its own repository
-- An integration repository (`ws-demo-poly-integration`) references all service repositories as Git submodules
-- Each service can be developed, tested, and deployed independently
-- The integration repository provides:
-  - Unified documentation
-  - Overall architecture documentation
-  - Cross-service integration tests
-  - Coordinated release management
-  - Development environment setup (DevContainer)
+- 各サービス（frontend、auth-service、user-management-service、service-setting-service）は独自のリポジトリを持つ
+- 統合リポジトリ（`ws-demo-poly-integration`）は、すべてのサービスリポジトリをGitサブモジュールとして参照
+- 各サービスは独立して開発、テスト、デプロイ可能
+- 統合リポジトリは以下を提供：
+  - 統一されたドキュメント
+  - 全体的なアーキテクチャドキュメント
+  - クロスサービス統合テスト
+  - 調整されたリリース管理
+  - 開発環境セットアップ（DevContainer）
 
-Repository structure:
+リポジトリ構造：
 ```
-ws-demo-poly-integration/          # Integration repository
+ws-demo-poly-integration/          # 統合リポジトリ
 ├── src/
-│   ├── front/                     # Submodule: ws-demo-poly1
-│   ├── auth-service/              # Submodule: ws-demo-poly3
-│   ├── user-management-service/   # Submodule: ws-demo-poly2
-│   └── service-setting-service/   # Submodule: ws-demo-poly4
-├── docs/                          # Shared documentation
-└── CONTRIBUTING.md                # Development guidelines
+│   ├── front/                     # サブモジュール: ws-demo-poly1
+│   ├── auth-service/              # サブモジュール: ws-demo-poly3
+│   ├── user-management-service/   # サブモジュール: ws-demo-poly2
+│   └── service-setting-service/   # サブモジュール: ws-demo-poly4
+├── docs/                          # 共有ドキュメント
+└── CONTRIBUTING.md                # 開発ガイドライン
 ```
 
-## Consequences
+## 結果
 
-### Positive Consequences
+### ポジティブな結果
 
-- **Service Independence**: Each service can be developed, versioned, and deployed independently
-- **Clear Boundaries**: Physical repository separation enforces service boundaries and reduces coupling
-- **Team Autonomy**: Different teams can own different services with their own CI/CD pipelines
-- **Selective Cloning**: Developers can clone only the services they need for their work
-- **Individual Service History**: Each service maintains its own Git history, making changes easier to track
-- **Technology Flexibility**: Services can use different technologies, frameworks, or languages
-- **Faster CI/CD**: Service-specific pipelines run faster than monorepo pipelines
+- **サービスの独立性**: 各サービスを独立して開発、バージョン管理、デプロイ可能
+- **明確な境界**: 物理的なリポジトリ分離がサービス境界を強制し、結合を減らす
+- **チームの自律性**: 異なるチームが独自のCI/CDパイプラインで異なるサービスを所有可能
+- **選択的クローン**: 開発者は作業に必要なサービスのみクローン可能
+- **個別のサービス履歴**: 各サービスは独自のGit履歴を維持し、変更の追跡が容易
+- **技術の柔軟性**: サービスは異なる技術、フレームワーク、言語を使用可能
+- **高速なCI/CD**: サービス固有のパイプラインはモノレポパイプラインより高速に実行
 
-### Negative Consequences
+### ネガティブな結果
 
-- **Coordination Overhead**: Cross-service changes require coordination across multiple repositories
-- **Submodule Complexity**: Team members need to understand Git submodules
-- **Dependency Management**: Shared types or libraries require careful versioning
-- **Integration Testing**: Cross-service tests must be maintained in the integration repository
-- **Initial Setup**: More complex initial setup compared to monorepo
+- **調整オーバーヘッド**: クロスサービス変更には複数のリポジトリにわたる調整が必要
+- **サブモジュールの複雑性**: チームメンバーはGitサブモジュールを理解する必要
+- **依存関係管理**: 共有型またはライブラリには慎重なバージョン管理が必要
+- **統合テスト**: クロスサービステストは統合リポジトリで維持する必要
+- **初期セットアップ**: モノレポと比較して初期セットアップが複雑
 
-### Neutral Consequences
+### 中立的な結果
 
-- Integration repository provides coordination point without tightly coupling services
-- Requires clear documentation and guidelines for working with submodules
+- 統合リポジトリはサービスを密結合せずに調整ポイントを提供
+- サブモジュールの操作に関する明確なドキュメントとガイドラインが必要
 
-## Alternatives Considered
+## 検討した代替案
 
-### Alternative 1: Monorepo
+### 代替案1: モノレポ
 
-**Description**: Single repository containing all services in directories.
+**説明**: ディレクトリ内のすべてのサービスを含む単一のリポジトリ。
 
-**Pros**:
-- Simplified dependency management
-- Atomic cross-service changes
-- Single CI/CD pipeline
-- Easier code sharing and refactoring
-- No submodule complexity
+**長所**:
+- 依存関係管理の簡素化
+- アトミックなクロスサービス変更
+- 単一のCI/CDパイプライン
+- コード共有とリファクタリングが容易
+- サブモジュールの複雑性なし
 
-**Cons**:
-- Larger repository size
-- Slower CI/CD (must test all services)
-- Harder to enforce service boundaries
-- All developers need access to all code
-- More complex build configurations
-- Potential for tight coupling
+**短所**:
+- リポジトリサイズが大きい
+- CI/CDが遅い（すべてのサービスをテスト）
+- サービス境界の強制が難しい
+- すべての開発者がすべてのコードにアクセス必要
+- より複雑なビルド設定
+- 密結合の可能性
 
-**Why rejected**: While simpler for small teams, our architecture emphasizes service independence and we want to support independent deployment cycles. Monorepo would make it too easy to violate service boundaries.
+**却下理由**: 小規模チームには簡単ですが、私たちのアーキテクチャはサービスの独立性を重視し、独立したデプロイサイクルをサポートしたいです。モノレポではサービス境界の違反が容易になります。
 
-### Alternative 2: Completely Separate Repositories (Multirepo)
+### 代替案2: 完全に独立したリポジトリ（マルチレポ）
 
-**Description**: Separate repositories with no integration layer.
+**説明**: 統合レイヤーのない個別のリポジトリ。
 
-**Pros**:
-- Maximum service independence
-- No submodule complexity
-- Complete team autonomy
+**長所**:
+- 最大限のサービス独立性
+- サブモジュールの複雑性なし
+- 完全なチームの自律性
 
-**Cons**:
-- No unified view of the system
-- Difficult to coordinate releases
-- Harder to onboard new developers
-- No shared documentation or standards
-- Complex integration testing setup
+**短所**:
+- システムの統一されたビューがない
+- リリースの調整が困難
+- 新しい開発者のオンボーディングが難しい
+- 共有ドキュメントや標準がない
+- 複雑な統合テストセットアップ
 
-**Why rejected**: Too much isolation makes it difficult to manage the system as a whole. We need a coordination point for documentation, standards, and integration testing.
+**却下理由**: 分離が多すぎてシステム全体の管理が困難。ドキュメント、標準、統合テストの調整ポイントが必要です。
 
-## Implementation Notes
+## 実装ノート
 
-### Working with Submodules
+### サブモジュールの操作
 
-**Initial clone**:
+**初期クローン**:
 ```bash
 git clone --recursive https://github.com/Takas0522/ws-demo-poly-integration.git
 ```
 
-**Update submodules**:
+**サブモジュールの更新**:
 ```bash
 git submodule update --remote --recursive
 ```
 
-**Make changes in a submodule**:
+**サブモジュール内での変更**:
 ```bash
 cd src/service-name
 git checkout -b feature/my-feature
-# Make changes
+# 変更を行う
 git commit -m "feat: add feature"
 git push origin feature/my-feature
 ```
 
-**Update integration repo to reference new submodule commit**:
+**新しいサブモジュールコミットを参照するようにメインリポジトリを更新**:
 ```bash
 cd ../..
 git add src/service-name
@@ -142,36 +142,36 @@ git commit -m "Update service-name submodule"
 git push
 ```
 
-### Guidelines
+### ガイドライン
 
-1. Service repositories should be kept independent and deployable
-2. Shared types should be published as npm packages
-3. Integration tests go in the integration repository
-4. Documentation standards maintained in integration repository
-5. DevContainer configuration in integration repository
+1. サービスリポジトリは独立してデプロイ可能に保つ
+2. 共有型はnpmパッケージとして公開
+3. 統合テストは統合リポジトリに配置
+4. ドキュメント標準は統合リポジトリで維持
+5. DevContainer設定は統合リポジトリに配置
 
-## Validation
+## 検証
 
-We will validate this decision by:
-- **Deployment Independence**: Successfully deploying services independently
-- **Team Velocity**: Measuring if teams can work without blocking each other
-- **Onboarding Time**: Tracking new developer onboarding experience
-- **Code Quality**: Monitoring if service boundaries remain clean
-- **Review Timeline**: 6 months after implementation
+以下によってこの決定を検証します：
+- **デプロイの独立性**: サービスを他を壊さずに独立してデプロイできること
+- **チームの速度**: チームが互いにブロックせずに作業できるかを測定
+- **オンボーディング時間**: 新しい開発者のオンボーディング体験を追跡
+- **コード品質**: サービス境界がクリーンに保たれているかを監視
+- **レビュータイムライン**: 実装後6か月
 
-Success metrics:
-- Services can be deployed independently without breaking others
-- Teams report minimal cross-service coordination overhead
-- New developers can contribute within 1 week
-- Service dependencies remain loosely coupled
+成功メトリクス：
+- サービスは他を壊さずに独立してデプロイ可能
+- チームは最小限のクロスサービス調整オーバーヘッドを報告
+- 新しい開発者は1週間以内に貢献可能
+- サービス依存関係は疎結合のまま
 
-## References
+## 参考資料
 
-- [Git Submodules Documentation](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
+- [Git Submodulesドキュメント](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
 - [Monorepo vs Polyrepo](https://medium.com/@mattklein123/monorepos-please-dont-e9a279be011b)
 - [Microservices and Repository Strategy](https://martinfowler.com/articles/microservices.html)
-- DEVELOPMENT_PLAN.md in this repository
+- このリポジトリのDEVELOPMENT_PLAN.md
 
 ---
 
-**Last Updated**: 2026-01-07
+**最終更新**: 2026-01-07
