@@ -261,6 +261,8 @@ export const Validators = {
   /**
    * Validate permission name format (dot notation)
    * Allows formats like: users.create, api-keys.delete, user-settings.update
+   * Format: {resource}.{action} where both parts can contain lowercase letters, numbers, and hyphens
+   * Examples: users.read, api-keys.create, user-profile.update
    */
   isValidPermissionName(name: string): boolean {
     const permissionRegex = /^[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$/;

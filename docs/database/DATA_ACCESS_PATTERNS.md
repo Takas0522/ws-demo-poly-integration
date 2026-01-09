@@ -442,6 +442,15 @@ const { resources: activity } = await container.items
 
 ## Performance Comparison
 
+> **Note**: The following metrics are baseline estimates based on typical workloads with the default indexing policies. Actual performance may vary significantly based on:
+> - Document size and complexity
+> - Index configuration and number of indexed paths
+> - Network latency and geographic distribution
+> - CosmosDB consistency level settings
+> - Concurrent query load and throttling
+> 
+> Always test with production-like data and monitor actual RU consumption in your environment.
+
 | Pattern | RU Cost | Latency | Use Case |
 |---------|---------|---------|----------|
 | Point Read | 1 RU | ~5ms | Get by ID |

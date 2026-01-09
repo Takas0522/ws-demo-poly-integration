@@ -131,7 +131,7 @@ async function seedUsers(tenantId: string) {
       failedLoginAttempts: 0,
       lockedUntil: null,
       twoFactorEnabled: false,
-      twoFactorSecret: null,
+      twoFactorSecret: null, // Should be encrypted TOTP secret when 2FA is enabled
     },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -172,7 +172,7 @@ async function seedUsers(tenantId: string) {
       failedLoginAttempts: 0,
       lockedUntil: null,
       twoFactorEnabled: false,
-      twoFactorSecret: null,
+      twoFactorSecret: null, // Should be encrypted TOTP secret when 2FA is enabled
     },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -495,14 +495,11 @@ async function seedData() {
     console.log('  - Audit Logs: 2');
     console.log('');
     console.log('🔐 Default Credentials:');
-    console.log('  Admin:');
-    console.log('    Email: admin@example.com');
-    console.log('    Password: Admin@123');
-    console.log('  User:');
-    console.log('    Email: user@example.com');
-    console.log('    Password: User@123');
+    console.log('  Credentials are stored in seed-data.ts');
+    console.log('  See scripts/cosmosdb/README.md for access details');
     console.log('');
-    console.log('⚠️  IMPORTANT: Change these passwords in production!');
+    console.log('⚠️  IMPORTANT: These are development-only credentials!');
+    console.log('⚠️  Change all passwords before deploying to staging or production!');
 
   } catch (error) {
     console.error('❌ Error seeding data:', error);
