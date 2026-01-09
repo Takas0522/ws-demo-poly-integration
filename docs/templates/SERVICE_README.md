@@ -1,122 +1,122 @@
-# Service Name
+# サービス名
 
-Brief one-line description of what this service does.
+このサービスが何をするかの簡単な1行の説明。
 
-## 📋 Overview
+## 📋 概要
 
-Detailed description of the service, its purpose, and its role in the overall application architecture.
+サービスの詳細な説明、その目的、およびアプリケーション全体のアーキテクチャにおける役割。
 
-## 🎯 Features
+## 🎯 機能
 
-- Feature 1: Description
-- Feature 2: Description
-- Feature 3: Description
+- 機能1：説明
+- 機能2：説明
+- 機能3：説明
 
-## 🏗️ Architecture
+## 🏗️ アーキテクチャ
 
-Explain the service architecture, key components, and how they interact.
+サービスのアーキテクチャ、主要コンポーネント、およびそれらの相互作用について説明します。
 
-### Key Components
+### 主要コンポーネント
 
-- **Component 1**: Description and responsibility
-- **Component 2**: Description and responsibility
-- **Component 3**: Description and responsibility
+- **コンポーネント1**：説明と責任
+- **コンポーネント2**：説明と責任
+- **コンポーネント3**：説明と責任
 
-## 🚀 Getting Started
+## 🚀 はじめに
 
-### Prerequisites
+### 前提条件
 
 - Node.js 18+
-- npm or yarn
-- [Any other requirements]
+- npmまたはyarn
+- [その他の要件]
 
-### Installation
+### インストール
 
 ```bash
-# Clone the repository
+# リポジトリをクローン
 git clone [repository-url]
 cd [service-directory]
 
-# Install dependencies
+# 依存関係をインストール
 npm install
 ```
 
-### Environment Variables
+### 環境変数
 
-Create a `.env` file in the root directory with the following variables:
+ルートディレクトリに`.env`ファイルを作成し、以下の変数を設定してください：
 
 ```env
-# Server Configuration
+# サーバー設定
 PORT=3000
 NODE_ENV=development
 
-# Database Configuration
+# データベース設定
 COSMOSDB_ENDPOINT=https://localhost:8081
 COSMOSDB_KEY=your-cosmosdb-key
 COSMOSDB_DATABASE=your-database-name
 
-# Authentication
+# 認証
 JWT_SECRET=your-jwt-secret
 JWT_EXPIRES_IN=24h
 
-# Feature Flags
+# 機能フラグ
 FEATURE_NEW_FEATURE=enabled
 
-# Logging
+# ロギング
 LOG_LEVEL=info
 ```
 
-### Running the Service
+### サービスの実行
 
 ```bash
-# Development mode with hot reload
+# ホットリロード付き開発モード
 npm run dev
 
-# Production mode
+# 本番モード
 npm run build
 npm start
 
-# Run tests
+# テストを実行
 npm test
 
-# Run linter
+# リンターを実行
 npm run lint
 ```
 
-## 📡 API Endpoints
+## 📡 APIエンドポイント
 
-### Base URL
-- **Development**: `http://localhost:3000`
-- **Staging**: `https://staging.example.com`
-- **Production**: `https://api.example.com`
+### ベースURL
+- **開発環境**: `http://localhost:3000`
+- **ステージング環境**: `https://staging.example.com`
+- **本番環境**: `https://api.example.com`
 
-### Authentication
+### 認証
 
-All endpoints (except public ones) require JWT authentication:
+すべてのエンドポイント（公開のものを除く）はJWT認証が必要です：
 
 ```
-Authorization: Bearer <your-jwt-token>
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-### Endpoints
+### エンドポイント
 
 #### GET /api/resource
 
-Get a list of resources.
+リソースのリストを取得します。
 
-**Query Parameters:**
-- `page` (number, optional): Page number (default: 1)
-- `limit` (number, optional): Items per page (default: 20)
-- `filter` (string, optional): Filter criteria
+**クエリパラメータ:**
+- `page` (number, オプション): ページ番号（デフォルト: 1）
+- `limit` (number, オプション): ページあたりのアイテム数（デフォルト: 20）
+- `filter` (string, オプション): フィルター条件
 
-**Response:**
+**レスポンス:**
 ```json
 {
   "success": true,
   "data": [
     {
       "id": "123",
-      "name": "Resource Name",
+      "name": "リソース名",
       "createdAt": "2026-01-07T00:00:00Z"
     }
   ],
@@ -128,135 +128,135 @@ Get a list of resources.
 }
 ```
 
-**Status Codes:**
-- `200 OK`: Success
-- `401 Unauthorized`: Missing or invalid authentication
-- `500 Internal Server Error`: Server error
+**ステータスコード:**
+- `200 OK`: 成功
+- `401 Unauthorized`: 認証がないか無効
+- `500 Internal Server Error`: サーバーエラー
 
 #### POST /api/resource
 
-Create a new resource.
+新しいリソースを作成します。
 
-**Request Body:**
+**リクエストボディ:**
 ```json
 {
-  "name": "Resource Name",
-  "description": "Resource description"
+  "name": "リソース名",
+  "description": "リソースの説明"
 }
 ```
 
-**Response:**
+**レスポンス:**
 ```json
 {
   "success": true,
   "data": {
     "id": "123",
-    "name": "Resource Name",
-    "description": "Resource description",
+    "name": "リソース名",
+    "description": "リソースの説明",
     "createdAt": "2026-01-07T00:00:00Z"
   }
 }
 ```
 
-**Status Codes:**
-- `201 Created`: Resource created successfully
-- `400 Bad Request`: Invalid input
-- `401 Unauthorized`: Missing or invalid authentication
-- `500 Internal Server Error`: Server error
+**ステータスコード:**
+- `201 Created`: リソースが正常に作成されました
+- `400 Bad Request`: 無効な入力
+- `401 Unauthorized`: 認証がないか無効
+- `500 Internal Server Error`: サーバーエラー
 
 #### GET /api/resource/:id
 
-Get a specific resource by ID.
+IDで特定のリソースを取得します。
 
-**Path Parameters:**
-- `id` (string, required): Resource ID
+**パスパラメータ:**
+- `id` (string, 必須): リソースID
 
-**Response:**
+**レスポンス:**
 ```json
 {
   "success": true,
   "data": {
     "id": "123",
-    "name": "Resource Name",
+    "name": "リソース名",
     "createdAt": "2026-01-07T00:00:00Z"
   }
 }
 ```
 
-**Status Codes:**
-- `200 OK`: Success
-- `404 Not Found`: Resource not found
-- `401 Unauthorized`: Missing or invalid authentication
-- `500 Internal Server Error`: Server error
+**ステータスコード:**
+- `200 OK`: 成功
+- `404 Not Found`: リソースが見つかりません
+- `401 Unauthorized`: 認証がないか無効
+- `500 Internal Server Error`: サーバーエラー
 
 #### PUT /api/resource/:id
 
-Update a resource (full update).
+リソースを更新します（完全更新）。
 
-**Path Parameters:**
-- `id` (string, required): Resource ID
+**パスパラメータ:**
+- `id` (string, 必須): リソースID
 
-**Request Body:**
+**リクエストボディ:**
 ```json
 {
-  "name": "Updated Name",
-  "description": "Updated description"
+  "name": "更新された名前",
+  "description": "更新された説明"
 }
 ```
 
-**Response:**
+**レスポンス:**
 ```json
 {
   "success": true,
   "data": {
     "id": "123",
-    "name": "Updated Name",
-    "description": "Updated description",
+    "name": "更新された名前",
+    "description": "更新された説明",
     "updatedAt": "2026-01-07T00:00:00Z"
   }
 }
 ```
 
-**Status Codes:**
-- `200 OK`: Success
-- `400 Bad Request`: Invalid input
-- `404 Not Found`: Resource not found
-- `401 Unauthorized`: Missing or invalid authentication
-- `500 Internal Server Error`: Server error
+**ステータスコード:**
+- `200 OK`: 成功
+- `400 Bad Request`: 無効な入力
+- `404 Not Found`: リソースが見つかりません
+- `401 Unauthorized`: 認証がないか無効
+- `500 Internal Server Error`: サーバーエラー
 
 #### DELETE /api/resource/:id
 
-Delete a resource.
+リソースを削除します。
 
-**Path Parameters:**
-- `id` (string, required): Resource ID
+**パスパラメータ:**
+- `id` (string, 必須): リソースID
 
-**Response:**
+**レスポンス:**
 ```json
 {
   "success": true,
-  "message": "Resource deleted successfully"
+  "message": "リソースが正常に削除されました"
 }
 ```
 
-**Status Codes:**
-- `204 No Content`: Successfully deleted
-- `404 Not Found`: Resource not found
-- `401 Unauthorized`: Missing or invalid authentication
-- `500 Internal Server Error`: Server error
+**ステータスコード:**
+- `204 No Content`: 正常に削除されました
+- `404 Not Found`: リソースが見つかりません
+- `401 Unauthorized`: 認証がないか無効
+- `500 Internal Server Error`: サーバーエラー
 
-### Error Responses
+### エラーレスポンス
 
-All error responses follow this format:
+すべてのエラーレスポンスはこの形式に従います：
 
 ```json
 {
   "success": false,
   "error": {
     "code": "ERROR_CODE",
-    "message": "Human-readable error message",
+    "message": "人間が読めるエラーメッセージ",
     "details": {
-      "field": "Additional error details"
+      "field": "追加のエラー詳細"
     }
   },
   "metadata": {
@@ -266,36 +266,36 @@ All error responses follow this format:
 }
 ```
 
-## 🧪 Testing
+## 🧪 テスト
 
-### Running Tests
+### テストの実行
 
 ```bash
-# Run all tests
+# すべてのテストを実行
 npm test
 
-# Run with coverage
+# カバレッジ付きで実行
 npm run test:coverage
 
-# Run specific test file
+# 特定のテストファイルを実行
 npm test -- path/to/test.spec.ts
 
-# Run in watch mode
+# ウォッチモードで実行
 npm test -- --watch
 ```
 
-### Test Structure
+### テスト構造
 
 ```
 tests/
-├── unit/              # Unit tests
-├── integration/       # Integration tests
-└── fixtures/          # Test data and fixtures
+├── unit/              # ユニットテスト
+├── integration/       # 統合テスト
+└── fixtures/          # テストデータとフィクスチャ
 ```
 
-### Writing Tests
+### テストの記述
 
-Example test:
+テスト例：
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -303,9 +303,9 @@ import { ResourceService } from './resource.service';
 
 describe('ResourceService', () => {
   describe('createResource', () => {
-    it('should create a new resource', async () => {
+    it('新しいリソースを作成できること', async () => {
       const service = new ResourceService();
-      const data = { name: 'Test Resource' };
+      const data = { name: 'テストリソース' };
       
       const result = await service.createResource(data);
       
@@ -316,162 +316,162 @@ describe('ResourceService', () => {
 });
 ```
 
-## 🛠️ Development
+## 🛠️ 開発
 
-### Project Structure
+### プロジェクト構造
 
 ```
 src/
-├── controllers/       # Request handlers
-├── services/         # Business logic
-├── models/           # Data models
-├── middleware/       # Express middleware
-├── utils/            # Utility functions
-├── types/            # TypeScript types
-├── config/           # Configuration files
-└── index.ts          # Application entry point
+├── controllers/       # リクエストハンドラ
+├── services/         # ビジネスロジック
+├── models/           # データモデル
+├── middleware/       # Expressミドルウェア
+├── utils/            # ユーティリティ関数
+├── types/            # TypeScript型
+├── config/           # 設定ファイル
+└── index.ts          # アプリケーションエントリポイント
 ```
 
-### Code Style
+### コードスタイル
 
-This project uses:
-- **ESLint** for code linting
-- **Prettier** for code formatting
-- **TypeScript** for type checking
+このプロジェクトは以下を使用します：
+- **ESLint**：コードリンティング
+- **Prettier**：コードフォーマット
+- **TypeScript**：型チェック
 
-Run linting and formatting:
+リンティングとフォーマットを実行：
 
 ```bash
-npm run lint          # Check for linting errors
-npm run lint:fix      # Auto-fix linting errors
-npm run format        # Format code with Prettier
-npm run type-check    # TypeScript type checking
+npm run lint          # リンティングエラーをチェック
+npm run lint:fix      # リンティングエラーを自動修正
+npm run format        # Prettierでコードをフォーマット
+npm run type-check    # TypeScript型チェック
 ```
 
-### Development Workflow
+### 開発ワークフロー
 
-1. Create a feature branch: `git checkout -b feature/my-feature`
-2. Make changes and commit following conventional commits
-3. Run tests and linting: `npm test && npm run lint`
-4. Push changes and create a Pull Request
-5. Wait for CI checks and code review
-6. Merge after approval
+1. 機能ブランチを作成：`git checkout -b feature/my-feature`
+2. 変更を行い、慣習的コミットに従ってコミット
+3. テストとリンティングを実行：`npm test && npm run lint`
+4. 変更をプッシュしてプルリクエストを作成
+5. CIチェックとコードレビューを待つ
+6. 承認後にマージ
 
-## 📚 Documentation
+## 📚 ドキュメント
 
-### API Documentation
+### APIドキュメント
 
-OpenAPI/Swagger documentation is available at:
-- Development: `http://localhost:3000/api-docs`
-- Production: `https://api.example.com/api-docs`
+OpenAPI/Swaggerドキュメントは以下で利用可能です：
+- 開発環境：`http://localhost:3000/api-docs`
+- 本番環境：`https://api.example.com/api-docs`
 
-### Code Documentation
+### コードドキュメント
 
-We use JSDoc for inline documentation:
+インラインドキュメントにはJSDocを使用します：
 
 ```typescript
 /**
- * Creates a new resource with the provided data.
+ * 提供されたデータで新しいリソースを作成します。
  * 
- * @param data - The resource data
- * @returns Promise resolving to the created resource
- * @throws {ValidationError} When data is invalid
+ * @param data - リソースデータ
+ * @returns 作成されたリソースに解決されるPromise
+ * @throws {ValidationError} データが無効な場合
  */
 async function createResource(data: ResourceInput): Promise<Resource> {
-  // Implementation
+  // 実装
 }
 ```
 
-## 🚀 Deployment
+## 🚀 デプロイ
 
-### Building for Production
+### 本番用ビルド
 
 ```bash
-# Build the application
+# アプリケーションをビルド
 npm run build
 
-# The build output will be in the 'dist' directory
+# ビルド出力は'dist'ディレクトリに配置されます
 ```
 
-### Environment-Specific Configuration
+### 環境固有の設定
 
-- **Development**: Uses `.env` file
-- **Staging**: Uses environment variables in Azure App Service
-- **Production**: Uses environment variables in Azure App Service
+- **開発環境**：`.env`ファイルを使用
+- **ステージング環境**：Azure App Serviceの環境変数を使用
+- **本番環境**：Azure App Serviceの環境変数を使用
 
-### Health Checks
+### ヘルスチェック
 
-The service provides health check endpoints:
+サービスはヘルスチェックエンドポイントを提供します：
 
-- `GET /health` - Basic health check
-- `GET /health/ready` - Readiness check (includes database connectivity)
-- `GET /health/live` - Liveness check
+- `GET /health` - 基本的なヘルスチェック
+- `GET /health/ready` - レディネスチェック（データベース接続を含む）
+- `GET /health/live` - ライブネスチェック
 
-## 📊 Monitoring & Logging
+## 📊 監視とロギング
 
-### Logging
+### ロギング
 
-This service uses structured logging with different log levels:
+このサービスは、異なるログレベルで構造化ロギングを使用します：
 
-- `error`: Error conditions
-- `warn`: Warning conditions
-- `info`: Informational messages
-- `debug`: Debug-level messages
+- `error`: エラー状態
+- `warn`: 警告状態
+- `info`: 情報メッセージ
+- `debug`: デバッグレベルのメッセージ
 
-Configure log level via `LOG_LEVEL` environment variable.
+ログレベルは`LOG_LEVEL`環境変数で設定します。
 
-### Metrics
+### メトリクス
 
-Key metrics exposed:
-- Request rate
-- Response time
-- Error rate
-- Database query performance
+公開される主要なメトリクス：
+- リクエスト率
+- レスポンス時間
+- エラー率
+- データベースクエリパフォーマンス
 
-## 🔒 Security
+## 🔒 セキュリティ
 
-### Authentication
+### 認証
 
-This service uses JWT-based authentication. Tokens must be included in the `Authorization` header:
+このサービスはJWTベースの認証を使用します。トークンは`Authorization`ヘッダーに含める必要があります：
 
 ```
-Authorization: Bearer <token>
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-### Authorization
+### 認可
 
-Permission-based access control using dot-notation:
-- `resource.read` - Read access
-- `resource.write` - Write access
-- `resource.delete` - Delete access
+ドット記法を使用した権限ベースのアクセス制御：
+- `resource.read` - 読み取りアクセス
+- `resource.write` - 書き込みアクセス
+- `resource.delete` - 削除アクセス
 
-### Security Best Practices
+### セキュリティベストプラクティス
 
-- All sensitive data encrypted at rest
-- HTTPS required for all endpoints
-- Input validation and sanitization
-- SQL injection prevention
-- XSS protection
-- Rate limiting enabled
+- すべての機密データは静止時に暗号化
+- すべてのエンドポイントにHTTPSが必要
+- 入力検証とサニタイゼーション
+- SQLインジェクション防止
+- XSS保護
+- レート制限が有効
 
-## 🤝 Contributing
+## 🤝 コントリビューション
 
-Please read [CONTRIBUTING.md](../CONTRIBUTING.md) in the root repository for contribution guidelines.
+コントリビューションガイドラインについては、ルートリポジトリの[CONTRIBUTING.md](../CONTRIBUTING.md)をお読みください。
 
-## 📄 License
+## 📄 ライセンス
 
-This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
+このプロジェクトはMITライセンスの下でライセンスされています - 詳細は[LICENSE](../LICENSE)ファイルを参照してください。
 
-## 📞 Support
+## 📞 サポート
 
-For issues and questions:
-- **GitHub Issues**: [Create an issue](https://github.com/Takas0522/ws-demo-poly-integration/issues)
-- **Documentation**: See `/docs` directory in main repository
+issueと質問については：
+- **GitHub Issues**: [issueを作成](https://github.com/Takas0522/ws-demo-poly-integration/issues)
+- **ドキュメント**: メインリポジトリの`/docs`ディレクトリを参照
 
-## 🗺️ Roadmap
+## 🗺️ ロードマップ
 
-See [DEVELOPMENT_PLAN.md](../DEVELOPMENT_PLAN.md) in the main repository for the overall project roadmap.
+プロジェクト全体のロードマップについては、メインリポジトリの[DEVELOPMENT_PLAN.md](../DEVELOPMENT_PLAN.md)を参照してください。
 
 ---
 
-**Last Updated**: 2026-01-07
+**最終更新**: 2026-01-07

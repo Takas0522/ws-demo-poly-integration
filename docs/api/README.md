@@ -1,38 +1,38 @@
-# API Documentation
+# APIドキュメント
 
-This directory contains API documentation for all services in the SaaS Admin Web Application.
+このディレクトリには、SaaS管理者Webアプリケーションのすべてのサービスに関するAPIドキュメントが含まれています。
 
-## 📋 Overview
+## 📋 概要
 
-Each service in this application exposes RESTful APIs documented using OpenAPI 3.0 specification. This directory provides:
+このアプリケーションの各サービスは、OpenAPI 3.0仕様を使用して文書化されたRESTful APIを公開しています。このディレクトリは以下を提供します：
 
-- Unified API documentation standards
-- Service-specific API references
-- Authentication and authorization guides
-- Common API patterns and conventions
+- 統一されたAPIドキュメント標準
+- サービス固有のAPIリファレンス
+- 認証と認可のガイド
+- 共通のAPIパターンと規約
 
-## 🏗️ Services
+## 🏗️ サービス
 
-### Authentication Service
-- **Path**: [auth-service/](./auth-service/)
-- **Base URL**: `http://localhost:3001/api`
-- **Purpose**: JWT authentication and token management
+### 認証サービス
+- **パス**: [auth-service/](./auth-service/)
+- **ベースURL**: `http://localhost:3001/api`
+- **目的**: JWT認証とトークン管理
 
-### User Management Service
-- **Path**: [user-management-service/](./user-management-service/)
-- **Base URL**: `http://localhost:3002/api`
-- **Purpose**: User CRUD operations and profile management
+### ユーザー管理サービス
+- **パス**: [user-management-service/](./user-management-service/)
+- **ベースURL**: `http://localhost:3002/api`
+- **目的**: ユーザーCRUD操作とプロファイル管理
 
-### Service Settings Service
-- **Path**: [service-setting-service/](./service-setting-service/)
-- **Base URL**: `http://localhost:3003/api`
-- **Purpose**: Service configuration and feature flag management
+### サービス設定サービス
+- **パス**: [service-setting-service/](./service-setting-service/)
+- **ベースURL**: `http://localhost:3003/api`
+- **目的**: サービス構成と機能フラグ管理
 
-## 🔐 Authentication
+## 🔐 認証
 
-All APIs (except public endpoints) require JWT authentication.
+すべてのAPI（公開エンドポイントを除く）はJWT認証が必要です。
 
-### Obtaining a Token
+### トークンの取得
 
 ```bash
 POST /api/auth/login
@@ -44,7 +44,7 @@ Content-Type: application/json
 }
 ```
 
-**Response:**
+**レスポンス：**
 ```json
 {
   "success": true,
@@ -54,62 +54,62 @@ Content-Type: application/json
     "user": {
       "id": "user-123",
       "email": "user@example.com",
-      "name": "John Doe"
+      "name": "田中太郎"
     }
   }
 }
 ```
 
-### Using the Token
+### トークンの使用
 
-Include the token in the `Authorization` header:
+`Authorization`ヘッダーにトークンを含めます：
 
 ```bash
 GET /api/users
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-### Token Refresh
+### トークンのリフレッシュ
 
 ```bash
 POST /api/auth/refresh
-Authorization: Bearer <existing-token>
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-## 📡 Common API Patterns
+## 📡 共通APIパターン
 
-### Request Format
+### リクエスト形式
 
-All API requests should follow these conventions:
+すべてのAPIリクエストは以下の規約に従う必要があります：
 
-**Headers:**
+**ヘッダー：**
 ```
 Content-Type: application/json
 Authorization: Bearer <token>
-X-Tenant-ID: <tenant-id>  (for multi-tenant operations)
+X-Tenant-ID: <tenant-id>  (マルチテナント操作用)
 ```
 
-**Query Parameters for Lists:**
-- `page` (number): Page number (default: 1)
-- `limit` (number): Items per page (default: 20, max: 100)
-- `sort` (string): Sort field (prefix with `-` for descending)
-- `filter` (string): Filter expression
+**リスト用のクエリパラメータ：**
+- `page` (number): ページ番号（デフォルト: 1）
+- `limit` (number): ページあたりのアイテム数（デフォルト: 20、最大: 100）
+- `sort` (string): ソートフィールド（降順は`-`プレフィックス）
+- `filter` (string): フィルター式
 
-**Example:**
+**例：**
 ```bash
 GET /api/users?page=1&limit=20&sort=-createdAt&filter=active:true
 ```
 
-### Response Format
+### レスポンス形式
 
-All API responses follow a standard format:
+すべてのAPIレスポンスは標準形式に従います：
 
-**Success Response:**
+**成功レスポンス：**
 ```json
 {
   "success": true,
   "data": {
-    // Response data
+    // レスポンスデータ
   },
   "metadata": {
     "timestamp": "2026-01-07T00:00:00Z",
@@ -118,12 +118,12 @@ All API responses follow a standard format:
 }
 ```
 
-**List Response:**
+**リストレスポンス：**
 ```json
 {
   "success": true,
   "data": [
-    // Array of items
+    // アイテムの配列
   ],
   "metadata": {
     "total": 100,
@@ -134,15 +134,15 @@ All API responses follow a standard format:
 }
 ```
 
-**Error Response:**
+**エラーレスポンス：**
 ```json
 {
   "success": false,
   "error": {
     "code": "ERROR_CODE",
-    "message": "Human-readable error message",
+    "message": "人間が読めるエラーメッセージ",
     "details": {
-      "field": "Additional context"
+      "field": "追加のコンテキスト"
     }
   },
   "metadata": {
@@ -152,89 +152,89 @@ All API responses follow a standard format:
 }
 ```
 
-## 🔢 Status Codes
+## 🔢 ステータスコード
 
-### Success Codes
-- **200 OK**: Successful GET, PUT, or PATCH request
-- **201 Created**: Successful POST request that creates a resource
-- **204 No Content**: Successful DELETE request
+### 成功コード
+- **200 OK**: 成功したGET、PUT、またはPATCHリクエスト
+- **201 Created**: リソースを作成する成功したPOSTリクエスト
+- **204 No Content**: 成功したDELETEリクエスト
 
-### Client Error Codes
-- **400 Bad Request**: Invalid request format or parameters
-- **401 Unauthorized**: Missing or invalid authentication token
-- **403 Forbidden**: Valid authentication but insufficient permissions
-- **404 Not Found**: Requested resource doesn't exist
-- **409 Conflict**: Request conflicts with current state (e.g., duplicate)
-- **422 Unprocessable Entity**: Validation errors
-- **429 Too Many Requests**: Rate limit exceeded
+### クライアントエラーコード
+- **400 Bad Request**: 無効なリクエスト形式またはパラメータ
+- **401 Unauthorized**: 認証トークンがないか無効
+- **403 Forbidden**: 有効な認証だが権限不足
+- **404 Not Found**: リクエストされたリソースが存在しない
+- **409 Conflict**: リクエストが現在の状態と競合（例：重複）
+- **422 Unprocessable Entity**: 検証エラー
+- **429 Too Many Requests**: レート制限を超過
 
-### Server Error Codes
-- **500 Internal Server Error**: Unexpected server error
-- **502 Bad Gateway**: Upstream service error
-- **503 Service Unavailable**: Service temporarily unavailable
-- **504 Gateway Timeout**: Upstream service timeout
+### サーバーエラーコード
+- **500 Internal Server Error**: 予期しないサーバーエラー
+- **502 Bad Gateway**: アップストリームサービスエラー
+- **503 Service Unavailable**: サービスが一時的に利用不可
+- **504 Gateway Timeout**: アップストリームサービスタイムアウト
 
-## 🚨 Error Codes
+## 🚨 エラーコード
 
-Standard error codes used across all services:
+すべてのサービスで使用される標準エラーコード：
 
-### Authentication Errors (AUTH_*)
-- `AUTH_INVALID_CREDENTIALS`: Invalid email or password
-- `AUTH_TOKEN_EXPIRED`: JWT token has expired
-- `AUTH_TOKEN_INVALID`: JWT token is malformed or invalid
-- `AUTH_UNAUTHORIZED`: No authentication token provided
+### 認証エラー (AUTH_*)
+- `AUTH_INVALID_CREDENTIALS`: 無効なメールまたはパスワード
+- `AUTH_TOKEN_EXPIRED`: JWTトークンの有効期限切れ
+- `AUTH_TOKEN_INVALID`: JWTトークンが不正または無効
+- `AUTH_UNAUTHORIZED`: 認証トークンが提供されていない
 
-### Authorization Errors (AUTHZ_*)
-- `AUTHZ_INSUFFICIENT_PERMISSIONS`: User lacks required permissions
-- `AUTHZ_FORBIDDEN`: Action not allowed for this user
+### 認可エラー (AUTHZ_*)
+- `AUTHZ_INSUFFICIENT_PERMISSIONS`: ユーザーに必要な権限がない
+- `AUTHZ_FORBIDDEN`: このユーザーにはアクションが許可されていない
 
-### Validation Errors (VALIDATION_*)
-- `VALIDATION_FAILED`: General validation failure
-- `VALIDATION_REQUIRED_FIELD`: Required field missing
-- `VALIDATION_INVALID_FORMAT`: Field format is invalid
-- `VALIDATION_OUT_OF_RANGE`: Value outside allowed range
+### 検証エラー (VALIDATION_*)
+- `VALIDATION_FAILED`: 一般的な検証失敗
+- `VALIDATION_REQUIRED_FIELD`: 必須フィールドが欠落
+- `VALIDATION_INVALID_FORMAT`: フィールドの形式が無効
+- `VALIDATION_OUT_OF_RANGE`: 許可された範囲外の値
 
-### Resource Errors (RESOURCE_*)
-- `RESOURCE_NOT_FOUND`: Requested resource doesn't exist
-- `RESOURCE_ALREADY_EXISTS`: Resource with same identifier exists
-- `RESOURCE_CONFLICT`: Operation conflicts with resource state
+### リソースエラー (RESOURCE_*)
+- `RESOURCE_NOT_FOUND`: リクエストされたリソースが存在しない
+- `RESOURCE_ALREADY_EXISTS`: 同じ識別子のリソースが存在
+- `RESOURCE_CONFLICT`: 操作がリソースの状態と競合
 
-### Database Errors (DB_*)
-- `DB_CONNECTION_ERROR`: Failed to connect to database
-- `DB_QUERY_ERROR`: Database query failed
-- `DB_CONSTRAINT_VIOLATION`: Database constraint violated
+### データベースエラー (DB_*)
+- `DB_CONNECTION_ERROR`: データベースへの接続に失敗
+- `DB_QUERY_ERROR`: データベースクエリが失敗
+- `DB_CONSTRAINT_VIOLATION`: データベース制約に違反
 
-### Rate Limiting (RATE_LIMIT_*)
-- `RATE_LIMIT_EXCEEDED`: Too many requests in time window
+### レート制限 (RATE_LIMIT_*)
+- `RATE_LIMIT_EXCEEDED`: 時間枠内のリクエストが多すぎる
 
-## 🔄 Versioning
+## 🔄 バージョニング
 
-APIs are versioned using URL path versioning:
+APIはURLパスバージョニングを使用してバージョン管理されます：
 
 ```
 /api/v1/users
 /api/v2/users
 ```
 
-**Current Version**: v1
+**現在のバージョン**: v1
 
-**Version Support Policy**:
-- Current version (v1): Fully supported
-- Previous version (v0): Deprecated, 6-month sunset period
-- Older versions: Not supported
+**バージョンサポートポリシー**:
+- 現在のバージョン（v1）：完全にサポート
+- 前のバージョン（v0）：非推奨、6か月のサンセット期間
+- 古いバージョン：サポートされていない
 
-## 📄 Pagination
+## 📄 ページネーション
 
-List endpoints support cursor-based and offset-based pagination.
+リストエンドポイントは、カーソルベースとオフセットベースのページネーションをサポートします。
 
-### Offset-Based Pagination (Default)
+### オフセットベースのページネーション（デフォルト）
 
-**Request:**
+**リクエスト：**
 ```bash
 GET /api/users?page=2&limit=20
 ```
 
-**Response:**
+**レスポンス：**
 ```json
 {
   "success": true,
@@ -248,14 +248,14 @@ GET /api/users?page=2&limit=20
 }
 ```
 
-### Cursor-Based Pagination
+### カーソルベースのページネーション
 
-**Request:**
+**リクエスト：**
 ```bash
 GET /api/users?cursor=eyJpZCI6IjEyMyJ9&limit=20
 ```
 
-**Response:**
+**レスポンス：**
 ```json
 {
   "success": true,
@@ -268,55 +268,55 @@ GET /api/users?cursor=eyJpZCI6IjEyMyJ9&limit=20
 }
 ```
 
-## 🔍 Filtering and Sorting
+## 🔍 フィルタリングとソート
 
-### Filtering
+### フィルタリング
 
-Use query parameters for filtering:
+クエリパラメータを使用してフィルタリング：
 
-**Simple Filter:**
+**シンプルフィルター：**
 ```bash
 GET /api/users?status=active&role=admin
 ```
 
-**Complex Filter (JSON):**
+**複雑なフィルター（JSON）：**
 ```bash
 GET /api/users?filter={"status":"active","createdAt":{"$gte":"2026-01-01"}}
 ```
 
-### Sorting
+### ソート
 
-Use `sort` parameter with field name:
+フィールド名を指定して`sort`パラメータを使用：
 
-**Ascending:**
+**昇順：**
 ```bash
 GET /api/users?sort=name
 ```
 
-**Descending:**
+**降順：**
 ```bash
 GET /api/users?sort=-createdAt
 ```
 
-**Multiple Fields:**
+**複数フィールド：**
 ```bash
 GET /api/users?sort=status,-createdAt
 ```
 
-## 🔐 Security Best Practices
+## 🔐 セキュリティベストプラクティス
 
-### Input Validation
-- All inputs are validated before processing
-- Strict type checking enforced
-- SQL injection prevention
-- XSS protection on text inputs
+### 入力検証
+- 処理前にすべての入力を検証
+- 厳格な型チェックを適用
+- SQLインジェクション防止
+- テキスト入力のXSS保護
 
-### Rate Limiting
-- **Anonymous users**: 60 requests/minute
-- **Authenticated users**: 300 requests/minute
-- **Premium users**: 1000 requests/minute
+### レート制限
+- **匿名ユーザー**: 60リクエスト/分
+- **認証済みユーザー**: 300リクエスト/分
+- **プレミアムユーザー**: 1000リクエスト/分
 
-Rate limit headers:
+レート制限ヘッダー：
 ```
 X-RateLimit-Limit: 300
 X-RateLimit-Remaining: 275
@@ -324,96 +324,96 @@ X-RateLimit-Reset: 1704672000
 ```
 
 ### CORS
-Cross-Origin Resource Sharing (CORS) is configured for:
-- Development: `http://localhost:*`
-- Staging: `https://*.staging.example.com`
-- Production: `https://*.example.com`
+Cross-Origin Resource Sharing（CORS）は以下のために設定されています：
+- 開発環境：`http://localhost:*`
+- ステージング環境：`https://*.staging.example.com`
+- 本番環境：`https://*.example.com`
 
-## 🧪 Testing APIs
+## 🧪 APIのテスト
 
-### Using cURL
+### cURLを使用
 
 ```bash
-# Login
+# ログイン
 curl -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"password"}'
 
-# Authenticated request
+# 認証済みリクエスト
 curl -X GET http://localhost:3002/api/users \
-  -H "Authorization: Bearer <token>"
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-### Using Postman
+### Postmanを使用
 
-Import the OpenAPI specification files from each service's documentation folder into Postman.
+各サービスのドキュメントフォルダからPostmanにOpenAPI仕様ファイルをインポートします。
 
-### Using Swagger UI
+### Swagger UIを使用
 
-Each service provides Swagger UI for interactive API testing:
+各サービスは対話的なAPIテストのためのSwagger UIを提供します：
 
-- Auth Service: `http://localhost:3001/api-docs`
-- User Service: `http://localhost:3002/api-docs`
-- Settings Service: `http://localhost:3003/api-docs`
+- 認証サービス：`http://localhost:3001/api-docs`
+- ユーザーサービス：`http://localhost:3002/api-docs`
+- 設定サービス：`http://localhost:3003/api-docs`
 
-## 📊 Monitoring and Logging
+## 📊 監視とロギング
 
-### Request Tracing
+### リクエストトレース
 
-All requests include a unique `X-Request-ID` header for tracing:
+すべてのリクエストには、トレース用の一意の`X-Request-ID`ヘッダーが含まれます：
 
 ```
 X-Request-ID: req-abc123def456
 ```
 
-Use this ID to trace requests across services in logs.
+このIDを使用して、ログ内でサービス間のリクエストをトレースします。
 
-### Health Checks
+### ヘルスチェック
 
-All services provide standard health check endpoints:
+すべてのサービスは標準のヘルスチェックエンドポイントを提供します：
 
 ```bash
-GET /health           # Basic health check
-GET /health/ready     # Readiness check (includes dependencies)
-GET /health/live      # Liveness check
+GET /health           # 基本的なヘルスチェック
+GET /health/ready     # レディネスチェック（依存関係を含む）
+GET /health/live      # ライブネスチェック
 ```
 
-## 🔧 Development Tools
+## 🔧 開発ツール
 
-### API Testing Collection
+### APIテストコレクション
 
-Postman collections are available in each service's `/docs` directory.
+Postmanコレクションは各サービスの`/docs`ディレクトリで利用可能です。
 
-### Code Generation
+### コード生成
 
-OpenAPI specifications can be used to generate client SDKs:
+OpenAPI仕様を使用してクライアントSDKを生成できます：
 
 ```bash
-# Generate TypeScript client
+# TypeScriptクライアントを生成
 npm run generate:client
 
-# Generate Python client
+# Pythonクライアントを生成
 npm run generate:client:python
 ```
 
-## 📚 Additional Resources
+## 📚 追加リソース
 
 - [OpenAPI Specification](https://swagger.io/specification/)
 - [REST API Best Practices](https://restfulapi.net/)
 - [JWT Authentication](https://jwt.io/introduction)
 
-## 🤝 Contributing
+## 🤝 コントリビューション
 
-When adding new APIs:
+新しいAPIを追加する場合：
 
-1. Follow the conventions documented here
-2. Update OpenAPI specification
-3. Add examples for all endpoints
-4. Document error codes
-5. Include integration tests
+1. ここで文書化された規約に従う
+2. OpenAPI仕様を更新
+3. すべてのエンドポイントの例を追加
+4. エラーコードをドキュメント化
+5. 統合テストを含める
 
-See [CONTRIBUTING.md](../../CONTRIBUTING.md) for detailed guidelines.
+詳細なガイドラインについては[CONTRIBUTING.md](../../CONTRIBUTING.md)を参照してください。
 
 ---
 
-**Last Updated**: 2026-01-07
+**最終更新**: 2026-01-07

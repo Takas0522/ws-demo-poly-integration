@@ -1,29 +1,29 @@
-# Authentication Service API
+# 認証サービスAPI
 
-REST API for JWT-based authentication and token management.
+JWTベースの認証とトークン管理のためのREST API。
 
-## Base URL
+## ベースURL
 
-- **Development**: `http://localhost:3001/api`
-- **Staging**: `https://auth-staging.example.com/api`
-- **Production**: `https://auth.example.com/api`
+- **開発環境**: `http://localhost:3001/api`
+- **ステージング環境**: `https://auth-staging.example.com/api`
+- **本番環境**: `https://auth.example.com/api`
 
-## Overview
+## 概要
 
-The Authentication Service handles:
-- User login and logout
-- JWT token generation and validation
-- Token refresh mechanism
-- Password reset flows
-- Session management
+認証サービスは以下を処理します：
+- ユーザーログインとログアウト
+- JWTトークンの生成と検証
+- トークンリフレッシュメカニズム
+- パスワードリセットフロー
+- セッション管理
 
-## Endpoints
+## エンドポイント
 
 ### POST /auth/login
 
-Authenticate a user and return a JWT token.
+ユーザーを認証してJWTトークンを返します。
 
-**Request:**
+**リクエスト：**
 ```json
 {
   "email": "user@example.com",
@@ -31,7 +31,7 @@ Authenticate a user and return a JWT token.
 }
 ```
 
-**Response (200 OK):**
+**レスポンス（200 OK）：**
 ```json
 {
   "success": true,
@@ -42,7 +42,7 @@ Authenticate a user and return a JWT token.
     "user": {
       "id": "user-123",
       "email": "user@example.com",
-      "name": "John Doe",
+      "name": "田中太郎",
       "tenantId": "tenant-456",
       "permissions": ["user.read", "user.write"]
     }
@@ -50,29 +50,29 @@ Authenticate a user and return a JWT token.
 }
 ```
 
-**Error Responses:**
-- `401 Unauthorized`: Invalid credentials
-- `400 Bad Request`: Missing required fields
+**エラーレスポンス：**
+- `401 Unauthorized`: 無効な認証情報
+- `400 Bad Request`: 必須フィールドが欠落
 
 ---
 
 ### POST /auth/refresh
 
-Refresh an existing JWT token.
+既存のJWTトークンをリフレッシュします。
 
-**Request Headers:**
+**リクエストヘッダー：**
 ```
-Authorization: Bearer <existing-token>
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-**Request:**
+**リクエスト：**
 ```json
 {
   "refreshToken": "refresh-token-string"
 }
 ```
 
-**Response (200 OK):**
+**レスポンス（200 OK）：**
 ```json
 {
   "success": true,
@@ -87,33 +87,33 @@ Authorization: Bearer <existing-token>
 
 ### POST /auth/logout
 
-Invalidate the current JWT token.
+現在のJWTトークンを無効化します。
 
-**Request Headers:**
+**リクエストヘッダー：**
 ```
-Authorization: Bearer <token>
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-**Response (204 No Content)**
+**レスポンス（204 No Content）**
 
 ---
 
 ### POST /auth/forgot-password
 
-Initiate password reset flow.
+パスワードリセットフローを開始します。
 
-**Request:**
+**リクエスト：**
 ```json
 {
   "email": "user@example.com"
 }
 ```
 
-**Response (200 OK):**
+**レスポンス（200 OK）：**
 ```json
 {
   "success": true,
-  "message": "Password reset email sent"
+  "message": "パスワードリセットメールを送信しました"
 }
 ```
 
@@ -121,9 +121,9 @@ Initiate password reset flow.
 
 ### POST /auth/reset-password
 
-Reset password using reset token.
+リセットトークンを使用してパスワードをリセットします。
 
-**Request:**
+**リクエスト：**
 ```json
 {
   "token": "reset-token-from-email",
@@ -131,11 +131,11 @@ Reset password using reset token.
 }
 ```
 
-**Response (200 OK):**
+**レスポンス（200 OK）：**
 ```json
 {
   "success": true,
-  "message": "Password reset successful"
+  "message": "パスワードリセットが成功しました"
 }
 ```
 
@@ -143,14 +143,14 @@ Reset password using reset token.
 
 ### POST /auth/verify-token
 
-Verify if a JWT token is valid.
+JWTトークンが有効かどうかを検証します。
 
-**Request Headers:**
+**リクエストヘッダー：**
 ```
-Authorization: Bearer <token>
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-**Response (200 OK):**
+**レスポンス（200 OK）：**
 ```json
 {
   "success": true,
@@ -166,36 +166,36 @@ Authorization: Bearer <token>
 
 ---
 
-## Token Structure
+## トークン構造
 
-JWT tokens include the following claims:
+JWTトークンには以下のクレームが含まれます：
 
 ```json
 {
-  "sub": "user-123",           // User ID
+  "sub": "user-123",           // ユーザーID
   "email": "user@example.com",
   "tenantId": "tenant-456",
   "permissions": ["user.read", "user.write"],
-  "iat": 1704672000,           // Issued at
-  "exp": 1704758400            // Expires at
+  "iat": 1704672000,           // 発行時刻
+  "exp": 1704758400            // 有効期限
 }
 ```
 
-## Error Codes
+## エラーコード
 
-| Code | Description |
+| コード | 説明 |
 |------|-------------|
-| `AUTH_INVALID_CREDENTIALS` | Email or password is incorrect |
-| `AUTH_TOKEN_EXPIRED` | JWT token has expired |
-| `AUTH_TOKEN_INVALID` | JWT token is malformed or invalid |
-| `AUTH_REFRESH_TOKEN_INVALID` | Refresh token is invalid or expired |
-| `AUTH_USER_NOT_FOUND` | User account doesn't exist |
-| `AUTH_PASSWORD_RESET_INVALID` | Password reset token is invalid or expired |
+| `AUTH_INVALID_CREDENTIALS` | メールまたはパスワードが正しくありません |
+| `AUTH_TOKEN_EXPIRED` | JWTトークンの有効期限が切れています |
+| `AUTH_TOKEN_INVALID` | JWTトークンが不正または無効です |
+| `AUTH_REFRESH_TOKEN_INVALID` | リフレッシュトークンが無効または期限切れです |
+| `AUTH_USER_NOT_FOUND` | ユーザーアカウントが存在しません |
+| `AUTH_PASSWORD_RESET_INVALID` | パスワードリセットトークンが無効または期限切れです |
 
-## OpenAPI Specification
+## OpenAPI仕様
 
-See [openapi.yaml](./openapi.yaml) for the complete OpenAPI 3.0 specification.
+完全なOpenAPI 3.0仕様については[openapi.yaml](./openapi.yaml)を参照してください。
 
 ---
 
-**Last Updated**: 2026-01-07
+**最終更新**: 2026-01-07
