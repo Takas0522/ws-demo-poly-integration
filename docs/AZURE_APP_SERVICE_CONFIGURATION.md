@@ -1,69 +1,69 @@
-# Azure App Service Configuration Guide
+# Azure App Service設定ガイド
 
-This guide provides step-by-step instructions for configuring environment variables in Azure App Service for staging and production deployments.
+このガイドは、ステージングおよび本番デプロイのためにAzure App Serviceで環境変数を設定する手順を提供します。
 
-## 📋 Table of Contents
+## 📋 目次
 
-- [Overview](#overview)
-- [Prerequisites](#prerequisites)
-- [Configuration Methods](#configuration-methods)
-- [Setting Up Azure Key Vault](#setting-up-azure-key-vault)
-- [Configuring Application Settings](#configuring-application-settings)
-- [Service-Specific Configuration](#service-specific-configuration)
-- [Best Practices](#best-practices)
-- [Monitoring and Troubleshooting](#monitoring-and-troubleshooting)
+- [概要](#概要)
+- [前提条件](#前提条件)
+- [設定方法](#設定方法)
+- [Azure Key Vaultのセットアップ](#azure-key-vaultのセットアップ)
+- [アプリケーション設定の構成](#アプリケーション設定の構成)
+- [サービス固有の設定](#サービス固有の設定)
+- [ベストプラクティス](#ベストプラクティス)
+- [監視とトラブルシューティング](#監視とトラブルシューティング)
 
-## 🎯 Overview
+## 🎯 概要
 
-Azure App Service provides multiple ways to configure environment variables:
-1. **Application Settings**: Key-value pairs set in the Azure Portal or via CLI
-2. **Azure Key Vault References**: Secure storage for sensitive values
-3. **Connection Strings**: Special settings for database connections
-4. **ARM Templates**: Infrastructure as Code for repeatable deployments
+Azure App Serviceは環境変数を設定するための複数の方法を提供します：
+1. **アプリケーション設定**: Azureポータルまたはcli経由で設定されるキー値ペア
+2. **Azure Key Vault参照**: 機密値の安全な保存
+3. **接続文字列**: データベース接続用の特別な設定
+4. **ARMテンプレート**: 繰り返し可能なデプロイのためのInfrastructure as Code
 
-## 🔧 Prerequisites
+## 🔧 前提条件
 
-Before configuring Azure App Service, ensure you have:
+Azure App Serviceを設定する前に、以下を確認してください：
 
-- Azure subscription with appropriate permissions
-- Azure CLI installed (`az --version` to verify)
-- Resource group created for your application
-- App Service Plan created
-- App Service instances created for each service
+- 適切な権限を持つAzureサブスクリプション
+- Azure CLIがインストールされている（`az --version`で確認）
+- アプリケーション用のリソースグループが作成されている
+- App Service Planが作成されている
+- 各サービス用のApp Serviceインスタンスが作成されている
 
-### Azure CLI Installation
+### Azure CLIのインストール
 
 ```bash
-# macOS (Homebrew)
+# macOS（Homebrew）
 brew install azure-cli
 
-# Windows (via MSI)
-# Download from: https://aka.ms/installazurecliwindows
+# Windows（MSI経由）
+# ダウンロード: https://aka.ms/installazurecliwindows
 
-# Linux (via script)
+# Linux（スクリプト経由）
 curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 ```
 
-### Login to Azure
+### Azureへのログイン
 
 ```bash
 az login
-az account set --subscription <subscription-id>
+az account set --subscription <サブスクリプションID>
 ```
 
-## 🔐 Setting Up Azure Key Vault
+## 🔐 Azure Key Vaultのセットアップ
 
-Azure Key Vault provides secure storage for secrets, keys, and certificates.
+Azure Key Vaultはシークレット、キー、証明書の安全な保管を提供します。
 
-### 1. Create Key Vault
+### 1. Key Vaultの作成
 
 ```bash
-# Set variables
+# 変数を設定
 RESOURCE_GROUP="saas-management-rg"
-KEYVAULT_NAME="saas-mgmt-kv-prod"  # Must be globally unique
+KEYVAULT_NAME="saas-mgmt-kv-prod"  # グローバルに一意である必要があります
 LOCATION="eastus"
 
-# Create Key Vault
+# Key Vaultを作成
 az keyvault create \
   --name $KEYVAULT_NAME \
   --resource-group $RESOURCE_GROUP \
@@ -71,21 +71,21 @@ az keyvault create \
   --enable-rbac-authorization false
 ```
 
-### 2. Store Secrets in Key Vault
+### 2. Key Vaultにシークレットを保存
 
 ```bash
-# Generate a strong JWT secret
+# 強力なJWT秘密鍵を生成
 JWT_SECRET=$(openssl rand -base64 64)
 
-# Store JWT secret
+# JWT秘密鍵を保存
 az keyvault secret set \
   --vault-name $KEYVAULT_NAME \
   --name jwt-secret \
   --value "$JWT_SECRET"
 
-# Store CosmosDB key (retrieve from CosmosDB account)
+# CosmosDBキーを保存（CosmosDBアカウントから取得）
 COSMOSDB_KEY=$(az cosmosdb keys list \
-  --name <cosmosdb-account-name> \
+  --name <cosmosdbアカウント名> \
   --resource-group $RESOURCE_GROUP \
   --query primaryMasterKey -o tsv)
 
@@ -95,64 +95,64 @@ az keyvault secret set \
   --value "$COSMOSDB_KEY"
 ```
 
-### 3. Grant App Service Access to Key Vault
+### 3. App ServiceにKey Vaultへのアクセス権を付与
 
 ```bash
-# Enable managed identity for App Service
+# App Serviceのマネージドアイデンティティを有効化
 APP_NAME="saas-auth-service-prod"
 
 az webapp identity assign \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP
 
-# Get the principal ID
+# プリンシパルIDを取得
 PRINCIPAL_ID=$(az webapp identity show \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
   --query principalId -o tsv)
 
-# Grant access to Key Vault
+# Key Vaultへのアクセス権を付与
 az keyvault set-policy \
   --name $KEYVAULT_NAME \
   --object-id $PRINCIPAL_ID \
   --secret-permissions get list
 ```
 
-## ⚙️ Configuring Application Settings
+## ⚙️ アプリケーション設定の構成
 
-### Method 1: Azure Portal
+### 方法1: Azureポータル
 
-1. **Navigate to App Service**:
-   - Go to [Azure Portal](https://portal.azure.com)
-   - Select your App Service
+1. **App Serviceに移動**:
+   - [Azureポータル](https://portal.azure.com)に移動
+   - App Serviceを選択
 
-2. **Open Configuration**:
-   - In the left menu, select **Configuration**
-   - Click **Application settings** tab
+2. **構成を開く**:
+   - 左メニューで**構成**を選択
+   - **アプリケーション設定**タブをクリック
 
-3. **Add New Setting**:
-   - Click **+ New application setting**
-   - Enter **Name** and **Value**
-   - Click **OK**
+3. **新しい設定を追加**:
+   - **+ 新しいアプリケーション設定**をクリック
+   - **名前**と**値**を入力
+   - **OK**をクリック
 
-4. **Reference Key Vault Secret**:
-   - For sensitive values, use Key Vault reference:
+4. **Key Vaultシークレットを参照**:
+   - 機密値の場合、Key Vault参照を使用：
    ```
    @Microsoft.KeyVault(SecretUri=https://your-keyvault.vault.azure.net/secrets/jwt-secret/)
    ```
 
-5. **Save Changes**:
-   - Click **Save** at the top
-   - App Service will restart automatically
+5. **変更を保存**:
+   - 上部の**保存**をクリック
+   - App Serviceが自動的に再起動されます
 
-### Method 2: Azure CLI
+### 方法2: Azure CLI
 
 ```bash
-# Set common variables
+# 共通変数を設定
 APP_NAME="saas-auth-service-prod"
 RESOURCE_GROUP="saas-management-rg"
 
-# Set multiple application settings
+# 複数のアプリケーション設定を設定
 az webapp config appsettings set \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
@@ -168,16 +168,16 @@ az webapp config appsettings set \
     ENABLE_DETAILED_ERRORS="false"
 ```
 
-### Method 3: Azure CLI with Key Vault References
+### 方法3: Key Vault参照を使用したAzure CLI
 
 ```bash
-# Get Key Vault URI
+# Key Vault URIを取得
 KEYVAULT_URI=$(az keyvault show \
   --name $KEYVAULT_NAME \
   --resource-group $RESOURCE_GROUP \
   --query properties.vaultUri -o tsv)
 
-# Set settings with Key Vault references
+# Key Vault参照で設定を設定
 az webapp config appsettings set \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
@@ -186,9 +186,9 @@ az webapp config appsettings set \
     COSMOSDB_KEY="@Microsoft.KeyVault(SecretUri=${KEYVAULT_URI}secrets/cosmosdb-key/)"
 ```
 
-### Method 4: ARM Template
+### 方法4: ARMテンプレート
 
-Create an ARM template for repeatable deployments:
+繰り返し可能なデプロイのためのARMテンプレートを作成：
 
 ```json
 {
@@ -221,9 +221,9 @@ Create an ARM template for repeatable deployments:
 }
 ```
 
-## 🚀 Service-Specific Configuration
+## 🚀 サービス固有の設定
 
-### Frontend Application
+### フロントエンドアプリケーション
 
 ```bash
 APP_NAME="saas-frontend-prod"
@@ -241,7 +241,7 @@ az webapp config appsettings set \
     VITE_FEATURE_USER_DELETE="enabled"
 ```
 
-### Auth Service
+### 認証サービス
 
 ```bash
 APP_NAME="saas-auth-service-prod"
@@ -264,7 +264,7 @@ az webapp config appsettings set \
     FEATURE_TWO_FACTOR_AUTH="enabled"
 ```
 
-### User Management Service
+### ユーザー管理サービス
 
 ```bash
 APP_NAME="saas-user-mgmt-prod"
@@ -286,7 +286,7 @@ az webapp config appsettings set \
     FEATURE_USER_ROLE_ASSIGN="enabled"
 ```
 
-### Service Settings Service
+### サービス設定サービス
 
 ```bash
 APP_NAME="saas-service-settings-prod"
@@ -306,11 +306,11 @@ az webapp config appsettings set \
     FEATURE_SERVICE_DELETE="enabled"
 ```
 
-## 📊 Feature Flags Configuration
+## 📊 機能フラグの設定
 
-Configure feature flags differently for staging vs production:
+ステージング環境と本番環境で機能フラグを異なる設定にします：
 
-### Staging (Test All Features)
+### ステージング（すべての機能をテスト）
 
 ```bash
 az webapp config appsettings set \
@@ -332,7 +332,7 @@ az webapp config appsettings set \
     FEATURE_RATE_LIMITING="enabled"
 ```
 
-### Production (Conservative Approach)
+### 本番（保守的なアプローチ）
 
 ```bash
 az webapp config appsettings set \
@@ -349,164 +349,164 @@ az webapp config appsettings set \
     FEATURE_RATE_LIMITING="enabled"
 ```
 
-## 🔍 Best Practices
+## 🔍 ベストプラクティス
 
-### 1. Use Deployment Slots
+### 1. デプロイスロットの使用
 
-Configure settings per slot for safe deployments:
+安全なデプロイのためにスロットごとに設定を構成：
 
 ```bash
-# Create staging slot
+# ステージングスロットを作成
 az webapp deployment slot create \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
   --slot staging
 
-# Configure staging-specific settings
+# ステージング固有の設定を構成
 az webapp config appsettings set \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
   --slot staging \
   --settings NODE_ENV="staging"
 
-# Mark settings as "slot settings" (don't swap)
+# 設定を「スロット設定」としてマーク（スワップしない）
 az webapp config appsettings set \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
   --slot-settings NODE_ENV COSMOSDB_DATABASE
 ```
 
-### 2. Environment-Specific Key Vaults
+### 2. 環境固有のKey Vault
 
-Use separate Key Vaults for each environment:
+各環境で個別のKey Vaultを使用：
 
-- `saas-mgmt-kv-dev` for development
-- `saas-mgmt-kv-staging` for staging
-- `saas-mgmt-kv-prod` for production
+- 開発用: `saas-mgmt-kv-dev`
+- ステージング用: `saas-mgmt-kv-staging`
+- 本番用: `saas-mgmt-kv-prod`
 
-### 3. Naming Conventions
+### 3. 命名規則
 
-Follow consistent naming:
-- App Services: `{service-name}-{environment}` (e.g., `saas-auth-service-prod`)
-- Key Vaults: `{app-name}-kv-{env}` (e.g., `saas-mgmt-kv-prod`)
-- Secrets: `{purpose}-{resource}` (e.g., `jwt-secret`, `cosmosdb-key`)
+一貫した命名に従う：
+- App Service: `{サービス名}-{環境}` （例: `saas-auth-service-prod`）
+- Key Vault: `{アプリ名}-kv-{環境}` （例: `saas-mgmt-kv-prod`）
+- シークレット: `{目的}-{リソース}` （例: `jwt-secret`、`cosmosdb-key`）
 
-### 4. Access Control
+### 4. アクセス制御
 
-Use Azure RBAC and Managed Identities:
+Azure RBACとマネージドアイデンティティを使用：
 
 ```bash
-# Assign role-based access
+# ロールベースアクセスを割り当て
 az role assignment create \
-  --assignee <user-or-group-id> \
+  --assignee <ユーザーまたはグループID> \
   --role "Key Vault Secrets User" \
   --scope "/subscriptions/<sub-id>/resourceGroups/<rg>/providers/Microsoft.KeyVault/vaults/<kv-name>"
 ```
 
-### 5. Secret Rotation
+### 5. シークレットローテーション
 
-Implement regular secret rotation:
+定期的なシークレットローテーションを実装：
 
 ```bash
-# Generate new secret
+# 新しいシークレットを生成
 NEW_JWT_SECRET=$(openssl rand -base64 64)
 
-# Store as new version (automatic versioning)
+# 新しいバージョンとして保存（自動バージョニング）
 az keyvault secret set \
   --vault-name $KEYVAULT_NAME \
   --name jwt-secret \
   --value "$NEW_JWT_SECRET"
 
-# App Service automatically uses latest version
-# Test, then deactivate old versions after rotation period
+# App Serviceは自動的に最新バージョンを使用
+# テスト後、ローテーション期間後に古いバージョンを無効化
 ```
 
-## 📈 Monitoring and Troubleshooting
+## 📈 監視とトラブルシューティング
 
-### Enable Application Insights
+### Application Insightsを有効化
 
 ```bash
-# Create Application Insights
+# Application Insightsを作成
 az monitor app-insights component create \
   --app saas-auth-service-prod-insights \
   --location $LOCATION \
   --resource-group $RESOURCE_GROUP
 
-# Get instrumentation key
+# インストルメンテーションキーを取得
 APPINSIGHTS_KEY=$(az monitor app-insights component show \
   --app saas-auth-service-prod-insights \
   --resource-group $RESOURCE_GROUP \
   --query instrumentationKey -o tsv)
 
-# Configure in App Service
+# App Serviceで構成
 az webapp config appsettings set \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
   --settings APPINSIGHTS_INSTRUMENTATIONKEY="$APPINSIGHTS_KEY"
 ```
 
-### View Application Logs
+### アプリケーションログの表示
 
 ```bash
-# Stream logs in real-time
+# ログをリアルタイムでストリーム
 az webapp log tail \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP
 
-# Download logs
+# ログをダウンロード
 az webapp log download \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
   --log-file app-logs.zip
 ```
 
-### Verify Configuration
+### 設定の検証
 
 ```bash
-# List all application settings
+# すべてのアプリケーション設定を一覧表示
 az webapp config appsettings list \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP
 
-# Test a specific setting
+# 特定の設定をテスト
 az webapp config appsettings list \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
   --query "[?name=='NODE_ENV'].value" -o tsv
 ```
 
-### Common Issues
+### よくある問題
 
-**Issue**: Key Vault reference not resolving
+**問題**: Key Vault参照が解決されない
 
-**Solution**:
+**解決策**:
 ```bash
-# Verify managed identity is enabled
+# マネージドアイデンティティが有効であることを確認
 az webapp identity show --name $APP_NAME --resource-group $RESOURCE_GROUP
 
-# Verify Key Vault access policy
+# Key Vaultアクセスポリシーを確認
 az keyvault show --name $KEYVAULT_NAME --resource-group $RESOURCE_GROUP
 
-# Check secret URI format
-# Correct: @Microsoft.KeyVault(SecretUri=https://kv.vault.azure.net/secrets/name/)
-# Note the trailing slash
+# シークレットURI形式を確認
+# 正しい形式: @Microsoft.KeyVault(SecretUri=https://kv.vault.azure.net/secrets/name/)
+# 末尾のスラッシュに注意
 ```
 
-**Issue**: App Service not restarting after configuration change
+**問題**: 設定変更後にApp Serviceが再起動しない
 
-**Solution**:
+**解決策**:
 ```bash
-# Manually restart
+# 手動で再起動
 az webapp restart --name $APP_NAME --resource-group $RESOURCE_GROUP
 ```
 
-## 🔄 CI/CD Integration
+## 🔄 CI/CD統合
 
-Configure environment variables in GitHub Actions:
+GitHub Actionsで環境変数を設定：
 
 ```yaml
 # .github/workflows/deploy-production.yml
-- name: Set Azure App Service Settings
+- name: Azure App Service設定を設定
   uses: azure/appservice-settings@v1
   with:
     app-name: ${{ secrets.AZURE_APP_NAME }}
@@ -525,13 +525,13 @@ Configure environment variables in GitHub Actions:
       ]
 ```
 
-## 📚 Additional Resources
+## 📚 追加リソース
 
-- [Azure App Service Configuration](https://docs.microsoft.com/azure/app-service/configure-common)
-- [Key Vault References](https://docs.microsoft.com/azure/app-service/app-service-key-vault-references)
-- [Managed Identities](https://docs.microsoft.com/azure/app-service/overview-managed-identity)
+- [Azure App Service設定](https://docs.microsoft.com/azure/app-service/configure-common)
+- [Key Vault参照](https://docs.microsoft.com/azure/app-service/app-service-key-vault-references)
+- [マネージドアイデンティティ](https://docs.microsoft.com/azure/app-service/overview-managed-identity)
 - [Application Insights](https://docs.microsoft.com/azure/azure-monitor/app/app-insights-overview)
 
 ---
 
-**Last Updated**: 2026-01-09
+**最終更新**: 2026-01-09
