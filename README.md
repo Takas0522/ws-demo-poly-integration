@@ -160,9 +160,16 @@ ws-demo-poly-integration/
    ```
 
 4. **環境変数を設定：**
-   - 各サービスディレクトリで`.env.example`を`.env`にコピー
-   - ローカルセットアップに応じて値を更新
-   - 各サービスの具体的な設定については、各サービスのREADMEを参照
+   ```bash
+   # ルートディレクトリで環境設定をコピー
+   cp .env.template .env
+   # または開発用のデフォルト設定を使用
+   cp .env.development .env
+   ```
+   
+   - ローカル開発にはCosmosDBエミュレータのデフォルト設定を使用
+   - JWT_SECRETなどの値は開発環境ではデフォルトのままで問題ありません
+   - 詳細な設定については[環境設定ガイド](./docs/ENVIRONMENT_CONFIGURATION.md)を参照
 
 ### ローカルで実行
 
@@ -255,6 +262,8 @@ npm run type-check      # TypeScriptの型チェック
 
 - **[CONTRIBUTING.md](./CONTRIBUTING.md)**: 開発ガイドラインとコントリビューションプロセス
 - **[DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md)**: 詳細な開発ロードマップとissue分類
+- **[docs/ENVIRONMENT_CONFIGURATION.md](./docs/ENVIRONMENT_CONFIGURATION.md)**: 環境設定とフィーチャーフラグの完全ガイド
+- **[docs/CONFIGURATION_VALIDATION.md](./docs/CONFIGURATION_VALIDATION.md)**: 設定検証の実装ガイド
 - **[docs/api/](./docs/api/)**: 各サービスのAPIドキュメント
 - **[docs/adr/](./docs/adr/)**: アーキテクチャ決定記録
 - **[docs/templates/](./docs/templates/)**: 新しいサービスとドキュメントのテンプレート
