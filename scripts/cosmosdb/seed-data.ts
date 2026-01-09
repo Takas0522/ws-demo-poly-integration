@@ -90,7 +90,9 @@ async function seedUsers(tenantId: string) {
   console.log('👤 Seeding Users...');
   const container = database.container('Users');
   
-  // Hash default password
+  // ⚠️ WARNING: These are hardcoded development-only credentials
+  // NEVER use these passwords in production or staging environments
+  // For production, use environment variables or secure secret management
   const passwordHash = await bcrypt.hash('Admin@123', 10);
   
   const adminUserId = `user-${uuidv4()}`;
