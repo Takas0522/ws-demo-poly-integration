@@ -260,9 +260,10 @@ export const Validators = {
 
   /**
    * Validate permission name format (dot notation)
+   * Allows formats like: users.create, api-keys.delete, user-settings.update
    */
   isValidPermissionName(name: string): boolean {
-    const permissionRegex = /^[a-z]+\.[a-z]+$/;
+    const permissionRegex = /^[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$/;
     return permissionRegex.test(name);
   },
 

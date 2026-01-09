@@ -27,10 +27,18 @@ npm install --save-dev @types/bcryptjs @types/uuid ts-node typescript
 Create a `.env` file or set environment variables:
 
 ```bash
-COSMOSDB_ENDPOINT=https://localhost:8081
-COSMOSDB_KEY=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
-COSMOSDB_DATABASE=saas-management-dev
+# For local CosmosDB Emulator
+export COSMOSDB_ENDPOINT=https://localhost:8081
+export COSMOSDB_KEY="C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+export COSMOSDB_DATABASE=saas-management-dev
+
+# For Azure CosmosDB (production)
+export COSMOSDB_ENDPOINT=https://your-account.documents.azure.com:443/
+export COSMOSDB_KEY="your-production-key-here"
+export COSMOSDB_DATABASE=saas-management
 ```
+
+⚠️ **IMPORTANT**: The CosmosDB emulator key shown above is the default public key for local development only. Never use this key in production.
 
 ### Initialize Database
 

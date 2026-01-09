@@ -19,11 +19,21 @@ import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
 // Configuration from environment variables
+// Note: Default values are for local CosmosDB Emulator only
 const config = {
   endpoint: process.env.COSMOSDB_ENDPOINT || 'https://localhost:8081',
-  key: process.env.COSMOSDB_KEY || 'C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==',
+  key: process.env.COSMOSDB_KEY || '',
   databaseId: process.env.COSMOSDB_DATABASE || 'saas-management-dev',
 };
+
+// Validate configuration
+if (!config.key) {
+  console.error('❌ Error: COSMOSDB_KEY environment variable is required');
+  console.error('');
+  console.error('For CosmosDB Emulator, use:');
+  console.error('  export COSMOSDB_KEY="C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="');
+  process.exit(1);
+}
 
 // Initialize Cosmos Client
 const client = new CosmosClient({
@@ -131,7 +141,7 @@ async function seedUsers(tenantId: string) {
 
   await container.items.upsert(adminUser);
   console.log(`  ✅ Created user: ${adminUser.username} (${adminUser.email})`);
-  console.log(`     Password: Admin@123 (change this in production!)`);
+  console.log(`     Default password set (see documentation for credentials)`);
 
   // Create a regular user
   const regularUserId = `user-${uuidv4()}`;
@@ -172,7 +182,7 @@ async function seedUsers(tenantId: string) {
 
   await container.items.upsert(regularUser);
   console.log(`  ✅ Created user: ${regularUser.username} (${regularUser.email})`);
-  console.log(`     Password: User@123 (change this in production!)`);
+  console.log(`     Default password set (see documentation for credentials)`);
 
   return { adminUserId, regularUserId };
 }
