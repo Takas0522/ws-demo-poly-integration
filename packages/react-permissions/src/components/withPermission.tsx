@@ -5,6 +5,7 @@
 import React from 'react';
 import { WithPermissionOptions } from '../types';
 import { AuthorizedComponent } from './AuthorizedComponent';
+import { usePermissions } from '../hooks/usePermissions';
 
 /**
  * Higher-Order Component that wraps a component with permission checks
@@ -82,5 +83,19 @@ export function requireAuth<P extends object>(
   Component: React.ComponentType<P>,
   fallback?: React.ReactNode
 ): React.FC<P> {
-  return withPermission(Component, { permission: [], fallback });
+  const WrappedComponent: React.FC<P> = (props) => {
+    const { isAuthenticated } = usePermissions();
+    
+    if (!isAuthenticated) {
+      return <>{fallback}</>;
+    }
+    
+    return <Component {...props} />;
+  };
+
+  WrappedComponent.displayName = `requireAuth(${
+    Component.displayName || Component.name || 'Component'
+  })`;
+
+  return WrappedComponent;
 }

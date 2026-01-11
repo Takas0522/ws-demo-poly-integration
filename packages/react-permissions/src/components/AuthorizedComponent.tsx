@@ -68,14 +68,22 @@ export const AuthorizedComponent: React.FC<AuthorizedComponentProps> = ({
     }
   }
 
-  // Check roles (in addition to permissions if both specified)
-  if (role && isAuthorized) {
+  // Check roles (AND with permission check if both specified)
+  if (role) {
+    let roleAuthorized: boolean;
     if (Array.isArray(role)) {
-      isAuthorized = requireAll
+      roleAuthorized = requireAll
         ? role.every((r) => hasRole(r))
         : hasAnyRole(role);
     } else {
-      isAuthorized = hasRole(role);
+      roleAuthorized = hasRole(role);
+    }
+    
+    // Combine with permission check if both are specified
+    if (permission) {
+      isAuthorized = isAuthorized && roleAuthorized;
+    } else {
+      isAuthorized = roleAuthorized;
     }
   }
 

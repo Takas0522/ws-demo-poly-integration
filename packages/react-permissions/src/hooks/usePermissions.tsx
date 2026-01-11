@@ -52,7 +52,15 @@ export const PermissionProvider: React.FC<PermissionProviderProps> = ({
         if (isTokenExpired(token)) {
           throw new Error('JWT token is expired');
         }
-        permissionPayload = parseJWT(token) as JWTAccessPayload;
+        const parsed = parseJWT(token);
+        if (!parsed || typeof parsed !== 'object') {
+          throw new Error('Invalid JWT token format');
+        }
+        // Validate required fields
+        if (!parsed.sub || !parsed.tenantId) {
+          throw new Error('JWT token missing required fields');
+        }
+        permissionPayload = parsed as JWTAccessPayload;
       } else if (typeof token === 'object' && token !== null) {
         // Use provided payload directly
         permissionPayload = token;

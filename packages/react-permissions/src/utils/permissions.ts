@@ -103,9 +103,12 @@ export function hasAllRoles(
 /**
  * Parse JWT token payload
  */
-export function parseJWT(token: string): any {
+export function parseJWT(token: string): Record<string, any> | null {
   try {
     const base64Url = token.split('.')[1];
+    if (!base64Url) {
+      return null;
+    }
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(
       atob(base64)
