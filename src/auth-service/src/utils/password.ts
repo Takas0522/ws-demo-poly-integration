@@ -43,7 +43,7 @@ export class PasswordUtils {
       errors.push('Password must contain at least one number');
     }
 
-    if (process.env.PASSWORD_REQUIRE_SPECIAL_CHARS === 'true' && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    if (process.env.PASSWORD_REQUIRE_SPECIAL_CHARS === 'true' && !/[!@#$%^&*(),.?":{}|<>\-_+=[\]\\;'/`~]/.test(password)) {
       errors.push('Password must contain at least one special character');
     }
 

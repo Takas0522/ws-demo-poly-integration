@@ -42,6 +42,16 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
 
     const token = parts[1];
 
+    // Validate token format (should be non-empty and reasonable length)
+    if (!token || token.length < 10 || token.length > 2000) {
+      res.status(401).json({
+        error: true,
+        message: 'Invalid token format',
+        code: 'INVALID_TOKEN',
+      });
+      return;
+    }
+
     // Verify token
     const verificationResult = TokenService.verifyAccessToken(token);
     if (!verificationResult.valid) {

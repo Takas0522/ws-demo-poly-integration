@@ -12,9 +12,10 @@ export const config = {
   // JWT Configuration with RS256 (asymmetric keys)
   jwt: {
     // For RS256, we need public/private key pair
-    // In production, these should be loaded from secure storage
-    // For development, we'll generate them or use a secret for HS256
-    algorithm: 'HS256' as const, // Using HS256 for simplicity, can be changed to RS256
+    // In production, these should be loaded from secure storage (Azure Key Vault)
+    // For development, we use HS256 for simplicity
+    // TODO: Implement RS256 support for better security isolation
+    algorithm: 'HS256' as const, // Change to 'RS256' when using asymmetric keys
     secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production',
     accessTokenExpiry: '1h', // 1 hour as per requirements
     refreshTokenExpiry: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
@@ -25,7 +26,8 @@ export const config = {
   // CosmosDB Configuration
   cosmosDb: {
     endpoint: process.env.COSMOSDB_ENDPOINT || 'https://localhost:8081',
-    key: process.env.COSMOSDB_KEY || 'C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==',
+    // Note: Default key is for local emulator only - NEVER use in production
+    key: process.env.COSMOSDB_KEY || '',
     database: process.env.COSMOSDB_DATABASE || 'saas-management',
     containers: {
       users: 'users',

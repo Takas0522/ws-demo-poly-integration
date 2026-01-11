@@ -108,7 +108,7 @@ export class AuthService {
         displayName: user.displayName,
         firstName: user.firstName,
         lastName: user.lastName,
-        status: user.status as 'active' | 'inactive' | 'suspended' | 'pending',
+        status: user.status as any, // Type conversion from string to UserStatus enum
       },
     };
   }
@@ -326,10 +326,22 @@ export class AuthService {
   private async resetFailedLoginAttempts(userId: string, tenantId: string): Promise<void> {
     try {
       const container = this.cosmosDb.getUsersContainer();
-      await container.item(userId, tenantId).patch([
-        { op: 'replace', path: '/security/failedLoginAttempts', value: 0 },
-        { op: 'remove', path: '/security/lockedUntil' },
-      ]);
+      
+      // Read current user to check if lockedUntil exists
+      const { resource: user } = await container.item(userId, tenantId).read<UserDocument>();
+      
+      if (user?.security.lockedUntil) {
+        // If locked, update both fields
+        await container.item(userId, tenantId).patch([
+          { op: 'replace', path: '/security/failedLoginAttempts', value: 0 },
+          { op: 'replace', path: '/security/lockedUntil', value: undefined },
+        ]);
+      } else {
+        // Otherwise just reset failed attempts
+        await container.item(userId, tenantId).patch([
+          { op: 'replace', path: '/security/failedLoginAttempts', value: 0 },
+        ]);
+      }
     } catch (error) {
       console.error('Error resetting failed login attempts:', error);
     }
