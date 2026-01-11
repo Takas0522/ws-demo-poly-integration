@@ -70,7 +70,7 @@ export function validateTenant(tenant: any, index: number): ValidationResult {
       type: 'error',
       entity: entityId,
       field: 'id',
-      message: 'Tenant ID is required',
+      message: 'id field is required and cannot be empty',
     });
   }
 
@@ -80,7 +80,7 @@ export function validateTenant(tenant: any, index: number): ValidationResult {
       type: 'error',
       entity: entityId,
       field: 'tenantId',
-      message: 'Tenant ID is required',
+      message: 'tenantId field is required and cannot be empty',
     });
   }
 
@@ -237,11 +237,12 @@ export function validateUser(user: any, index: number, validTenantIds: Set<strin
 
   // Check for password field (required in seed data)
   if (!user.password || user.password.trim() === '') {
-    result.warnings.push({
-      type: 'warning',
+    result.valid = false;
+    result.errors.push({
+      type: 'error',
       entity: entityId,
       field: 'password',
-      message: 'Password field is missing (will need to be hashed during seeding)',
+      message: 'Password field is required in seed data (will be hashed during seeding)',
     });
   }
 

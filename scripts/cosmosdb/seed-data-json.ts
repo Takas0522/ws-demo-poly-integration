@@ -147,14 +147,19 @@ async function seedUsers(users: any[]): Promise<Map<string, string>> {
   for (const userData of users) {
     const now = new Date().toISOString();
     
+    // Validate that user has an ID
+    if (!userData.id) {
+      console.error(`  ❌ Error: User ${userData.email} is missing required 'id' field`);
+      throw new Error(`User ${userData.email} must have an 'id' field in seed data`);
+    }
+    
     // Hash password if provided
     let passwordHash = userData.passwordHash;
     if (!passwordHash && userData.password) {
       passwordHash = await bcrypt.hash(userData.password, 10);
     }
     
-    // Generate user ID if needed
-    const userId = userData.id || `user-${uuidv4()}`;
+    const userId = userData.id;
     
     const user: User = {
       id: userId,

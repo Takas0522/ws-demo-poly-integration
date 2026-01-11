@@ -13,7 +13,7 @@
     "cleanup": "ts-node cleanup-data.ts",
     "cleanup:stats": "ts-node cleanup-data.ts --stats",
     "cleanup:list": "ts-node cleanup-data.ts --list",
-    "init:seed": "npm run init && npm run seed:json",
+    "init:seed": "npm run init && npm run seed:json:dev",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
