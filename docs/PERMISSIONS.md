@@ -1,24 +1,24 @@
-# Permission System Overview
+# 権限システム概要
 
-## Introduction
+## はじめに
 
-The SaaS Management Application implements a sophisticated hierarchical permission system using **dot notation** (e.g., `users.create`, `app.users.*`) with Role-Based Access Control (RBAC). This system provides fine-grained authorization for all backend services and frontend components.
+SaaS管理アプリケーションは、ロールベースアクセス制御（RBAC）を備えた**ドット記法**（例: `users.create`, `app.users.*`）を使用した洗練された階層的権限システムを実装しています。このシステムは、すべてのバックエンドサービスとフロントエンドコンポーネントに対してきめ細かい認可を提供します。
 
-## Quick Start
+## クイックスタート
 
-### For Developers
+### 開発者向け
 
 ```typescript
 import { requirePermission } from '../../scripts/permissions';
 
-// Protect your Express routes
+// Expressルートを保護
 router.post('/users', 
   requirePermission('users.create'), 
   createUserHandler
 );
 ```
 
-### For Frontend Developers
+### フロントエンド開発者向け
 
 ```typescript
 import { usePermission } from '../hooks/usePermission';
@@ -28,85 +28,85 @@ function UserManagement() {
   
   return (
     <div>
-      {canCreate && <button>Create User</button>}
+      {canCreate && <button>ユーザー作成</button>}
     </div>
   );
 }
 ```
 
-## Key Features
+## 主要機能
 
-### ✅ Dot Notation Format
-Permissions use intuitive hierarchical format:
-- `users.create` - Create users
-- `users.read` - Read user data
-- `app.users.delete` - Delete users in app
-- `users.*` - All user operations (wildcard)
+### ✅ ドット記法形式
+権限は直感的な階層形式を使用：
+- `users.create` - ユーザー作成
+- `users.read` - ユーザーデータ読み取り
+- `app.users.delete` - アプリ内のユーザー削除
+- `users.*` - すべてのユーザー操作（ワイルドカード）
 
-### ✅ Role-Based Access Control (RBAC)
-- Define roles with associated permissions
-- Support for role inheritance (e.g., Admin inherits from Manager)
-- Users can have multiple roles
-- Automatic permission aggregation
+### ✅ ロールベースアクセス制御（RBAC）
+- 関連する権限を持つロールを定義
+- ロール継承をサポート（例: 管理者がマネージャーから継承）
+- ユーザーは複数のロールを持てる
+- 自動的な権限集約
 
-### ✅ Permission Scopes
-Three scope types for flexible access control:
-- **Tenant** (default): Access within user's tenant
-- **Global**: Cross-tenant access (system admins)
-- **Own**: Access to own resources only
+### ✅ 権限スコープ
+柔軟なアクセス制御のための3つのスコープタイプ：
+- **Tenant**（デフォルト）: ユーザーのテナント内でのアクセス
+- **Global**: テナント横断アクセス（システム管理者）
+- **Own**: 自分のリソースのみへのアクセス
 
-### ✅ Wildcard Permissions
-Simplify admin roles with wildcards:
-- `users.*` - All user operations
-- `app.*` - All operations in app
-- Automatically includes new actions as they're added
+### ✅ ワイルドカード権限
+ワイルドカードで管理者ロールを簡素化：
+- `users.*` - すべてのユーザー操作
+- `app.*` - アプリ内のすべての操作
+- 新しいアクションの追加時に自動的に含まれる
 
-### ✅ Express Middleware
-Ready-to-use middleware for route protection:
-- `requirePermission()` - Single permission
-- `requireAnyPermission()` - Any of multiple permissions
-- `requireAllPermissions()` - All specified permissions
-- `requireRole()` - Specific role
-- `requireAnyRole()` - Any of multiple roles
+### ✅ Expressミドルウェア
+ルート保護のための即座に使用可能なミドルウェア：
+- `requirePermission()` - 単一の権限
+- `requireAnyPermission()` - 複数権限のいずれか
+- `requireAllPermissions()` - すべての指定権限
+- `requireRole()` - 特定のロール
+- `requireAnyRole()` - 複数ロールのいずれか
 
-### ✅ Type-Safe
-Full TypeScript support with comprehensive type definitions
+### ✅ 型安全
+包括的な型定義を伴う完全なTypeScriptサポート
 
-### ✅ Well-Tested
-95 test cases with 98%+ code coverage
+### ✅ よくテストされている
+98%以上のコードカバレッジを持つ95のテストケース
 
-### ✅ Performance Optimized
-Efficient permission checking with support for caching
+### ✅ パフォーマンス最適化
+キャッシュサポートによる効率的な権限チェック
 
-## Architecture
+## アーキテクチャ
 
-### Components
+### コンポーネント
 
 ```
 scripts/permissions/
-├── types.ts              # TypeScript type definitions
-├── parser.ts             # Permission parsing and validation
-├── rbac.ts              # Role-based access control logic
-├── checker.ts           # Permission checking functions
-├── middleware.ts        # Express middleware
-├── index.ts             # Public API exports
-├── README.md            # Detailed documentation
-├── EXAMPLES.md          # Integration examples
-└── *.test.ts            # Comprehensive tests
+├── types.ts              # TypeScript型定義
+├── parser.ts             # 権限解析と検証
+├── rbac.ts              # ロールベースアクセス制御ロジック
+├── checker.ts           # 権限チェック関数
+├── middleware.ts        # Expressミドルウェア
+├── index.ts             # パブリックAPIエクスポート
+├── README.md            # 詳細ドキュメント
+├── EXAMPLES.md          # 統合例
+└── *.test.ts            # 包括的なテスト
 ```
 
-### Data Model
+### データモデル
 
-Permissions and roles are stored in CosmosDB:
+権限とロールはCosmosDBに保存されます：
 
 ```typescript
-// Permission Document
+// 権限ドキュメント
 {
   id: "permission-123",
   tenantId: "tenant-456",
-  name: "users.create",          // Dot notation
-  displayName: "Create User",
-  description: "Permission to create new users",
+  name: "users.create",          // ドット記法
+  displayName: "ユーザー作成",
+  description: "新しいユーザーを作成する権限",
   category: "users",
   resource: "users",
   action: "create",
@@ -114,20 +114,20 @@ Permissions and roles are stored in CosmosDB:
   isActive: true
 }
 
-// Role Document (stored in User)
+// ロールドキュメント（ユーザーに保存）
 {
   id: "role-admin",
   name: "admin",
-  displayName: "Administrator",
+  displayName: "管理者",
   permissions: ["users.*", "services.*"],
-  inheritsFrom: ["manager"],      // Role inheritance
+  inheritsFrom: ["manager"],      // ロール継承
   isActive: true
 }
 ```
 
-## Usage Examples
+## 使用例
 
-### Backend: Protecting Routes
+### バックエンド: ルートの保護
 
 ```typescript
 import express from 'express';
@@ -135,19 +135,19 @@ import { requirePermission, requireAnyPermission } from '../../scripts/permissio
 
 const router = express.Router();
 
-// Single permission
+// 単一権限
 router.post('/users', 
   requirePermission('users.create'), 
   createUser
 );
 
-// Multiple permissions (any)
+// 複数権限（いずれか）
 router.get('/dashboard',
   requireAnyPermission(['dashboard.view', 'admin.*']),
   getDashboard
 );
 
-// Own scope - users can update their own profile
+// 所有スコープ - ユーザーは自分のプロフィールを更新可能
 router.put('/profile',
   requirePermission('profile.update', {
     scope: 'own',
@@ -157,13 +157,13 @@ router.put('/profile',
 );
 ```
 
-### Backend: Business Logic
+### バックエンド: ビジネスロジック
 
 ```typescript
 import { hasPermission, createPermissionContext } from '../../scripts/permissions';
 
 async function deleteUser(userId: string, currentUser: any) {
-  // Create permission context
+  // 権限コンテキストを作成
   const context = createPermissionContext(
     currentUser.id,
     currentUser.tenantId,
@@ -171,18 +171,18 @@ async function deleteUser(userId: string, currentUser: any) {
     currentUser.permissions
   );
 
-  // Check permission
+  // 権限をチェック
   const result = hasPermission(context, 'users.delete');
   if (!result.granted) {
-    throw new Error('Insufficient permissions');
+    throw new Error('権限が不足しています');
   }
 
-  // Proceed with deletion
+  // 削除を実行
   await db.users.delete(userId);
 }
 ```
 
-### Frontend: Conditional Rendering
+### フロントエンド: 条件付きレンダリング
 
 ```typescript
 import { hasPermission, createPermissionContext } from '../../scripts/permissions';
@@ -204,8 +204,8 @@ function UserList({ users, currentUser }) {
         <tr key={user.id}>
           <td>{user.name}</td>
           <td>
-            {canEdit && <button onClick={() => edit(user.id)}>Edit</button>}
-            {canDelete && <button onClick={() => delete(user.id)}>Delete</button>}
+            {canEdit && <button onClick={() => edit(user.id)}>編集</button>}
+            {canDelete && <button onClick={() => delete(user.id)}>削除</button>}
           </td>
         </tr>
       ))}
@@ -214,187 +214,187 @@ function UserList({ users, currentUser }) {
 }
 ```
 
-## Common Permission Patterns
+## 一般的な権限パターン
 
-### Standard CRUD Operations
+### 標準CRUD操作
 ```
-users.create    - Create new users
-users.read      - Read user data
-users.update    - Update existing users
-users.delete    - Delete users
-users.list      - List all users
-```
-
-### Administrative Permissions
-```
-users.*         - All user operations
-services.*      - All service operations
-admin.*         - All admin operations
-system.*        - All system operations
+users.create    - 新しいユーザーを作成
+users.read      - ユーザーデータを読み取り
+users.update    - 既存のユーザーを更新
+users.delete    - ユーザーを削除
+users.list      - すべてのユーザーをリスト
 ```
 
-### Specialized Permissions
+### 管理権限
 ```
-api-keys.create   - Create API keys
-api-keys.revoke   - Revoke API keys
-reports.generate  - Generate reports
-reports.export    - Export reports
-audit-logs.read   - View audit logs
-```
-
-## Role Hierarchy Example
-
-```
-System Admin (system.*)
-  └─ Tenant Admin (users.*, services.*, settings.*)
-      └─ Manager (users.create, users.update, services.read)
-          └─ User (users.read, profile.update)
+users.*         - すべてのユーザー操作
+services.*      - すべてのサービス操作
+admin.*         - すべての管理者操作
+system.*        - すべてのシステム操作
 ```
 
-Each child role inherits all permissions from parent roles.
+### 特殊権限
+```
+api-keys.create   - APIキーを作成
+api-keys.revoke   - APIキーを取り消し
+reports.generate  - レポートを生成
+reports.export    - レポートをエクスポート
+audit-logs.read   - 監査ログを表示
+```
 
-## Integration with Services
+## ロール階層の例
 
-### Authentication Service
-- Generates JWT tokens with user permissions
-- Includes aggregated permissions from all user roles
-- Token payload includes: userId, tenantId, roles, permissions
+```
+システム管理者 (system.*)
+  └─ テナント管理者 (users.*, services.*, settings.*)
+      └─ マネージャー (users.create, users.update, services.read)
+          └─ ユーザー (users.read, profile.update)
+```
 
-### User Management Service
-- Manages user-role assignments
-- Handles permission CRUD operations
-- Validates role inheritance
-- Ensures permission consistency
+各子ロールは親ロールからすべての権限を継承します。
 
-### All Backend Services
-- Use middleware to protect routes
-- Check permissions in business logic
-- Log permission denials for auditing
-- Validate tenant isolation
+## サービスとの統合
 
-### Frontend Application
-- Fetch user permissions on login
-- Store in global state (Redux/Context)
-- Conditionally render UI elements
-- Hide/disable buttons based on permissions
+### 認証サービス
+- ユーザー権限を含むJWTトークンを生成
+- すべてのユーザーロールから集約された権限を含む
+- トークンペイロードに含まれるもの: userId、tenantId、roles、permissions
 
-## Testing
+### ユーザー管理サービス
+- ユーザー-ロール割り当てを管理
+- 権限CRUD操作を処理
+- ロール継承を検証
+- 権限の一貫性を確保
 
-### Running Tests
+### すべてのバックエンドサービス
+- ミドルウェアを使用してルートを保護
+- ビジネスロジックで権限をチェック
+- 監査のため権限拒否をログに記録
+- テナント分離を検証
+
+### フロントエンドアプリケーション
+- ログイン時にユーザー権限を取得
+- グローバル状態に保存（Redux/Context）
+- UI要素を条件付きでレンダリング
+- 権限に基づいてボタンを非表示/無効化
+
+## テスト
+
+### テストの実行
 ```bash
 cd scripts/permissions
-npm test                 # Run all tests
-npm run test:coverage    # Generate coverage report
-npm run type-check       # TypeScript type checking
+npm test                 # すべてのテストを実行
+npm run test:coverage    # カバレッジレポートを生成
+npm run type-check       # TypeScript型チェック
 ```
 
-### Test Coverage
-- **95 test cases** covering all functionality
-- **98%+ code coverage** (statements, branches, functions)
-- Tests for parser, RBAC, checker, and middleware
-- Edge cases and error conditions tested
+### テストカバレッジ
+- すべての機能をカバーする**95のテストケース**
+- **98%以上のコードカバレッジ**（文、分岐、関数）
+- パーサー、RBAC、チェッカー、ミドルウェアのテスト
+- エッジケースとエラー条件をテスト
 
-## Security
+## セキュリティ
 
-### Security Features
-✅ No vulnerabilities in dependencies
-✅ Permission format validation prevents injection
-✅ Scope checking prevents unauthorized access
-✅ Role inheritance validation prevents circular dependencies
-✅ Tenant isolation enforced at permission level
+### セキュリティ機能
+✅ 依存関係に脆弱性なし
+✅ 権限形式検証がインジェクションを防ぐ
+✅ スコープチェックが不正アクセスを防ぐ
+✅ ロール継承検証が循環依存を防ぐ
+✅ 権限レベルでテナント分離を強制
 
-### Security Scan Results
-- **CodeQL Analysis**: 0 alerts found
-- **Dependency Scan**: No vulnerabilities detected
-- **Test Coverage**: 98%+ coverage ensures code quality
+### セキュリティスキャン結果
+- **CodeQL分析**: 0件のアラート
+- **依存関係スキャン**: 脆弱性検出なし
+- **テストカバレッジ**: 98%以上のカバレッジがコード品質を保証
 
-## Performance Considerations
+## パフォーマンスに関する考慮事項
 
-### Optimization Strategies
-1. **Cache Permission Aggregation**: Cache role permissions to avoid repeated calculations
-2. **Use Point Reads**: Leverage CosmosDB partition keys for efficient queries
-3. **Minimize Wildcard Expansion**: Only expand wildcards when necessary
-4. **Implement Token Caching**: Cache JWT token validation results
-5. **Batch Permission Checks**: Check multiple permissions at once when possible
+### 最適化戦略
+1. **権限集約をキャッシュ**: 繰り返し計算を避けるためロール権限をキャッシュ
+2. **ポイント読み取りを使用**: 効率的なクエリのためCosmosDBパーティションキーを活用
+3. **ワイルドカード展開を最小化**: 必要な場合のみワイルドカードを展開
+4. **トークンキャッシングを実装**: JWT トークン検証結果をキャッシュ
+5. **権限チェックをバッチ処理**: 可能な場合は複数の権限を一度にチェック
 
-### Expected Performance
-- Permission check: < 1ms (with caching)
-- Role aggregation: < 5ms (first time)
-- JWT validation: < 10ms
-- Middleware overhead: < 2ms per request
+### 期待されるパフォーマンス
+- 権限チェック: < 1ms（キャッシュあり）
+- ロール集約: < 5ms（初回）
+- JWT検証: < 10ms
+- ミドルウェアオーバーヘッド: リクエストあたり< 2ms
 
-## Documentation
+## ドキュメント
 
-### Core Documentation
-- **[README.md](../scripts/permissions/README.md)** - Complete API reference and usage guide
-- **[EXAMPLES.md](../scripts/permissions/EXAMPLES.md)** - Integration examples for all services
-- **[ADR 005](./adr/005-dot-notation-permission-system.md)** - Architecture decision record
+### コアドキュメント
+- **[README.md](../scripts/permissions/README.md)** - 完全なAPIリファレンスと使用ガイド
+- **[EXAMPLES.md](../scripts/permissions/EXAMPLES.md)** - すべてのサービスの統合例
+- **[ADR 005](./adr/005-dot-notation-permission-system.md)** - アーキテクチャ決定記録
 
-### Related Documentation
-- **[CosmosDB Schema](./database/SCHEMA.en.md)** - Database schema including permissions
-- **[Data Access Patterns](./database/DATA_ACCESS_PATTERNS.en.md)** - Efficient data access patterns
-- **[API Documentation](./api/README.md)** - Service API specifications
+### 関連ドキュメント
+- **[CosmosDBスキーマ](./database/SCHEMA.md)** - 権限を含むデータベーススキーマ
+- **[データアクセスパターン](./database/DATA_ACCESS_PATTERNS.md)** - 効率的なデータアクセスパターン
+- **[APIドキュメント](./api/README.md)** - サービスAPI仕様
 
-## Best Practices
+## ベストプラクティス
 
-### ✅ Do's
-- Use specific permissions for regular users
-- Grant wildcard permissions only to admins
-- Always validate permissions at API boundaries
-- Cache aggregated role permissions
-- Log all permission denials for auditing
-- Use middleware for route protection
-- Test permission logic thoroughly
+### ✅ すべきこと
+- 通常ユーザーには具体的な権限を使用
+- 管理者にのみワイルドカード権限を付与
+- 常にAPI境界で権限を検証
+- 集約されたロール権限をキャッシュ
+- 監査のためすべての権限拒否をログに記録
+- ルート保護にミドルウェアを使用
+- 権限ロジックを徹底的にテスト
 
-### ❌ Don'ts
-- Don't skip permission checks in business logic
-- Don't trust client-provided permissions
-- Don't grant `*.*` wildcard to any role
-- Don't implement custom permission formats
-- Don't bypass middleware for "internal" routes
-- Don't store permissions in frontend code
+### ❌ すべきでないこと
+- ビジネスロジックで権限チェックをスキップしない
+- クライアント提供の権限を信頼しない
+- どのロールにも`*.*`ワイルドカードを付与しない
+- カスタム権限形式を実装しない
+- 「内部」ルートのミドルウェアをバイパスしない
+- フロントエンドコードに権限を保存しない
 
-## Troubleshooting
+## トラブルシューティング
 
-### Common Issues
+### 一般的な問題
 
-**Issue**: Permission checks always fail
-- **Check**: Verify JWT token includes permissions array
-- **Check**: Ensure roles are properly loaded
-- **Check**: Validate permission name format
+**問題**: 権限チェックが常に失敗する
+- **確認**: JWTトークンに権限配列が含まれていることを確認
+- **確認**: ロールが適切にロードされていることを確認
+- **確認**: 権限名の形式を検証
 
-**Issue**: Wildcard permissions not working
-- **Check**: Ensure permission ends with `.*`
-- **Check**: Verify wildcard prefix matches
+**問題**: ワイルドカード権限が機能しない
+- **確認**: 権限が`.*`で終わっていることを確認
+- **確認**: ワイルドカードプレフィックスが一致することを確認
 
-**Issue**: Performance degradation
-- **Solution**: Implement permission caching
-- **Solution**: Optimize role aggregation
-- **Solution**: Use tenant-scoped queries
+**問題**: パフォーマンスの低下
+- **解決策**: 権限キャッシングを実装
+- **解決策**: ロール集約を最適化
+- **解決策**: テナントスコープのクエリを使用
 
-## Support
+## サポート
 
-For questions, issues, or contributions:
-- **GitHub Issues**: [Create an issue](https://github.com/Takas0522/ws-demo-poly-integration/issues)
-- **Documentation**: Check the [docs](../scripts/permissions/) directory
-- **Examples**: See [EXAMPLES.md](../scripts/permissions/EXAMPLES.md)
+質問、問題、またはコントリビューションについて：
+- **GitHub Issues**: [issueを作成](https://github.com/Takas0522/ws-demo-poly-integration/issues)
+- **ドキュメント**: [docs](../scripts/permissions/)ディレクトリを確認
+- **例**: [EXAMPLES.md](../scripts/permissions/EXAMPLES.md)を参照
 
-## Roadmap
+## ロードマップ
 
-### Planned Enhancements
-- [ ] Permission groups for easier management
-- [ ] Time-based permissions (temporary grants)
-- [ ] Conditional permissions (based on context)
-- [ ] Permission delegation
-- [ ] Analytics dashboard for permission usage
-- [ ] API rate limiting by permission level
+### 計画された機能強化
+- [ ] より簡単な管理のための権限グループ
+- [ ] 時間ベース権限（一時的な付与）
+- [ ] 条件付き権限（コンテキストに基づく）
+- [ ] 権限委任
+- [ ] 権限使用の分析ダッシュボード
+- [ ] 権限レベルごとのAPIレート制限
 
-## License
+## ライセンス
 
-MIT - See [LICENSE](../LICENSE) for details
+MIT - 詳細は[LICENSE](../LICENSE)を参照
 
 ---
 
-**Last Updated**: 2026-01-11  
-**Version**: 1.0.0  
-**Status**: Production Ready
+**最終更新**: 2026-01-11  
+**バージョン**: 1.0.0  
+**ステータス**: 本番環境対応

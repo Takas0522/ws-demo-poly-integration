@@ -1,87 +1,87 @@
-# ADR 005: Dot Notation Permission System with RBAC
+# ADR 005: RBACを伴うドット記法権限システム
 
-**Status**: Accepted  
-**Date**: 2026-01-11  
-**Deciders**: Development Team  
-**Related Issues**: Issue #005
+**ステータス**: 承認済み  
+**日付**: 2026-01-11  
+**決定者**: 開発チーム  
+**関連issue**: Issue #005
 
-## Context
+## 背景
 
-The SaaS management application requires a flexible, hierarchical permission system to implement fine-grained access control across multiple services. The system must support:
+SaaS管理アプリケーションには、複数のサービスにわたってきめ細かいアクセス制御を実装するための、柔軟で階層的な権限システムが必要です。このシステムは以下をサポートする必要があります：
 
-1. Fine-grained permissions for different resources and actions
-2. Role-based access control (RBAC) with role inheritance
-3. Multi-tenant isolation
-4. Wildcard permissions for administrative roles
-5. Ownership-based permissions (users editing their own resources)
-6. Button-level authorization in the frontend
-7. Easy integration with Express.js backend services
+1. 異なるリソースとアクションに対するきめ細かい権限
+2. ロール継承を伴うロールベースアクセス制御（RBAC）
+3. マルチテナント分離
+4. 管理者ロール用のワイルドカード権限
+5. 所有権ベースの権限（ユーザーが自分のリソースを編集）
+6. フロントエンドでのボタンレベル認可
+7. Express.jsバックエンドサービスとの簡単な統合
 
-## Decision
+## 決定
 
-We have decided to implement a **dot notation permission system** with the following characteristics:
+以下の特性を持つ**ドット記法権限システム**を実装することを決定しました：
 
-### Permission Format
+### 権限形式
 
-Permissions use hierarchical dot notation with 2-3 segments:
+権限は2〜3セグメントの階層的ドット記法を使用します：
 
 ```
-module.action              (e.g., users.create)
-app.module.action          (e.g., app.users.create)
+module.action              (例: users.create)
+app.module.action          (例: app.users.create)
 ```
 
-Wildcard permissions are supported for administrative roles:
+管理者ロール用にワイルドカード権限がサポートされています：
 ```
-module.*                   (e.g., users.*)
-app.module.*              (e.g., app.users.*)
-app.*                     (e.g., app.*)
+module.*                   (例: users.*)
+app.module.*              (例: app.users.*)
+app.*                     (例: app.*)
 ```
 
-### Core Components
+### コアコンポーネント
 
-1. **Permission Parser** (`parser.ts`)
-   - Validates permission format
-   - Parses permissions into components
-   - Matches wildcard patterns
-   - Supports hierarchical comparison
+1. **権限パーサー**（`parser.ts`）
+   - 権限形式を検証
+   - 権限をコンポーネントに解析
+   - ワイルドカードパターンをマッチング
+   - 階層的比較をサポート
 
-2. **RBAC System** (`rbac.ts`)
-   - Role definitions with permission lists
-   - Role inheritance (roles can inherit from parent roles)
-   - Permission aggregation from multiple roles
-   - Circular dependency detection
-   - Role hierarchy visualization
+2. **RBACシステム**（`rbac.ts`）
+   - 権限リストを持つロール定義
+   - ロール継承（ロールは親ロールから継承可能）
+   - 複数ロールからの権限集約
+   - 循環依存検出
+   - ロール階層の可視化
 
-3. **Permission Checker** (`checker.ts`)
-   - Check if user has specific permission
-   - Check if user has any/all of multiple permissions
-   - Scope-based checking (tenant/global/own)
-   - Support for role-based and direct permissions
+3. **権限チェッカー**（`checker.ts`）
+   - ユーザーが特定の権限を持っているかチェック
+   - 複数権限のいずれか/すべてをチェック
+   - スコープベースチェック（tenant/global/own）
+   - ロールベースと直接権限をサポート
 
-4. **Express Middleware** (`middleware.ts`)
-   - `requirePermission()` - Require specific permission
-   - `requireAnyPermission()` - Require any of multiple permissions
-   - `requireAllPermissions()` - Require all specified permissions
-   - `requireRole()` - Require specific role
-   - `requireAnyRole()` - Require any of multiple roles
+4. **Expressミドルウェア**（`middleware.ts`）
+   - `requirePermission()` - 特定の権限を要求
+   - `requireAnyPermission()` - 複数権限のいずれかを要求
+   - `requireAllPermissions()` - すべての指定権限を要求
+   - `requireRole()` - 特定のロールを要求
+   - `requireAnyRole()` - 複数ロールのいずれかを要求
 
-### Permission Scopes
+### 権限スコープ
 
-Three permission scopes are supported:
+3つの権限スコープがサポートされています：
 
-1. **Tenant** (default): Permission applies within user's tenant
-2. **Global**: Permission applies across all tenants (for system admins)
-3. **Own**: Permission applies only to resources owned by the user
+1. **Tenant**（デフォルト）: ユーザーのテナント内で権限が適用
+2. **Global**: すべてのテナントにわたって権限が適用（システム管理者用）
+3. **Own**: ユーザーが所有するリソースにのみ権限が適用
 
-### Data Storage
+### データストレージ
 
-Permissions are stored in CosmosDB as defined in the existing schema:
+権限は既存のスキーマで定義されているようにCosmosDBに保存されます：
 
 ```typescript
 interface Permission {
   id: string;
   tenantId: string;
-  name: string;              // Dot-notation name
+  name: string;              // ドット記法名
   displayName: string;
   description: string;
   category: string;
@@ -94,7 +94,7 @@ interface Permission {
 }
 ```
 
-Roles are stored with their permissions and inheritance:
+ロールは権限と継承と共に保存されます：
 
 ```typescript
 interface Role {
@@ -102,155 +102,155 @@ interface Role {
   name: string;
   displayName: string;
   description: string;
-  permissions: string[];     // Array of permission names
-  inheritsFrom?: string[];   // Parent role names
+  permissions: string[];     // 権限名の配列
+  inheritsFrom?: string[];   // 親ロール名
   isActive: boolean;
   tenantId?: string;
 }
 ```
 
-## Rationale
+## 根拠
 
-### Why Dot Notation?
+### なぜドット記法か？
 
-1. **Intuitive and Human-Readable**: `users.create` is immediately understandable
-2. **Hierarchical**: Natural grouping of permissions by resource
-3. **Flexible**: Supports both specific and wildcard permissions
-4. **Extensible**: Easy to add new resources and actions
-5. **Industry Standard**: Used by many systems (AWS IAM, etc.)
+1. **直感的で人間が読みやすい**: `users.create`は即座に理解可能
+2. **階層的**: リソースごとの権限の自然なグループ化
+3. **柔軟**: 特定とワイルドカードの両方の権限をサポート
+4. **拡張可能**: 新しいリソースとアクションの追加が容易
+5. **業界標準**: 多くのシステム（AWS IAMなど）で使用
 
-### Why RBAC with Inheritance?
+### なぜ継承を伴うRBACか？
 
-1. **Reduces Permission Management Complexity**: Assign roles instead of individual permissions
-2. **Supports Organizational Hierarchy**: Roles can inherit from others (Manager inherits from User)
-3. **Flexibility**: Users can have multiple roles
-4. **Maintainability**: Change role permissions once, affects all users with that role
+1. **権限管理の複雑さを軽減**: 個別の権限ではなくロールを割り当て
+2. **組織階層をサポート**: ロールは他から継承可能（マネージャーはユーザーから継承）
+3. **柔軟性**: ユーザーは複数のロールを持てる
+4. **保守性**: ロール権限を一度変更すれば、そのロールを持つすべてのユーザーに影響
 
-### Why Three Scopes?
+### なぜ3つのスコープか？
 
-1. **Tenant Scope**: Default for multi-tenant isolation
-2. **Global Scope**: Needed for system administrators
-3. **Own Scope**: Common pattern for users editing their own data
+1. **テナントスコープ**: マルチテナント分離のデフォルト
+2. **グローバルスコープ**: システム管理者に必要
+3. **所有スコープ**: ユーザーが自分のデータを編集する一般的なパターン
 
-### Why Wildcards?
+### なぜワイルドカードか？
 
-1. **Simplifies Admin Roles**: Grant `users.*` instead of listing all user actions
-2. **Reduces Permission Bloat**: Fewer permissions to manage
-3. **Flexible**: Admin gets new permissions automatically when new actions are added
+1. **管理者ロールを簡素化**: すべてのユーザーアクションをリストする代わりに`users.*`を付与
+2. **権限の肥大化を削減**: 管理する権限が少なくなる
+3. **柔軟**: 新しいアクションが追加されたときに管理者が自動的に新しい権限を取得
 
-## Consequences
+## 結果
 
-### Positive
+### プラス面
 
-1. **Fine-Grained Control**: Can control access at the individual action level
-2. **Scalable**: Easy to add new resources and actions
-3. **Type-Safe**: Full TypeScript support with interfaces
-4. **Well-Tested**: 98%+ test coverage
-5. **Easy Integration**: Simple middleware for Express routes
-6. **Frontend Support**: Can be used in React for button-level authorization
-7. **Performance**: Efficient wildcard matching and permission aggregation
-8. **Auditable**: Clear permission names in logs and audit trails
+1. **きめ細かい制御**: 個々のアクションレベルでアクセスを制御可能
+2. **スケーラブル**: 新しいリソースとアクションの追加が容易
+3. **型安全**: インターフェースを伴う完全なTypeScriptサポート
+4. **よくテストされている**: 98%以上のテストカバレッジ
+5. **簡単な統合**: Expressルート用のシンプルなミドルウェア
+6. **フロントエンドサポート**: Reactでボタンレベル認可に使用可能
+7. **パフォーマンス**: 効率的なワイルドカードマッチングと権限集約
+8. **監査可能**: ログと監査証跡での明確な権限名
 
-### Negative
+### マイナス面
 
-1. **Learning Curve**: Team needs to understand permission format and scopes
-2. **Initial Setup**: Requires defining all roles and permissions upfront
-3. **Cache Complexity**: May need caching for performance at scale
-4. **Validation Overhead**: Permission format must be validated
+1. **学習曲線**: チームが権限形式とスコープを理解する必要
+2. **初期設定**: すべてのロールと権限を事前に定義する必要
+3. **キャッシュの複雑さ**: 大規模でのパフォーマンスにはキャッシュが必要な場合
+4. **検証オーバーヘッド**: 権限形式を検証する必要
 
-### Risks and Mitigation
+### リスクと軽減策
 
-| Risk | Mitigation |
-|------|-----------|
-| Overly broad wildcard permissions | Code review for role definitions, principle of least privilege |
-| Performance with many roles | Implement permission caching, optimize aggregation |
-| Circular role inheritance | Validation function prevents circular dependencies |
-| Inconsistent permission names | Linting, documentation, naming conventions |
+| リスク | 軽減策 |
+|--------|--------|
+| 過度に広範なワイルドカード権限 | ロール定義のコードレビュー、最小権限の原則 |
+| 多くのロールでのパフォーマンス | 権限キャッシングの実装、集約の最適化 |
+| 循環ロール継承 | 検証関数が循環依存を防ぐ |
+| 一貫性のない権限名 | リンティング、ドキュメント、命名規則 |
 
-## Alternatives Considered
+## 検討された代替案
 
-### Alternative 1: Simple Role-Based Permissions
+### 代替案1: シンプルなロールベース権限
 
-**Approach**: Users have roles, roles grant access to entire features/pages
+**アプローチ**: ユーザーはロールを持ち、ロールが全体的な機能/ページへのアクセスを付与
 
-**Rejected Because**:
-- Not granular enough for button-level authorization
-- Difficult to implement partial access (e.g., read but not delete)
-- Less flexible for complex permission requirements
+**却下理由**:
+- ボタンレベル認可には十分にきめ細かくない
+- 部分的なアクセス（例: 読み取りは可能だが削除は不可）の実装が困難
+- 複雑な権限要件には柔軟性が低い
 
-### Alternative 2: Resource-Action Tuples
+### 代替案2: リソース-アクションタプル
 
-**Approach**: Permissions as separate resource and action fields in database
+**アプローチ**: データベース内の別々のリソースとアクションフィールドとしての権限
 
-**Rejected Because**:
-- More complex to query and manage
-- Harder to read and understand
-- Difficult to implement wildcards
-- More database storage
+**却下理由**:
+- クエリと管理がより複雑
+- 読み取りと理解が困難
+- ワイルドカードの実装が困難
+- データベースストレージが多い
 
-### Alternative 3: Bitwise Permissions
+### 代替案3: ビット単位権限
 
-**Approach**: Use bit flags for different permissions
+**アプローチ**: 異なる権限にビットフラグを使用
 
-**Rejected Because**:
-- Not extensible (fixed number of permissions)
-- Not human-readable
-- Difficult to understand and audit
-- Hard to document
+**却下理由**:
+- 拡張不可能（固定数の権限）
+- 人間が読めない
+- 理解と監査が困難
+- ドキュメント化が困難
 
-## Implementation Details
+## 実装詳細
 
-### File Structure
+### ファイル構造
 
 ```
 scripts/permissions/
-├── types.ts              # TypeScript interfaces
-├── parser.ts             # Permission parsing and validation
-├── rbac.ts              # Role-based access control
-├── checker.ts           # Permission checking logic
-├── middleware.ts        # Express middleware
-├── index.ts             # Main exports
-├── README.md            # Documentation
-├── EXAMPLES.md          # Integration examples
-├── *.test.ts            # Test files
-├── package.json         # Dependencies
-└── tsconfig.json        # TypeScript config
+├── types.ts              # TypeScriptインターフェース
+├── parser.ts             # 権限解析と検証
+├── rbac.ts              # ロールベースアクセス制御
+├── checker.ts           # 権限チェックロジック
+├── middleware.ts        # Expressミドルウェア
+├── index.ts             # メインエクスポート
+├── README.md            # ドキュメント
+├── EXAMPLES.md          # 統合例
+├── *.test.ts            # テストファイル
+├── package.json         # 依存関係
+└── tsconfig.json        # TypeScript設定
 ```
 
-### Dependencies
+### 依存関係
 
-- **express**: For middleware type definitions
-- **typescript**: For type safety
-- **jest**: For testing
-- **ts-jest**: TypeScript support for Jest
+- **express**: ミドルウェア型定義用
+- **typescript**: 型安全性用
+- **jest**: テスト用
+- **ts-jest**: JestのTypeScriptサポート
 
-### Integration Points
+### 統合ポイント
 
-1. **Authentication Service**: Generate JWT tokens with permissions
-2. **User Management Service**: Manage users, roles, and permissions
-3. **All Backend Services**: Use middleware to protect routes
-4. **Frontend**: Check permissions for UI rendering
-5. **CosmosDB**: Store permission and role definitions
+1. **認証サービス**: 権限を含むJWTトークンを生成
+2. **ユーザー管理サービス**: ユーザー、ロール、権限を管理
+3. **すべてのバックエンドサービス**: ルートを保護するためにミドルウェアを使用
+4. **フロントエンド**: UI レンダリングのための権限チェック
+5. **CosmosDB**: 権限とロール定義を保存
 
-## Examples
+## 例
 
-### Defining Roles
+### ロールの定義
 
 ```typescript
 const roles: Role[] = [
   {
     id: 'role-user',
     name: 'user',
-    displayName: 'User',
-    description: 'Basic user',
+    displayName: 'ユーザー',
+    description: '基本ユーザー',
     permissions: ['users.read', 'profile.update'],
     isActive: true
   },
   {
     id: 'role-admin',
     name: 'admin',
-    displayName: 'Admin',
-    description: 'Administrator',
+    displayName: '管理者',
+    description: '管理者',
     permissions: ['users.*', 'services.*'],
     inheritsFrom: ['user'],
     isActive: true
@@ -258,7 +258,7 @@ const roles: Role[] = [
 ];
 ```
 
-### Protecting Routes
+### ルートの保護
 
 ```typescript
 router.post('/users', 
@@ -275,7 +275,7 @@ router.put('/users/:id',
 );
 ```
 
-### Frontend Authorization
+### フロントエンド認可
 
 ```typescript
 function UserManagement() {
@@ -283,89 +283,89 @@ function UserManagement() {
   
   return (
     <div>
-      {canCreate && <button onClick={createUser}>Create User</button>}
+      {canCreate && <button onClick={createUser}>ユーザー作成</button>}
     </div>
   );
 }
 ```
 
-## Validation
+## 検証
 
-### Tests
+### テスト
 
-- 95 test cases covering all functionality
-- 98%+ code coverage
-- Tests for parser, RBAC, checker, and middleware
-- Edge cases and error conditions tested
+- すべての機能をカバーする95のテストケース
+- 98%以上のコードカバレッジ
+- パーサー、RBAC、チェッカー、ミドルウェアのテスト
+- エッジケースとエラー条件をテスト
 
-### Security
+### セキュリティ
 
-- No security vulnerabilities in dependencies
-- Permission format validation prevents injection
-- Scope checking prevents unauthorized access
-- Role inheritance validation prevents circular dependencies
+- 依存関係にセキュリティ脆弱性なし
+- 権限形式検証がインジェクションを防ぐ
+- スコープチェックが不正アクセスを防ぐ
+- ロール継承検証が循環依存を防ぐ
 
-## Monitoring and Metrics
+## モニタリングとメトリクス
 
-### Recommended Metrics
+### 推奨メトリクス
 
-1. **Permission Check Latency**: Monitor time to check permissions
-2. **Permission Denial Rate**: Track failed permission checks
-3. **Most Used Permissions**: Identify common permissions
-4. **Role Distribution**: Track role assignments across users
-5. **Wildcard Permission Usage**: Monitor admin actions
+1. **権限チェック遅延**: 権限チェックにかかる時間を監視
+2. **権限拒否率**: 失敗した権限チェックを追跡
+3. **最もよく使用される権限**: 一般的な権限を特定
+4. **ロール分布**: ユーザー間のロール割り当てを追跡
+5. **ワイルドカード権限使用**: 管理者アクションを監視
 
-### Logging
+### ロギング
 
-All permission denials should be logged with:
-- User ID
-- Tenant ID
-- Required permission
-- Timestamp
-- Request context
+すべての権限拒否は以下と共にログに記録されるべきです：
+- ユーザーID
+- テナントID
+- 必要な権限
+- タイムスタンプ
+- リクエストコンテキスト
 
-## Future Enhancements
+## 将来の拡張
 
-1. **Permission Groups**: Group related permissions for easier management
-2. **Time-Based Permissions**: Temporary permission grants
-3. **Conditional Permissions**: Permissions based on conditions (e.g., time of day)
-4. **Permission Delegation**: Users delegating their permissions to others
-5. **API Rate Limiting by Permission**: Different rate limits for different permissions
-6. **Permission Analytics Dashboard**: Visualize permission usage
+1. **権限グループ**: 簡単な管理のための関連権限のグループ化
+2. **時間ベース権限**: 一時的な権限付与
+3. **条件付き権限**: 条件に基づく権限（例: 時刻）
+4. **権限委任**: ユーザーが他者に権限を委任
+5. **権限ごとのAPIレート制限**: 権限ごとに異なるレート制限
+6. **権限分析ダッシュボード**: 権限使用を可視化
 
-## References
+## 参考文献
 
-- [CosmosDB Schema Documentation](../../docs/database/SCHEMA.en.md)
-- [Permission System README](./README.md)
-- [Integration Examples](./EXAMPLES.md)
-- [AWS IAM Policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) (inspiration)
-- [NIST RBAC Standard](https://csrc.nist.gov/projects/role-based-access-control)
+- [CosmosDBスキーマドキュメント](../../docs/database/SCHEMA.md)
+- [権限システムREADME](./README.md)
+- [統合例](./EXAMPLES.md)
+- [AWS IAM ポリシー](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html)（インスピレーション）
+- [NIST RBAC標準](https://csrc.nist.gov/projects/role-based-access-control)
 
-## Appendix: Naming Conventions
+## 付録: 命名規則
 
-### Resource Names
+### リソース名
 
-- Use lowercase kebab-case: `api-keys`, `user-profiles`
-- Use plural for collections: `users`, `services`
-- Use singular for singleton resources: `profile`, `settings`
+- 小文字のケバブケースを使用: `api-keys`, `user-profiles`
+- コレクションには複数形を使用: `users`, `services`
+- シングルトンリソースには単数形を使用: `profile`, `settings`
 
-### Action Names
+### アクション名
 
-Standard CRUD actions:
-- `create` - Create new resource
-- `read` - Read resource
-- `update` - Update existing resource
-- `delete` - Delete resource
-- `list` - List resources (alternative to read for collections)
+標準CRUDアクション:
+- `create` - 新しいリソースを作成
+- `read` - リソースを読み取り
+- `update` - 既存のリソースを更新
+- `delete` - リソースを削除
+- `list` - リソースをリスト（コレクションの読み取りの代替）
 
-Custom actions:
-- `execute` - Execute operation
-- `import` - Import data
-- `export` - Export data
-- `approve` - Approve request
-- `reject` - Reject request
+カスタムアクション:
+- `execute` - 操作を実行
+- `import` - データをインポート
+- `export` - データをエクスポート
+- `approve` - リクエストを承認
+- `reject` - リクエストを拒否
 
-### Example Permissions
+### 権限例
 
 ```
 users.create
