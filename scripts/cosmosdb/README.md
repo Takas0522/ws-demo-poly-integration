@@ -1,162 +1,170 @@
-# CosmosDB Scripts
+# CosmosDBスクリプト
 
-This directory contains scripts for initializing and managing the CosmosDB database for the SaaS Management Application.
+このディレクトリには、SaaS管理アプリケーションのCosmosDBデータベースを初期化および管理するためのスクリプトが含まれています。
 
-## 📁 Files
+## 📁 ファイル
 
-- **`init-database.ts`** - Creates the database and containers with proper configuration
-- **`seed-data.ts`** - Populates the database with initial development data
-- **`types.ts`** - TypeScript type definitions for all database models
-- **`README.md`** - This file
+- **`init-database.ts`** - 適切な設定でデータベースとコンテナを作成
+- **`seed-data.ts`** - 初期開発データをデータベースに投入
+- **`types.ts`** - すべてのデータベースモデルのTypeScript型定義
+- **`README.md`** - このファイル
 
-## 🚀 Quick Start
+## 🚀 クイックスタート
 
-### Prerequisites
+### 前提条件
 
-1. CosmosDB Emulator running locally OR Azure CosmosDB instance
-2. Node.js 18+ and npm installed
-3. Required npm packages:
+1. ローカルで実行中のCosmosDBエミュレータ または Azure CosmosDBインスタンス
+2. Node.js 18+とnpmがインストール済み
+3. 必要なnpmパッケージ：
 
 ```bash
 npm install @azure/cosmos bcryptjs uuid
 npm install --save-dev @types/bcryptjs @types/uuid ts-node typescript
 ```
 
-### Setup Environment Variables
+### 環境変数の設定
 
-Create a `.env` file or set environment variables:
+`.env`ファイルを作成するか、環境変数を設定します：
 
 ```bash
-# For local CosmosDB Emulator
+# ローカルCosmosDBエミュレータ用
 export COSMOSDB_ENDPOINT=https://localhost:8081
 export COSMOSDB_KEY="C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
 export COSMOSDB_DATABASE=saas-management-dev
 
-# For Azure CosmosDB (production)
+# Azure CosmosDB用（本番環境）
 export COSMOSDB_ENDPOINT=https://your-account.documents.azure.com:443/
 export COSMOSDB_KEY="your-production-key-here"
 export COSMOSDB_DATABASE=saas-management
 ```
 
-⚠️ **IMPORTANT**: The CosmosDB emulator key shown above is the default public key for local development only. Never use this key in production.
+⚠️ **重要**: 上記のCosmosDBエミュレータキーは、ローカル開発専用のデフォルト公開キーです。本番環境では絶対に使用しないでください。
 
-### Initialize Database
+### データベースの初期化
 
-Run the initialization script to create the database and containers:
+初期化スクリプトを実行してデータベースとコンテナを作成します：
 
 ```bash
-# Using ts-node
+# ts-nodeを使用
 npx ts-node scripts/cosmosdb/init-database.ts
 
-# Or compile first
+# または最初にコンパイル
 tsc scripts/cosmosdb/init-database.ts
 node scripts/cosmosdb/init-database.js
 ```
 
-This will create:
-- Database: `saas-management-dev`
-- Containers:
-  - **Tenants** - Tenant/organization information
-  - **Users** - User accounts and profiles
-  - **Permissions** - Permission definitions
-  - **AuditLogs** - Audit trail (with 90-day TTL)
+これにより以下が作成されます：
+- データベース: `saas-management-dev`
+- コンテナ:
+  - **Tenants** - テナント/組織情報
+  - **Users** - ユーザーアカウントとプロファイル
+  - **Permissions** - 権限定義
+  - **AuditLogs** - 監査証跡（90日TTL付き）
 
-### Seed Development Data
+### 開発データのシード
 
-Run the seed script to populate initial data:
+シードスクリプトを実行して初期データを投入します：
 
 ```bash
 npx ts-node scripts/cosmosdb/seed-data.ts
 ```
 
-This will create:
-- 1 default tenant (`dev-tenant`)
-- 2 users (admin and regular user)
-- 13 permission definitions
-- 2 sample audit log entries
+これにより以下が作成されます：
+- 1つのデフォルトテナント（`dev-tenant`）
+- 2人のユーザー（管理者と一般ユーザー）
+- 13の権限定義
+- 2つのサンプル監査ログエントリ
 
-**Default Credentials:**
-- **Admin User**
+**デフォルト認証情報:**
+- **管理者ユーザー**
   - Email: `admin@example.com`
   - Password: `Admin@123`
-  - Roles: admin, user
+  - ロール: admin, user
   
-- **Regular User**
+- **一般ユーザー**
   - Email: `user@example.com`
   - Password: `User@123`
-  - Roles: user
+  - ロール: user
 
-⚠️ **IMPORTANT:** Change these passwords before deploying to production!
+⚠️ **重要:** 本番環境またはステージング環境にデプロイする前に、これらのパスワードを変更してください！
 
-## 📊 Database Schema
+## 📊 データベーススキーマ
 
-### Tenants Container
+### Tenantsコンテナ
 
-Stores tenant (customer organization) information.
+テナント（顧客組織）情報を保存します。
 
-**Partition Key:** `/tenantId`
+**パーティションキー:** `/tenantId`
 
-**Key Fields:**
-- `id` - Unique tenant identifier
-- `tenantId` - Same as id (partition key)
-- `name` - Organization name
-- `status` - Tenant status (active, suspended, inactive)
-- `subscription` - Subscription plan and details
-- `settings` - Tenant-specific settings
+**スループット:** 400 RU/s（手動）またはオートスケール（400-4000 RU/s）
 
-### Users Container
+#### 主要フィールド
+- `id` - 一意のテナント識別子
+- `tenantId` - idと同じ（パーティションキー）
+- `name` - 組織名
+- `status` - テナントステータス（active, suspended, inactive）
+- `subscription` - サブスクリプションプランと詳細
+- `settings` - テナント固有の設定
 
-Stores user accounts and authentication information.
+### Usersコンテナ
 
-**Partition Key:** `/tenantId`
+ユーザーアカウントと認証情報を保存します。
 
-**Key Fields:**
-- `id` - Unique user identifier
-- `tenantId` - Tenant identifier (partition key)
-- `email` - User email address
-- `username` - Username
-- `passwordHash` - Bcrypt hashed password
-- `status` - User status (active, inactive, suspended, locked)
-- `roles` - Array of role names
-- `permissions` - Array of dot-notation permissions
-- `profile` - User profile information
-- `security` - Security-related fields
+**パーティションキー:** `/tenantId`
 
-### Permissions Container
+**スループット:** 400 RU/s（手動）またはオートスケール（400-4000 RU/s）
 
-Stores dot-notation permission definitions.
+#### 主要フィールド
+- `id` - 一意のユーザー識別子
+- `tenantId` - テナント識別子（パーティションキー）
+- `email` - ユーザーメールアドレス
+- `username` - ユーザー名
+- `passwordHash` - Bcryptでハッシュ化されたパスワード
+- `status` - ユーザーステータス（active, inactive, suspended, locked）
+- `roles` - ロール名の配列
+- `permissions` - ドット記法の権限の配列
+- `profile` - ユーザープロファイル情報
+- `security` - セキュリティ関連フィールド
 
-**Partition Key:** `/tenantId`
+### Permissionsコンテナ
 
-**Key Fields:**
-- `id` - Unique permission identifier
-- `tenantId` - Tenant identifier (partition key)
-- `name` - Dot-notation permission name (e.g., `users.create`)
-- `category` - Permission category (users, services, settings, system)
-- `action` - Action type (create, read, update, delete, execute)
-- `scope` - Permission scope (tenant, global, own)
+ドット記法の権限定義を保存します。
 
-### AuditLogs Container
+**パーティションキー:** `/tenantId`
 
-Stores audit trail of all data changes.
+**スループット:** 400 RU/s（手動）またはオートスケール（400-4000 RU/s）
 
-**Partition Key:** `/tenantId`
+#### 主要フィールド
+- `id` - 一意の権限識別子
+- `tenantId` - テナント識別子（パーティションキー）
+- `name` - ドット記法の権限名（例：`users.create`）
+- `category` - 権限カテゴリ（users, services, settings, system）
+- `action` - アクションタイプ（create, read, update, delete, execute）
+- `scope` - 権限スコープ（tenant, global, own）
 
-**TTL:** 7,776,000 seconds (90 days)
+### AuditLogsコンテナ
 
-**Key Fields:**
-- `id` - Unique log identifier
-- `tenantId` - Tenant identifier (partition key)
-- `timestamp` - Action timestamp
-- `userId` - User who performed the action
-- `action` - Action performed (format: `{resource}.{action}`)
-- `resource` - Resource information
-- `status` - Action status (success, failure, warning)
-- `ttl` - Time to live in seconds
+すべてのデータ変更の監査証跡を保存します。
 
-## 🔍 Querying Data
+**パーティションキー:** `/tenantId`
 
-### Point Read (Most Efficient - 1 RU)
+**TTL:** 7,776,000秒（90日）
+
+**スループット:** 400 RU/s（手動）またはオートスケール（400-4000 RU/s）
+
+#### 主要フィールド
+- `id` - 一意のログ識別子
+- `tenantId` - テナント識別子（パーティションキー）
+- `timestamp` - アクションのタイムスタンプ
+- `userId` - アクションを実行したユーザー
+- `action` - 実行されたアクション（形式：`{resource}.{action}`）
+- `resource` - リソース情報
+- `status` - アクションステータス（success, failure, warning）
+- `ttl` - 有効期限（秒単位）
+
+## 🔍 データのクエリ
+
+### ポイント読み取り（最も効率的 - 1 RU）
 
 ```typescript
 import { CosmosClient } from '@azure/cosmos';
@@ -164,16 +172,16 @@ import { CosmosClient } from '@azure/cosmos';
 const client = new CosmosClient({ endpoint, key });
 const container = client.database(databaseId).container('Users');
 
-// Most efficient query - requires both ID and partition key
+// 最も効率的なクエリ - IDとパーティションキーの両方が必要
 const { resource: user } = await container
   .item('user-123', 'tenant-456')
   .read();
 ```
 
-### Single Partition Query (Efficient)
+### 単一パーティションクエリ（効率的）
 
 ```typescript
-// Query within a single tenant partition
+// 単一テナントパーティション内でのクエリ
 const querySpec = {
   query: 'SELECT * FROM c WHERE c.tenantId = @tenantId AND c.status = @status',
   parameters: [
@@ -187,26 +195,26 @@ const { resources: users } = await container.items
   .fetchAll();
 ```
 
-### Pagination
+### ページネーション
 
 ```typescript
-// Efficient pagination for large result sets
+// 大量の結果セットを効率的にページネーション
 const queryIterator = container.items.query(querySpec, {
   maxItemCount: 20
 });
 
 while (queryIterator.hasMoreResults()) {
   const { resources: page } = await queryIterator.fetchNext();
-  // Process page
+  // ページを処理
 }
 ```
 
-## 🛠️ Maintenance Scripts
+## 🛠️ メンテナンススクリプト
 
-### Backup Data
+### データのバックアップ
 
 ```bash
-# Export all data to JSON files
+# すべてのデータをJSONファイルにエクスポート
 az cosmosdb sql container export \
   --resource-group myResourceGroup \
   --account-name myCosmosAccount \
@@ -215,73 +223,63 @@ az cosmosdb sql container export \
   --output-format json
 ```
 
-### Monitor RU Usage
+### RU使用量の監視
 
 ```typescript
-// Track Request Units consumed by queries
+// クエリで消費されたリクエストユニットを追跡
 const { resources, requestCharge } = await container.items
   .query(querySpec)
   .fetchAll();
 
-console.log(`Query consumed ${requestCharge} RUs`);
+console.log(`クエリで消費したRU: ${requestCharge}`);
 ```
 
-### Update Indexing Policy
+## 🔐 セキュリティのベストプラクティス
 
-```typescript
-// Modify indexing policy after container creation
-const { resource: containerDef } = await container.read();
-containerDef.indexingPolicy = newIndexingPolicy;
-await container.replace(containerDef);
-```
+1. **シークレットをコミットしない** - CosmosDBキーをバージョン管理に含めない
+2. **環境変数を使用** - 認証情報は環境変数またはAzure Key Vaultに保存
+3. **定期的にキーをローテーション** - CosmosDBキーを定期的に再生成
+4. **テナントコンテキストを検証** - 認証トークンからtenantIdを常に検証
+5. **パスワードをハッシュ化** - bcryptを最低10ソルトラウンドで使用
+6. **機密データを暗号化** - 保存前に二要素認証シークレットとPIIを暗号化
+7. **監査ログを有効化** - すべてのデータアクセスと変更をログ記録
 
-## 🔐 Security Best Practices
+## 📈 パフォーマンス最適化
 
-1. **Never commit secrets** - Keep CosmosDB keys out of version control
-2. **Use environment variables** - Store credentials in environment variables or Azure Key Vault
-3. **Rotate keys regularly** - Regenerate CosmosDB keys periodically
-4. **Validate tenant context** - Always verify tenantId from authentication token
-5. **Hash passwords** - Use bcrypt with minimum 10 salt rounds
-6. **Encrypt sensitive data** - Encrypt two-factor secrets and PII before storing
-7. **Enable audit logging** - Log all data access and modifications
+### ベストプラクティス
 
-## 📈 Performance Optimization
+1. ✅ **常にtenantIdを含める** - すべてのクエリにパーティションキーを含める
+2. ✅ **ポイント読み取りを使用** - IDとpartitionKeyの両方がわかる場合は`item(id, partitionKey).read()`を優先
+3. ✅ **ページネーションを実装** - 大量の結果セットを一度に取得しない
+4. ✅ **RU消費を監視** - 本番環境でリクエストユニットの使用状況を追跡
+5. ✅ **クエリ対象のフィールドのみにインデックスを付ける**
+6. ✅ **一時データにTTLを使用** - 監査ログとセッションにTTLを有効化
+7. ❌ **ユーザーフローでクロスパーティションクエリを避ける** - 管理/分析のみに使用
 
-### Best Practices
+### クエリコスト比較
 
-1. ✅ **Always include partition key** in queries
-2. ✅ **Use point reads** when you know both ID and partition key
-3. ✅ **Implement pagination** for large result sets
-4. ✅ **Monitor RU consumption** and optimize queries
-5. ✅ **Only index fields you query** on
-6. ✅ **Use TTL** for temporary data
-7. ❌ **Avoid cross-partition queries** in user-facing flows
-8. ❌ **Don't use SELECT *** when you only need specific fields
+| クエリタイプ | 推定RUコスト | ユースケース |
+|------------|-------------|-------------|
+| ポイント読み取り | 1 RU | IDで単一アイテムを取得 |
+| 単一パーティションクエリ | 2-10 RU | 1つのテナント内でクエリ |
+| クロスパーティションクエリ | 10-100+ RU | 管理/分析のみ |
+| フルスキャン | 100-1000+ RU | 本番環境では避ける |
 
-### Query Cost Comparison
+## 🔗 参考資料
 
-| Query Type | Estimated RU Cost | Use Case |
-|------------|------------------|----------|
-| Point Read | 1 RU | Get single item by ID |
-| Single Partition Query | 2-10 RUs | Query within one tenant |
-| Cross-Partition Query | 10-100+ RUs | Admin/analytics only |
-| Full Scan | 100-1000+ RUs | Avoid in production |
+- [スキーマドキュメント](../../docs/database/SCHEMA.md)
+- [ADR 003: CosmosDBスキーマ設計](../../docs/adr/003-cosmosdb-schema-tenant-partitioning.md)
+- [Azure CosmosDB ドキュメント](https://docs.microsoft.com/azure/cosmos-db/)
+- [パーティショニングのベストプラクティス](https://docs.microsoft.com/azure/cosmos-db/partitioning-overview)
 
-## 🔗 References
-
-- [Schema Documentation](../../docs/database/SCHEMA.md)
-- [ADR 003: CosmosDB Schema Design](../../docs/adr/003-cosmosdb-schema-tenant-partitioning.md)
-- [Azure CosmosDB Documentation](https://docs.microsoft.com/azure/cosmos-db/)
-- [Partitioning Best Practices](https://docs.microsoft.com/azure/cosmos-db/partitioning-overview)
-
-## 📝 Changelog
+## 📝 変更履歴
 
 ### 2026-01-09
-- Initial database schema design
-- Created initialization and seed scripts
-- Defined TypeScript types
-- Documented schema and access patterns
+- 初期データベーススキーマ設計
+- 初期化とシードスクリプトの作成
+- TypeScript型定義の定義
+- スキーマとアクセスパターンの文書化
 
 ---
 
-**Last Updated:** 2026-01-09
+**最終更新:** 2026-01-09

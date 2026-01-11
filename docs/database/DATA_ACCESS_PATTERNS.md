@@ -1,31 +1,31 @@
-# CosmosDB Data Access Patterns
+# CosmosDB データアクセスパターン
 
-This document describes recommended data access patterns for the SaaS Management Application's CosmosDB implementation.
+このドキュメントでは、SaaS管理アプリケーションのCosmosDB実装における推奨データアクセスパターンについて説明します。
 
-## Overview
+## 概要
 
-The application uses Azure CosmosDB with tenant-based partitioning (`/tenantId`). This design enables:
-- Efficient data isolation per tenant
-- Optimal query performance within tenant boundaries
-- Automatic scalability as tenants grow
+アプリケーションはテナントベースのパーティショニング（`/tenantId`）を使用したAzure CosmosDBを使用します。この設計により以下が可能になります：
+- テナントごとの効率的なデータ分離
+- テナント境界内での最適なクエリパフォーマンス
+- テナントが増加しても自動的にスケーラビリティ
 
-## Key Principles
+## 主要な原則
 
-1. **Always include tenantId** - All queries should include the partition key
-2. **Prefer point reads** - Use `item(id, partitionKey).read()` when possible
-3. **Paginate results** - Never fetch all results at once
-4. **Monitor RU consumption** - Track and optimize Request Unit usage
-5. **Avoid cross-partition queries** - Reserve for admin/analytics only
+1. **常にtenantIdを含める** - すべてのクエリにパーティションキーを含める必要があります
+2. **ポイント読み取りを優先** - 可能な限り`item(id, partitionKey).read()`を使用
+3. **結果をページネーション** - すべての結果を一度に取得しない
+4. **RU消費を監視** - リクエストユニットの使用状況を追跡し最適化
+5. **クロスパーティションクエリを避ける** - 管理/分析のみに使用
 
-## Pattern Categories
+## パターンカテゴリ
 
-### 1. Point Read Pattern (Most Efficient)
+### 1. ポイント読み取りパターン（最も効率的）
 
-**Use Case**: Retrieve a single document when you know both ID and partition key
+**ユースケース**: IDとパーティションキーの両方がわかっている場合に単一ドキュメントを取得
 
-**RU Cost**: 1 RU
+**RUコスト**: 1 RU
 
-**Example**:
+**例**:
 ```typescript
 import { CosmosClient } from '@azure/cosmos';
 
@@ -33,30 +33,30 @@ const client = new CosmosClient({ endpoint, key });
 const database = client.database(databaseId);
 const container = database.container('Users');
 
-// Most efficient - requires both ID and partition key
+// 最も効率的 - IDとパーティションキーの両方が必要
 const { resource: user } = await container
   .item('user-123', 'tenant-456')
   .read();
 
-console.log(`User: ${user.email}`);
+console.log(`ユーザー: ${user.email}`);
 ```
 
-**When to Use**:
-- Fetching a user by ID from authentication token
-- Loading tenant settings
-- Retrieving specific permission or audit log
+**使用するタイミング**:
+- 認証トークンからIDでユーザーを取得
+- テナント設定をロード
+- 特定の権限または監査ログを取得
 
 ---
 
-### 2. Single Partition Query Pattern (Efficient)
+### 2. 単一パーティションクエリパターン（効率的）
 
-**Use Case**: Query documents within a single tenant partition
+**ユースケース**: 単一テナントパーティション内でドキュメントをクエリ
 
-**RU Cost**: 2-10 RUs (depends on result size and indexes)
+**RUコスト**: 2-10 RU（結果サイズとインデックスに依存）
 
-**Example**:
+**例**:
 ```typescript
-// Get all active users for a tenant
+// テナントのすべてのアクティブユーザーを取得
 const querySpec = {
   query: `
     SELECT * FROM c 
@@ -75,27 +75,27 @@ const { resources: users } = await container.items
   .fetchAll();
 ```
 
-**When to Use**:
-- Listing users within a tenant
-- Finding permissions for a tenant
-- Recent audit logs for a tenant
+**使用するタイミング**:
+- テナント内のユーザーリスト
+- テナントの権限を検索
+- テナントの最近の監査ログ
 
-**Optimization Tips**:
-- Select only needed fields: `SELECT c.id, c.email FROM c`
-- Use indexed fields in WHERE clause
-- Add ORDER BY only when necessary
+**最適化のヒント**:
+- 必要なフィールドのみを選択: `SELECT c.id, c.email FROM c`
+- WHERE句でインデックス付きフィールドを使用
+- 必要な場合のみORDER BYを追加
 
 ---
 
-### 3. Pagination Pattern (Essential for Large Datasets)
+### 3. ページネーションパターン（大規模データセットに必須）
 
-**Use Case**: Retrieve large result sets in manageable chunks
+**ユースケース**: 管理可能なチャンクで大規模な結果セットを取得
 
-**RU Cost**: Variable per page (typically 2-5 RUs per page)
+**RUコスト**: ページごとに可変（通常ページあたり2-5 RU）
 
-**Example**:
+**例**:
 ```typescript
-// Paginated user list
+// ページネーションされたユーザーリスト
 const querySpec = {
   query: `
     SELECT * FROM c 
@@ -108,7 +108,7 @@ const querySpec = {
 };
 
 const queryIterator = container.items.query(querySpec, {
-  maxItemCount: 20 // Page size
+  maxItemCount: 20 // ページサイズ
 });
 
 const allPages = [];
@@ -116,35 +116,29 @@ while (queryIterator.hasMoreResults()) {
   const { resources: page, continuationToken } = await queryIterator.fetchNext();
   allPages.push(page);
   
-  // Store continuationToken for next page request
+  // 次のページリクエストのためにcontinuationTokenを保存
   if (!queryIterator.hasMoreResults()) {
-    console.log('All pages fetched');
+    console.log('すべてのページを取得しました');
   }
 }
 ```
 
-**When to Use**:
-- User lists with many records
-- Audit log history
-- Any query that could return 50+ items
-
-**Best Practices**:
-- Set reasonable page size (10-50 items)
-- Store continuation token for next page
-- Display loading indicators in UI
-- Implement infinite scroll or page navigation
+**使用するタイミング**:
+- 多数のレコードを持つユーザーリスト
+- 監査ログ履歴
+- 50件以上のアイテムを返す可能性のあるクエリ
 
 ---
 
-### 4. Filter and Search Pattern
+### 4. フィルタと検索パターン
 
-**Use Case**: Search within tenant data with multiple criteria
+**ユースケース**: 複数の条件でテナントデータ内を検索
 
-**RU Cost**: 3-15 RUs (depends on indexes and result size)
+**RUコスト**: 3-15 RU（インデックスと結果サイズに依存）
 
-**Example**:
+**例**:
 ```typescript
-// Search users by multiple criteria
+// 複数の条件でユーザーを検索
 const querySpec = {
   query: `
     SELECT * FROM c 
@@ -169,28 +163,17 @@ const { resources: matchedUsers } = await container.items
   .fetchAll();
 ```
 
-**When to Use**:
-- User search functionality
-- Permission filtering by category
-- Audit log filtering
-
-**Optimization Tips**:
-- Index fields used in WHERE clause
-- Use CONTAINS for case-insensitive search
-- Combine with pagination for large results
-- Consider adding search-specific indexes
-
 ---
 
-### 5. Array Query Pattern
+### 5. 配列クエリパターン
 
-**Use Case**: Query documents based on array membership
+**ユースケース**: 配列メンバーシップに基づいてドキュメントをクエリ
 
-**RU Cost**: 3-10 RUs
+**RUコスト**: 3-10 RU
 
-**Example**:
+**例**:
 ```typescript
-// Find users with specific permission
+// 特定の権限を持つユーザーを検索
 const querySpec = {
   query: `
     SELECT * FROM c 
@@ -206,140 +189,53 @@ const querySpec = {
 const { resources: usersWithPermission } = await container.items
   .query(querySpec)
   .fetchAll();
-
-// Find users with specific role
-const roleQuerySpec = {
-  query: `
-    SELECT * FROM c 
-    WHERE c.tenantId = @tenantId 
-    AND ARRAY_CONTAINS(c.roles, @role)
-  `,
-  parameters: [
-    { name: '@tenantId', value: 'tenant-456' },
-    { name: '@role', value: 'admin' }
-  ]
-};
-
-const { resources: admins } = await container.items
-  .query(roleQuerySpec)
-  .fetchAll();
 ```
-
-**When to Use**:
-- Finding users by permission
-- Finding users by role
-- Any query on array fields
-
-**Best Practices**:
-- Index array fields (roles/*, permissions/*)
-- Use ARRAY_CONTAINS for membership checks
-- Consider denormalizing if queried frequently
 
 ---
 
-### 6. Conditional Update Pattern
+### 6. 条件付き更新パターン
 
-**Use Case**: Update with optimistic concurrency control
+**ユースケース**: 楽観的同時実行制御での更新
 
-**RU Cost**: 2-5 RUs (read + write)
+**RUコスト**: 2-5 RU（読み取り + 書き込み）
 
-**Example**:
+**例**:
 ```typescript
-// Read item with etag
+// etagでアイテムを読み取り
 const { resource: user, headers } = await container
   .item('user-123', 'tenant-456')
   .read();
 
-// Modify the item
+// アイテムを変更
 user.status = 'suspended';
 user.updatedAt = new Date().toISOString();
-user.updatedBy = 'admin-user-id';
 
-// Update with concurrency check
+// 同時実行チェックで更新
 try {
-  const { resource: updatedUser } = await container
-    .item(user.id, user.tenantId)
-    .replace(user, {
-      accessCondition: { 
-        type: 'IfMatch', 
-        condition: headers.etag 
-      }
-    });
-  
-  console.log('User updated successfully');
+  await container.item(user.id, user.tenantId).replace(user, {
+    accessCondition: { 
+      type: 'IfMatch', 
+      condition: headers.etag 
+    }
+  });
 } catch (error) {
   if (error.code === 412) {
-    console.error('Concurrency conflict - item was modified');
-    // Retry or notify user
+    console.error('同時実行の競合 - アイテムが変更されました');
   }
 }
 ```
 
-**When to Use**:
-- Concurrent user updates
-- Preventing lost updates
-- Critical data modifications
-
-**Best Practices**:
-- Always use etag for important updates
-- Implement retry logic for conflicts
-- Log concurrency violations
-
 ---
 
-### 7. Batch Operations Pattern
+### 7. クロスパーティションクエリパターン（慎重に使用）
 
-**Use Case**: Perform multiple operations efficiently
+**ユースケース**: すべてのテナントにわたる管理/分析クエリ
 
-**RU Cost**: Sum of individual operations (with some optimization)
+**RUコスト**: 高い（データサイズに応じて10-1000+ RU）
 
-**Example**:
+**例**:
 ```typescript
-// Batch read multiple users (same partition)
-const userIds = ['user-1', 'user-2', 'user-3'];
-const tenantId = 'tenant-456';
-
-const userPromises = userIds.map(id => 
-  container.item(id, tenantId).read()
-);
-
-const results = await Promise.all(userPromises);
-const users = results.map(r => r.resource);
-
-// Bulk insert (using TransactionalBatch for same partition)
-const batch = container.items.batch(tenantId);
-
-for (const newUser of newUsers) {
-  batch.create(newUser);
-}
-
-const batchResponse = await batch.execute();
-if (batchResponse.statusCode === 200) {
-  console.log('All users created successfully');
-}
-```
-
-**When to Use**:
-- Creating multiple records at once
-- Bulk user import
-- Batch permission updates
-
-**Best Practices**:
-- Use TransactionalBatch for same partition
-- Limit batch size to 100 operations
-- Handle partial failures gracefully
-
----
-
-### 8. Cross-Partition Query Pattern (Use Sparingly)
-
-**Use Case**: Admin/analytics queries across all tenants
-
-**RU Cost**: HIGH (10-1000+ RUs depending on data size)
-
-**Example**:
-```typescript
-// Admin dashboard: count users across all tenants
+// 管理ダッシュボード: すべてのテナントでユーザーをカウント
 const querySpec = {
   query: `
     SELECT c.tenantId, COUNT(1) as userCount
@@ -352,189 +248,84 @@ const querySpec = {
   ]
 };
 
-// WARNING: This is a cross-partition query!
+// 警告: これはクロスパーティションクエリです！
 const { resources: tenantStats } = await container.items
-  .query(querySpec, {
-    maxItemCount: -1 // No limit
-  })
-  .fetchAll();
-
-console.log('Active users per tenant:', tenantStats);
-```
-
-**When to Use** (ONLY):
-- Admin dashboards
-- System analytics
-- Data export/migration
-- Scheduled background jobs
-
-**Best Practices**:
-- Never use in user-facing request flows
-- Cache results aggressively
-- Run during off-peak hours
-- Consider separate analytics database
-- Use Azure Functions or scheduled jobs
-
----
-
-### 9. Time-Based Query Pattern
-
-**Use Case**: Query based on date ranges (audit logs, recent activity)
-
-**RU Cost**: 3-20 RUs (with composite index)
-
-**Example**:
-```typescript
-// Get audit logs for last 24 hours
-const yesterday = new Date(Date.now() - 86400000).toISOString();
-
-const querySpec = {
-  query: `
-    SELECT * FROM c 
-    WHERE c.tenantId = @tenantId 
-    AND c.timestamp >= @startTime
-    ORDER BY c.timestamp DESC
-  `,
-  parameters: [
-    { name: '@tenantId', value: 'tenant-456' },
-    { name: '@startTime', value: yesterday }
-  ]
-};
-
-const { resources: recentLogs } = await container.items
-  .query(querySpec, { maxItemCount: 100 })
-  .fetchAll();
-
-// Get user activity for specific user in date range
-const userActivityQuery = {
-  query: `
-    SELECT * FROM c 
-    WHERE c.tenantId = @tenantId 
-    AND c.userId = @userId
-    AND c.timestamp BETWEEN @startDate AND @endDate
-    ORDER BY c.timestamp DESC
-  `,
-  parameters: [
-    { name: '@tenantId', value: 'tenant-456' },
-    { name: '@userId', value: 'user-123' },
-    { name: '@startDate', value: '2026-01-01T00:00:00Z' },
-    { name: '@endDate', value: '2026-01-31T23:59:59Z' }
-  ]
-};
-
-const { resources: activity } = await container.items
-  .query(userActivityQuery)
+  .query(querySpec)
   .fetchAll();
 ```
 
-**When to Use**:
-- Recent audit logs
-- User activity reports
-- Time-based analytics
-
-**Best Practices**:
-- Use composite indexes: (tenantId, timestamp)
-- Always include partition key
-- Limit date ranges for better performance
-- Consider data aggregation for old data
+**使用するタイミング**（のみ）:
+- 管理ダッシュボード
+- システム分析
+- データエクスポート/移行
+- スケジュールされたバックグラウンドジョブ
 
 ---
 
-## Performance Comparison
+## パフォーマンス比較
 
-> **Note**: The following metrics are baseline estimates based on typical workloads with the default indexing policies. Actual performance may vary significantly based on:
-> - Document size and complexity
-> - Index configuration and number of indexed paths
-> - Network latency and geographic distribution
-> - CosmosDB consistency level settings
-> - Concurrent query load and throttling
+> **注意**: 以下のメトリクスは、デフォルトのインデックスポリシーによる典型的なワークロードに基づくベースライン推定値です。実際のパフォーマンスは以下により大きく異なる可能性があります：
+> - ドキュメントのサイズと複雑性
+> - インデックス構成とインデックス付きパスの数
+> - ネットワークレイテンシと地理的分散
+> - CosmosDBの整合性レベル設定
+> - 同時クエリ負荷とスロットリング
 > 
-> Always test with production-like data and monitor actual RU consumption in your environment.
+> 本番環境に近いデータで常にテストし、環境内の実際のRU消費を監視してください。
 
-| Pattern | RU Cost | Latency | Use Case |
-|---------|---------|---------|----------|
-| Point Read | 1 RU | ~5ms | Get by ID |
-| Single Partition Query | 2-10 RUs | ~10-20ms | List within tenant |
-| Pagination | 2-5 RUs/page | ~10-15ms | Large result sets |
-| Filter & Search | 3-15 RUs | ~15-30ms | Search within tenant |
-| Array Query | 3-10 RUs | ~15-25ms | Find by permission/role |
-| Conditional Update | 2-5 RUs | ~10-15ms | Safe updates |
-| Batch Operations | Variable | ~20-50ms | Multiple operations |
-| Cross-Partition Query | 10-1000+ RUs | ~50-500ms | Admin/analytics only |
-| Time-Based Query | 3-20 RUs | ~15-30ms | Recent activity |
+| パターン | RUコスト | レイテンシ | ユースケース |
+|---------|---------|----------|-------------|
+| ポイント読み取り | 1 RU | ~5ms | IDで取得 |
+| 単一パーティションクエリ | 2-10 RU | ~10-20ms | テナント内でリスト |
+| ページネーション | 2-5 RU/ページ | ~10-15ms | 大規模結果セット |
+| フィルタと検索 | 3-15 RU | ~15-30ms | テナント内で検索 |
+| 配列クエリ | 3-10 RU | ~15-25ms | 権限/ロールで検索 |
+| 条件付き更新 | 2-5 RU | ~10-15ms | 安全な更新 |
+| クロスパーティションクエリ | 10-1000+ RU | ~50-500ms | 管理/分析のみ |
 
-## Anti-Patterns to Avoid
+## 避けるべきアンチパターン
 
-❌ **Don't**: Query without partition key in user flows
+❌ **避けるべき**: ユーザーフローでパーティションキーなしのクエリ
 ```typescript
-// BAD: Cross-partition query for user email
+// 悪い例: ユーザーメールのクロスパーティションクエリ
 SELECT * FROM c WHERE c.email = 'user@example.com'
 ```
 
-✅ **Do**: Include tenant context
+✅ **推奨**: テナントコンテキストを含める
 ```typescript
-// GOOD: Single partition query
+// 良い例: 単一パーティションクエリ
 SELECT * FROM c WHERE c.tenantId = @tenantId AND c.email = @email
 ```
 
 ---
 
-❌ **Don't**: Use SELECT * unnecessarily
+❌ **避けるべき**: 不要な`SELECT *`の使用
 ```typescript
-// BAD: Fetching all fields when you only need email
+// 悪い例: メールのみが必要な場合にすべてのフィールドを取得
 SELECT * FROM c WHERE c.tenantId = @tenantId
 ```
 
-✅ **Do**: Select only needed fields
+✅ **推奨**: 特定のフィールドのみを選択
 ```typescript
-// GOOD: Select specific fields
+// 良い例: 特定のフィールドを選択
 SELECT c.id, c.email, c.firstName, c.lastName FROM c WHERE c.tenantId = @tenantId
 ```
 
----
+## 監視と最適化
 
-❌ **Don't**: Fetch all results without pagination
-```typescript
-// BAD: Could fetch thousands of records
-const { resources } = await container.items.query(query).fetchAll();
-```
-
-✅ **Do**: Implement pagination
-```typescript
-// GOOD: Fetch in pages
-const iterator = container.items.query(query, { maxItemCount: 20 });
-```
-
----
-
-❌ **Don't**: Query on non-indexed fields
-```typescript
-// BAD: profile.department is not indexed
-SELECT * FROM c WHERE c.tenantId = @tenantId AND c.profile.department = 'Sales'
-```
-
-✅ **Do**: Use indexed fields or add index
-```typescript
-// GOOD: status is indexed
-SELECT * FROM c WHERE c.tenantId = @tenantId AND c.status = 'active'
-```
-
-## Monitoring and Optimization
-
-### Key Metrics to Track
+### 追跡すべき主要メトリクス
 
 ```typescript
-// Track RU consumption
+// RU消費を追跡
 const { resources, requestCharge, headers } = await container.items
   .query(querySpec)
   .fetchAll();
 
-console.log(`Query RUs: ${requestCharge}`);
-console.log(`Continuation token: ${headers['x-ms-continuation']}`);
+console.log(`クエリRU: ${requestCharge}`);
 
-// Log slow queries
+// 遅いクエリをログ記録
 if (requestCharge > 50) {
-  logger.warn('High RU query detected', {
+  logger.warn('高RUクエリを検出', {
     query: querySpec.query,
     rus: requestCharge,
     tenantId: tenantId
@@ -542,25 +333,25 @@ if (requestCharge > 50) {
 }
 ```
 
-### Query Optimization Checklist
+### クエリ最適化チェックリスト
 
-- [ ] Include partition key (tenantId) in all queries
-- [ ] Use point reads when possible
-- [ ] Implement pagination for > 10 results
-- [ ] Select only required fields
-- [ ] Index fields used in WHERE clause
-- [ ] Avoid cross-partition queries in user flows
-- [ ] Monitor and log RU consumption
-- [ ] Cache frequently accessed data
-- [ ] Test with production-like data volumes
+- [ ] すべてのクエリにパーティションキー（tenantId）を含める
+- [ ] 可能な限りポイント読み取りを使用
+- [ ] 10件以上の結果にはページネーションを実装
+- [ ] 必要なフィールドのみを選択
+- [ ] WHERE句で使用するフィールドにインデックスを付ける
+- [ ] ユーザーフローでクロスパーティションクエリを避ける
+- [ ] RU消費を監視しログ記録
+- [ ] 頻繁にアクセスするデータをキャッシュ
+- [ ] 本番環境に近いデータ量でテスト
 
-## References
+## 参考資料
 
-- [Schema Documentation](./SCHEMA.md)
-- [ADR 003: CosmosDB Schema Design](../adr/003-cosmosdb-schema-tenant-partitioning.md)
-- [Azure CosmosDB Query Best Practices](https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started)
-- [Partitioning in Azure Cosmos DB](https://docs.microsoft.com/azure/cosmos-db/partitioning-overview)
+- [スキーマドキュメント](./SCHEMA.md)
+- [ADR 003: CosmosDBスキーマ設計](../adr/003-cosmosdb-schema-tenant-partitioning.md)
+- [Azure CosmosDBクエリのベストプラクティス](https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started)
+- [Azure Cosmos DBでのパーティショニング](https://docs.microsoft.com/azure/cosmos-db/partitioning-overview)
 
 ---
 
-**Last Updated**: 2026-01-09
+**最終更新**: 2026-01-09

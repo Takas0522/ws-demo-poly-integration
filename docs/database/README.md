@@ -1,68 +1,68 @@
-# CosmosDB Database Documentation
+# CosmosDB データベースドキュメント
 
-This directory contains comprehensive documentation for the CosmosDB database design and implementation for the SaaS Management Application.
+このディレクトリには、SaaS管理アプリケーションのCosmosDBデータベース設計と実装に関する包括的なドキュメントが含まれています。
 
-## 📚 Documentation Index
+## 📚 ドキュメントインデックス
 
 ### [SCHEMA.md](./SCHEMA.md)
-Complete database schema documentation including:
-- Container definitions (Tenants, Users, Permissions, AuditLogs)
-- Field specifications and data types
-- Indexing policies
-- Example documents
-- Common query examples
-- Performance optimization guidelines
-- Security considerations
+完全なデータベーススキーマドキュメント：
+- コンテナ定義（Tenants、Users、Permissions、AuditLogs）
+- フィールド仕様とデータ型
+- インデックスポリシー
+- ドキュメント例
+- 一般的なクエリ例
+- パフォーマンス最適化ガイドライン
+- セキュリティ考慮事項
 
 ### [DATA_ACCESS_PATTERNS.md](./DATA_ACCESS_PATTERNS.md)
-Detailed guide to data access patterns:
-- 9 comprehensive patterns with examples
-- Request Unit (RU) cost analysis
-- Performance comparison table
-- Anti-patterns to avoid
-- Monitoring and optimization tips
+データアクセスパターンの詳細ガイド：
+- 7つの包括的なパターンと例
+- リクエストユニット（RU）コスト分析
+- パフォーマンス比較表
+- 避けるべきアンチパターン
+- 監視と最適化のヒント
 
-## 🏗️ Architecture
+## 🏗️ アーキテクチャ
 
-### Database Design Philosophy
+### データベース設計哲学
 
-The database design follows these core principles:
+データベース設計は以下の核心原則に従います：
 
-1. **Multi-Tenancy First**: Tenant ID partitioning ensures data isolation and scalability
-2. **Performance Optimized**: Strategic indexing minimizes RU costs
-3. **Security Focused**: Built-in data isolation and audit logging
-4. **Developer Friendly**: Clear patterns and TypeScript types
+1. **マルチテナンシー優先**: テナントIDパーティショニングによりデータ分離とスケーラビリティを保証
+2. **パフォーマンス最適化**: 戦略的なインデックスによりRUコストを最小化
+3. **セキュリティ重視**: 組み込みのデータ分離と監査ログ
+4. **開発者フレンドリー**: 明確なパターンとTypeScript型
 
-### Partition Strategy
+### パーティション戦略
 
-All containers use `/tenantId` as the partition key:
+すべてのコンテナは`/tenantId`をパーティションキーとして使用：
 
 ```json
 {
   "id": "document-id",
-  "tenantId": "tenant-123",  // Partition Key
-  // other fields...
+  "tenantId": "tenant-123",  // パーティションキー
+  // その他のフィールド...
 }
 ```
 
-**Benefits**:
-- Efficient data isolation per tenant
-- Optimal query performance within tenants
-- Automatic horizontal scaling
-- Physical data separation for security
+**利点**:
+- テナントごとの効率的なデータ分離
+- テナント内での最適なクエリパフォーマンス
+- 自動的な水平スケーリング
+- セキュリティのための物理的なデータ分離
 
-### Containers Overview
+### コンテナ概要
 
-| Container | Purpose | Partition Key | TTL | Throughput |
-|-----------|---------|---------------|-----|------------|
-| **Tenants** | Organization information | `/tenantId` | None | 400 RU/s |
-| **Users** | User accounts & profiles | `/tenantId` | None | 400 RU/s |
-| **Permissions** | Permission definitions | `/tenantId` | None | 400 RU/s |
-| **AuditLogs** | Activity audit trail | `/tenantId` | 90 days | 400 RU/s |
+| コンテナ | 目的 | パーティションキー | TTL | スループット |
+|---------|------|------------------|-----|------------|
+| **Tenants** | 組織情報 | `/tenantId` | なし | 400 RU/s |
+| **Users** | ユーザーアカウントとプロファイル | `/tenantId` | なし | 400 RU/s |
+| **Permissions** | 権限定義 | `/tenantId` | なし | 400 RU/s |
+| **AuditLogs** | アクティビティ監査証跡 | `/tenantId` | 90日 | 400 RU/s |
 
-## 🚀 Quick Start
+## 🚀 クイックスタート
 
-### 1. Initialize Database
+### 1. データベースの初期化
 
 ```bash
 cd scripts/cosmosdb
@@ -70,29 +70,29 @@ npm install
 npm run init
 ```
 
-This creates:
-- Database: `saas-management-dev`
-- All 4 containers with proper configuration
-- Indexing policies
-- TTL settings
+これにより以下が作成されます：
+- データベース: `saas-management-dev`
+- 適切な設定を持つすべての4つのコンテナ
+- インデックスポリシー
+- TTL設定
 
-### 2. Seed Development Data
+### 2. 開発データのシード
 
 ```bash
 npm run seed
 ```
 
-This populates:
-- 1 development tenant
-- 2 users (admin and regular)
-- 13 permission definitions
-- Sample audit logs
+これにより以下が投入されます：
+- 1つの開発テナント
+- 2人のユーザー（管理者と一般）
+- 13の権限定義
+- サンプル監査ログ
 
-**Default Credentials**:
-- Admin: `admin@example.com` / `Admin@123`
-- User: `user@example.com` / `User@123`
+**デフォルト認証情報**:
+- 管理者: `admin@example.com` / `Admin@123`
+- ユーザー: `user@example.com` / `User@123`
 
-### 3. Connect from Application
+### 3. アプリケーションから接続
 
 ```typescript
 import { CosmosClient } from '@azure/cosmos';
@@ -105,24 +105,23 @@ const client = new CosmosClient({
 const database = client.database(process.env.COSMOSDB_DATABASE);
 const usersContainer = database.container('Users');
 
-// Point read - most efficient (1 RU)
+// ポイント読み取り - 最も効率的（1 RU）
 const { resource: user } = await usersContainer
   .item('user-123', 'tenant-456')
   .read();
 ```
 
-## 📊 Data Model Diagram
+## 📊 データモデル図
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                         Tenants                             │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │ id: tenant-123                                       │  │
-│  │ tenantId: tenant-123 (Partition Key)                │  │
+│  │ tenantId: tenant-123 (パーティションキー)           │  │
 │  │ name: "Acme Corp"                                   │  │
 │  │ status: "active"                                    │  │
 │  │ subscription: { plan, dates, maxUsers }            │  │
-│  │ settings: { timezone, locale, features }           │  │
 │  └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
                               │
@@ -132,14 +131,10 @@ const { resource: user } = await usersContainer
 │                          Users                              │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │ id: user-456                                         │  │
-│  │ tenantId: tenant-123 (Partition Key)                │  │
+│  │ tenantId: tenant-123 (パーティションキー)           │  │
 │  │ email: "user@example.com"                           │  │
-│  │ username: "john.doe"                                │  │
-│  │ passwordHash: "..."                                 │  │
 │  │ roles: ["admin", "user"]                            │  │
-│  │ permissions: ["users.create", "users.read", ...]   │  │
-│  │ profile: { phone, department, jobTitle }           │  │
-│  │ security: { lastLogin, failedAttempts, ... }       │  │
+│  │ permissions: ["users.create", ...]                  │  │
 │  └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
                               │
@@ -149,13 +144,9 @@ const { resource: user } = await usersContainer
 │                       Permissions                           │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │ id: permission-789                                   │  │
-│  │ tenantId: tenant-123 (Partition Key)                │  │
+│  │ tenantId: tenant-123 (パーティションキー)           │  │
 │  │ name: "users.create"                                │  │
-│  │ displayName: "Create User"                          │  │
 │  │ category: "users"                                   │  │
-│  │ action: "create"                                    │  │
-│  │ scope: "tenant"                                     │  │
-│  │ metadata: { uiSection, uiButton, ... }             │  │
 │  └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 
@@ -163,159 +154,111 @@ const { resource: user } = await usersContainer
 │                       AuditLogs                             │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │ id: log-101112                                       │  │
-│  │ tenantId: tenant-123 (Partition Key)                │  │
+│  │ tenantId: tenant-123 (パーティションキー)           │  │
 │  │ timestamp: "2026-01-09T12:00:00Z"                   │  │
-│  │ userId: "user-456"                                  │  │
 │  │ action: "user.update"                               │  │
-│  │ resource: { type, id, name }                        │  │
-│  │ details: { changes, reason }                        │  │
-│  │ metadata: { ipAddress, userAgent, ... }            │  │
-│  │ status: "success"                                   │  │
-│  │ ttl: 7776000 (90 days)                             │  │
+│  │ ttl: 7776000 (90日)                                 │  │
 │  └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 🔑 Key Features
+## 🔑 主要機能
 
-### 1. Tenant Isolation
+### 1. テナント分離
 
-Physical data separation through partitioning:
-- Each tenant's data in separate partitions
-- Queries scoped to single tenant by default
-- Prevents accidental cross-tenant data access
+パーティショニングによる物理的なデータ分離：
+- 各テナントのデータは別々のパーティションに
+- デフォルトで単一テナントにスコープされたクエリ
+- テナント間のデータアクセスの誤りを防止
 
-### 2. Performance Optimization
+### 2. パフォーマンス最適化
 
-Strategic indexing reduces costs:
-- Composite indexes for common queries
-- Excluded paths for unused fields
-- Point reads for single-document access
+コスト削減のための戦略的なインデックス：
+- 一般的なクエリ用の複合インデックス
+- 未使用フィールドの除外パス
+- 単一ドキュメントアクセスのためのポイント読み取り
 
-### 3. Audit Logging
+### 3. 監査ログ
 
-Comprehensive activity tracking:
-- All data changes logged automatically
-- 90-day retention with automatic cleanup
-- Compliance-ready audit trail
+包括的なアクティビティ追跡：
+- すべてのデータ変更を自動的にログ記録
+- 自動クリーンアップ付き90日保持
+- コンプライアンス対応の監査証跡
 
-### 4. Type Safety
+### 4. 型安全性
 
-TypeScript definitions for all models:
-- Strong typing prevents errors
-- IntelliSense support
-- Runtime validation helpers
+すべてのモデルのTypeScript定義：
+- 強力な型付けによりエラーを防止
+- IntelliSenseサポート
+- ランタイム検証ヘルパー
 
-## 📈 Performance Guidelines
+## 📈 パフォーマンスガイドライン
 
-### Query Cost Comparison
+### クエリコスト比較
 
-| Operation | RU Cost | Use Case |
-|-----------|---------|----------|
-| Point Read | 1 RU | Get document by ID |
-| Single Partition Query | 2-10 RUs | List within tenant |
-| Cross-Partition Query | 10-1000+ RUs | Admin only |
-| Insert | 5-15 RUs | Create document |
-| Update | 5-15 RUs | Modify document |
-| Delete | 5-10 RUs | Remove document |
+| 操作 | RUコスト | ユースケース |
+|------|---------|-------------|
+| ポイント読み取り | 1 RU | IDでドキュメントを取得 |
+| 単一パーティションクエリ | 2-10 RU | テナント内でリスト |
+| クロスパーティションクエリ | 10-1000+ RU | 管理のみ |
+| 挿入 | 5-15 RU | ドキュメントを作成 |
+| 更新 | 5-15 RU | ドキュメントを変更 |
+| 削除 | 5-10 RU | ドキュメントを削除 |
 
-### Best Practices
+### ベストプラクティス
 
-✅ **DO**:
-- Include `tenantId` in all queries
-- Use point reads when possible
-- Implement pagination for large results
-- Monitor RU consumption
-- Index only queried fields
+✅ **実施すべきこと**:
+- すべてのクエリに`tenantId`を含める
+- 可能な限りポイント読み取りを使用
+- 大規模な結果にはページネーションを実装
+- RU消費を監視
+- クエリ対象のフィールドのみにインデックスを付ける
 
-❌ **DON'T**:
-- Query without partition key
-- Use `SELECT *` unnecessarily
-- Fetch all results at once
-- Over-index fields
-- Run cross-partition queries in user flows
+❌ **避けるべきこと**:
+- パーティションキーなしのクエリ
+- 不要な`SELECT *`の使用
+- すべての結果を一度に取得
+- フィールドの過剰インデックス
+- ユーザーフローでクロスパーティションクエリを実行
 
-## 🔒 Security Considerations
+## 🔒 セキュリティ考慮事項
 
-### Data Protection
+### データ保護
 
-1. **Partition-Level Isolation**: Tenant data physically separated
-2. **Password Security**: Bcrypt with 10+ salt rounds
-3. **Secret Encryption**: Two-factor secrets encrypted at rest
-4. **Audit Logging**: All access and modifications logged
-5. **No Secrets in Logs**: Passwords never logged
+1. **パーティションレベルの分離**: テナントデータの物理的な分離
+2. **パスワードセキュリティ**: 10回以上のソルトラウンドでBcrypt
+3. **シークレット暗号化**: 保存時に二要素認証シークレットを暗号化
+4. **監査ログ**: すべてのアクセスと変更をログ記録
+5. **ログにシークレットなし**: パスワードを決してログに記録しない
 
-### Access Control
+### アクセス制御
 
-1. **Application-Level**: Validate tenant context from auth token
-2. **Never Trust Client**: Always verify tenant ID server-side
-3. **Least Privilege**: Users get minimum required permissions
-4. **Regular Audits**: Review access patterns and permissions
+1. **アプリケーションレベル**: 認証トークンからテナントコンテキストを検証
+2. **クライアントを信頼しない**: サーバー側で常にテナントIDを検証
+3. **最小権限**: ユーザーに必要最小限の権限を付与
+4. **定期的な監査**: アクセスパターンと権限を定期的にレビュー
 
-## 🧪 Testing
+## 📚 追加リソース
 
-### Unit Tests
+- [ADR 003: CosmosDBスキーマ設計](../adr/003-cosmosdb-schema-tenant-partitioning.md)
+- [データベーススクリプトREADME](../../scripts/cosmosdb/README.md)
+- [Azure CosmosDB ドキュメント](https://docs.microsoft.com/azure/cosmos-db/)
+- [SQLクエリリファレンス](https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started)
+- [パーティショニングのベストプラクティス](https://docs.microsoft.com/azure/cosmos-db/partitioning-overview)
 
-Test data access layer with mocked CosmosDB client:
+## 📝 変更履歴
 
-```typescript
-import { jest } from '@jest/globals';
-import { CosmosClient } from '@azure/cosmos';
-
-// Mock CosmosDB client
-jest.mock('@azure/cosmos');
-
-describe('UserRepository', () => {
-  it('should fetch user by id', async () => {
-    // Test implementation
-  });
-});
-```
-
-### Integration Tests
-
-Test against CosmosDB Emulator:
-
-```bash
-# Start emulator (in DevContainer)
-docker run -p 8081:8081 mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator
-
-# Run tests
-npm test
-```
-
-## 📚 Additional Resources
-
-- [ADR 003: CosmosDB Schema Design](../adr/003-cosmosdb-schema-tenant-partitioning.md)
-- [Database Scripts README](../../scripts/cosmosdb/README.md)
-- [Azure CosmosDB Documentation](https://docs.microsoft.com/azure/cosmos-db/)
-- [SQL Query Reference](https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started)
-- [Partitioning Best Practices](https://docs.microsoft.com/azure/cosmos-db/partitioning-overview)
-
-## 🤝 Contributing
-
-When making schema changes:
-
-1. Update ADR with justification
-2. Modify schema documentation
-3. Update TypeScript types
-4. Create migration script if needed
-5. Update seed data if applicable
-6. Document in CHANGELOG
-
-## 📝 Changelog
-
-### 2026-01-09 - Initial Schema Design
-- Defined all 4 containers with partition strategy
-- Created indexing policies for optimization
-- Implemented TTL for audit logs
-- Added TypeScript type definitions
-- Created initialization and seed scripts
+### 2026-01-09 - 初期スキーマ設計
+- パーティション戦略を持つすべての4つのコンテナを定義
+- 最適化のためのインデックスポリシーを作成
+- 監査ログのTTLを実装
+- TypeScript型定義を追加
+- 初期化とシードスクリプトを作成
 
 ---
 
-**Last Updated**: 2026-01-09
+**最終更新**: 2026-01-09
 
-**Maintained By**: Development Team
+**管理者**: 開発チーム
 
-**Questions?**: See [CONTRIBUTING.md](../../CONTRIBUTING.md) for how to get help
+**質問?**: ヘルプを得る方法については[CONTRIBUTING.md](../../CONTRIBUTING.md)を参照してください
