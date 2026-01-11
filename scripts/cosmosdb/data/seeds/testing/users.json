@@ -1,0 +1,76 @@
+[
+  {
+    "id": "test-admin-001",
+    "tenantId": "test-tenant-001",
+    "email": "test-admin@test.com",
+    "username": "test-admin",
+    "firstName": "Test",
+    "lastName": "Admin",
+    "password": "TestAdmin@123",
+    "status": "active",
+    "roles": ["admin"],
+    "permissions": [
+      "users.create",
+      "users.read",
+      "users.update",
+      "users.delete"
+    ],
+    "profile": {
+      "department": "Testing",
+      "jobTitle": "Test Administrator"
+    },
+    "security": {
+      "failedLoginAttempts": 0,
+      "twoFactorEnabled": false
+    }
+  },
+  {
+    "id": "test-user-001",
+    "tenantId": "test-tenant-001",
+    "email": "test-user@test.com",
+    "username": "test-user",
+    "firstName": "Test",
+    "lastName": "User",
+    "password": "TestUser@123",
+    "status": "active",
+    "roles": ["user"],
+    "permissions": [
+      "users.read",
+      "services.read"
+    ],
+    "profile": {
+      "department": "Testing",
+      "jobTitle": "Test User"
+    },
+    "security": {
+      "failedLoginAttempts": 0,
+      "twoFactorEnabled": false
+    }
+  },
+  {
+    "id": "test-admin-002",
+    "tenantId": "test-tenant-002",
+    "email": "admin@testtenant2.com",
+    "username": "test-admin-2",
+    "firstName": "Test2",
+    "lastName": "Admin",
+    "password": "TestAdmin2@123",
+    "status": "active",
+    "roles": ["admin"],
+    "permissions": [
+      "users.create",
+      "users.read",
+      "users.update",
+      "services.read",
+      "services.update"
+    ],
+    "profile": {
+      "department": "Testing",
+      "jobTitle": "Test Administrator"
+    },
+    "security": {
+      "failedLoginAttempts": 0,
+      "twoFactorEnabled": true
+    }
+  }
+]
