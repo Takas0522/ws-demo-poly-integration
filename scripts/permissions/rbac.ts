@@ -109,25 +109,37 @@ export function validateRoleInheritance(
 /**
  * Gets all roles that inherit from a given role (directly or indirectly)
  */
-export function getChildRoles(roleName: string, allRoles: Role[]): Role[] {
+export function getChildRoles(roleName: string, allRoles: Role[], visited: Set<string> = new Set()): Role[] {
+  // Prevent infinite loops
+  if (visited.has(roleName)) {
+    return [];
+  }
+  visited.add(roleName);
+
   const children: Role[] = [];
 
   for (const role of allRoles) {
     if (role.inheritsFrom && role.inheritsFrom.includes(roleName)) {
       children.push(role);
       // Recursively get children of this role
-      children.push(...getChildRoles(role.name, allRoles));
+      children.push(...getChildRoles(role.name, allRoles, new Set(visited)));
     }
   }
 
-  // Remove duplicates
-  return Array.from(new Set(children));
+  // Remove duplicates by role ID
+  return Array.from(new Map(children.map(r => [r.id, r])).values());
 }
 
 /**
  * Gets all parent roles of a given role (directly or indirectly)
  */
-export function getParentRoles(roleName: string, allRoles: Role[]): Role[] {
+export function getParentRoles(roleName: string, allRoles: Role[], visited: Set<string> = new Set()): Role[] {
+  // Prevent infinite loops
+  if (visited.has(roleName)) {
+    return [];
+  }
+  visited.add(roleName);
+
   const role = allRoles.find(r => r.name === roleName || r.id === roleName);
   if (!role || !role.inheritsFrom || role.inheritsFrom.length === 0) {
     return [];
@@ -139,12 +151,12 @@ export function getParentRoles(roleName: string, allRoles: Role[]): Role[] {
     if (parentRole) {
       parents.push(parentRole);
       // Recursively get parents of this parent role
-      parents.push(...getParentRoles(parentRole.name, allRoles));
+      parents.push(...getParentRoles(parentRole.name, allRoles, new Set(visited)));
     }
   }
 
-  // Remove duplicates
-  return Array.from(new Set(parents));
+  // Remove duplicates by role ID
+  return Array.from(new Map(parents.map(r => [r.id, r])).values());
 }
 
 /**

@@ -74,6 +74,20 @@ export function validatePermissionFormat(permission: string): PermissionValidati
 
 /**
  * Parses a permission string into its components
+ * 
+ * Supports 2+ segment formats:
+ * - 2 segments: module.action (e.g., "users.create")
+ * - 3+ segments: app.module.action (e.g., "app.users.create", "my.app.users.create")
+ * 
+ * For 3+ segments:
+ * - Last segment is the action
+ * - Second-to-last segment is the module
+ * - All preceding segments are joined as the app name
+ * 
+ * Examples:
+ * - "users.create" → module="users", action="create"
+ * - "app.users.create" → app="app", module="users", action="create"
+ * - "my.complex.app.users.create" → app="my.complex.app", module="users", action="create"
  */
 export function parsePermission(permission: string): ParsedPermission {
   const validation = validatePermissionFormat(permission);
@@ -96,13 +110,14 @@ export function parsePermission(permission: string): ParsedPermission {
     };
   } else {
     // Format: app.module.action or app.module.* or app.*
+    // For 3+ segments: first segment(s) are app, second-to-last is module, last is action
     const action = segments[segments.length - 1];
     const module = segments[segments.length - 2];
     const app = segments.slice(0, -2).join('.');
 
     parsed = {
       full: permission,
-      app: app || undefined,
+      app: app.length > 0 ? app : undefined,
       module,
       action,
       isWildcard
