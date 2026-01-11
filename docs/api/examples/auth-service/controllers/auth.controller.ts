@@ -75,9 +75,11 @@ export async function login(
     // - Return user profile
 
     // Example response (replace with actual implementation)
+    // WARNING: These are example values only - DO NOT use in production!
+    // Generate actual JWT tokens using jsonwebtoken library
     const tokens: JWTTokenPair = {
-      accessToken: 'example-jwt-access-token',
-      refreshToken: 'example-jwt-refresh-token',
+      accessToken: 'EXAMPLE-jwt-access-token-REPLACE-WITH-REAL-TOKEN',
+      refreshToken: 'EXAMPLE-jwt-refresh-token-REPLACE-WITH-REAL-TOKEN',
       expiresIn: 3600,
       tokenType: 'Bearer'
     };

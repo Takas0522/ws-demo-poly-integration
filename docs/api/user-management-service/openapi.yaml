@@ -10,6 +10,9 @@ info:
     - Role assignments and permissions
     - User status management
     - Multi-tenant user data isolation
+    
+    Note: This API uses Japanese text in examples as the application targets Japanese users.
+    All tools in the pipeline support UTF-8/Unicode.
   version: 1.0.0
   contact:
     name: API Support

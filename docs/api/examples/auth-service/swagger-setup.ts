@@ -25,6 +25,8 @@ export interface SwaggerConfig {
  */
 export function setupSwagger(app: Express, config: SwaggerConfig = {}): void {
   const {
+    // Enable Swagger by default unless explicitly disabled
+    // Set SWAGGER_ENABLED=false to disable in production
     enabled = process.env.SWAGGER_ENABLED !== 'false',
     routePath = '/api-docs',
     openapiPath = path.join(__dirname, '../../../docs/api/auth-service/openapi.yaml')

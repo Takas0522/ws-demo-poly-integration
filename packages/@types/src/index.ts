@@ -64,7 +64,13 @@ export * as AuthTypes from './auth.types';
  */
 
 // Note: Generated types will be available after running 'npm run generate'
-// Uncomment the following lines after generating types:
+// TODO: Uncomment the following lines after running type generation for the first time.
+// These exports will work once the OpenAPI specs have been processed by openapi-typescript.
+// To enable:
+// 1. Run: npm install
+// 2. Run: npm run generate
+// 3. Uncomment the exports below
+// 4. Run: npm run type-check to verify
 
 // export * as AuthAPI from './generated/auth.types';
 // export * as UsersAPI from './generated/users.types';
