@@ -4,9 +4,6 @@
 [submodule "src/user-management-service"]
 	path = src/user-management-service
 	url = https://github.com/Takas0522/ws-demo-poly2.git
-[submodule "src/auth-service"]
-	path = src/auth-service
-	url = https://github.com/Takas0522/ws-demo-poly3.git
 [submodule "src/service-setting-service"]
 	path = src/service-setting-service
 	url = https://github.com/Takas0522/ws-demo-poly4.git
