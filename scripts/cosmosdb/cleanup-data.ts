@@ -29,19 +29,31 @@ const config = {
   databaseId: process.env.COSMOSDB_DATABASE || 'saas-management-dev',
 };
 
-// Validate configuration
-if (!config.key) {
-  console.error('❌ Error: COSMOSDB_KEY environment variable is required');
-  process.exit(1);
+// Lazy initialization of Cosmos Client
+let client: CosmosClient | null = null;
+let database: any = null;
+
+function initClient() {
+  if (!config.key) {
+    console.error('❌ Error: COSMOSDB_KEY environment variable is required');
+    process.exit(1);
+  }
+  
+  if (!client) {
+    client = new CosmosClient({
+      endpoint: config.endpoint,
+      key: config.key,
+    });
+    database = client.database(config.databaseId);
+  }
 }
 
-// Initialize Cosmos Client
-const client = new CosmosClient({
-  endpoint: config.endpoint,
-  key: config.key,
-});
-
-const database = client.database(config.databaseId);
+function getDatabase() {
+  if (!database) {
+    initClient();
+  }
+  return database;
+}
 
 /**
  * Container names
@@ -70,7 +82,7 @@ async function confirm(message: string): Promise<boolean> {
  */
 async function cleanupContainer(containerName: string): Promise<number> {
   console.log(`🧹 Cleaning up container: ${containerName}...`);
-  const container = database.container(containerName);
+  const container = getDatabase().container(containerName);
 
   try {
     // Query all documents
@@ -116,7 +128,7 @@ async function cleanupTenant(tenantId: string): Promise<void> {
   let totalDeleted = 0;
 
   for (const containerName of CONTAINERS) {
-    const container = database.container(containerName);
+    const container = getDatabase().container(containerName);
 
     try {
       // Query documents for this tenant
@@ -176,7 +188,7 @@ async function listTenants(): Promise<void> {
   console.log('');
 
   try {
-    const container = database.container('Tenants');
+    const container = getDatabase().container('Tenants');
     const querySpec = {
       query: 'SELECT c.id, c.tenantId, c.name, c.status FROM c',
     };
@@ -190,7 +202,7 @@ async function listTenants(): Promise<void> {
 
     console.log(`Found ${tenants.length} tenant(s):`);
     console.log('');
-    tenants.forEach((tenant) => {
+    tenants.forEach((tenant: any) => {
       console.log(`  • ${tenant.name} (${tenant.tenantId}) - Status: ${tenant.status}`);
     });
   } catch (error) {
@@ -207,7 +219,7 @@ async function getStats(): Promise<void> {
 
   for (const containerName of CONTAINERS) {
     try {
-      const container = database.container(containerName);
+      const container = getDatabase().container(containerName);
       const querySpec = {
         query: 'SELECT VALUE COUNT(1) FROM c',
       };
