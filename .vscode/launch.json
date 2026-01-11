@@ -1,0 +1,47 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Auth Service (FastAPI)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app.main:app", "--reload", "--port", "3001"],
+      "cwd": "${workspaceFolder}/src/auth-service",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src/auth-service"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Python: Auth Service (Debug Mode)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "app.main:app",
+        "--reload",
+        "--port",
+        "3001",
+        "--log-level",
+        "debug"
+      ],
+      "cwd": "${workspaceFolder}/src/auth-service",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src/auth-service",
+        "LOG_LEVEL": "DEBUG"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Python: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}
