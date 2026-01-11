@@ -1,6 +1,6 @@
-# 🚀 SaaS管理者Webアプリケーション - Polyrepo統合
+# 🚀 SaaS 管理者 Web アプリケーション - Polyrepo 統合
 
-Gitサブモジュールを使用したpolyrepoアーキテクチャで構築された包括的なSaaS管理プラットフォームです。このプロジェクトは、独立したサービスリポジトリを持つマルチサービスアプリケーションを構築するための、モダンでスケーラブルなアプローチを示しています。
+Git サブモジュールを使用した polyrepo アーキテクチャで構築された包括的な SaaS 管理プラットフォームです。このプロジェクトは、独立したサービスリポジトリを持つマルチサービスアプリケーションを構築するための、モダンでスケーラブルなアプローチを示しています。
 
 ## 📋 目次
 
@@ -15,19 +15,19 @@ Gitサブモジュールを使用したpolyrepoアーキテクチャで構築さ
 
 ## 🎯 概要
 
-このプロジェクトは、以下の主要機能を備えたマルチテナントSaaS管理アプリケーションを提供します：
+このプロジェクトは、以下の主要機能を備えたマルチテナント SaaS 管理アプリケーションを提供します：
 
 - **ユーザー管理**: ロールベースのアクセス制御を含む完全なユーザーライフサイクル管理
-- **認証と認可**: ドット記法の権限システムを使用したJWTベースの認証
+- **認証と認可**: ドット記法の権限システムを使用した JWT ベースの認証
 - **サービス設定管理**: サービスの集中設定管理
-- **マルチテナントアーキテクチャ**: データ分離のためのCosmosDBベースのテナントパーティショニング
-- **ボタンレベルの認可**: ユーザー権限に基づく詳細なUI制御
+- **マルチテナントアーキテクチャ**: データ分離のための CosmosDB ベースのテナントパーティショニング
+- **ボタンレベルの認可**: ユーザー権限に基づく詳細な UI 制御
 
 ## 🏗️ アーキテクチャ
 
-### Polyrepo構造
+### Polyrepo 構造
 
-このリポジトリは、Gitサブモジュールを使用した**polyrepo統合**パターンに従っています。各サービスは独自のリポジトリで管理され、ここでサブモジュールとして統合されます：
+このリポジトリは、Git サブモジュールを使用した**polyrepo 統合**パターンに従っています。各サービスは独自のリポジトリで管理され、ここでサブモジュールとして統合されます：
 
 ```
 ws-demo-poly-integration/
@@ -55,105 +55,118 @@ ws-demo-poly-integration/
 アプリケーションは**マイクロサービスアーキテクチャ**パターンに従っています：
 
 - **フロントエンド (React)**: ユーザーインターフェースを提供するシングルページアプリケーション
-- **認証サービス**: JWT認証とトークン管理を処理
-- **ユーザー管理サービス**: ユーザーのCRUD操作とプロファイルを管理
+- **認証サービス**: JWT 認証とトークン管理を処理
+- **ユーザー管理サービス**: ユーザーの CRUD 操作とプロファイルを管理
 - **サービス設定サービス**: サービス構成と機能フラグを管理
 
-すべてのサービスはRESTful API経由で通信し、共有型ライブラリ（`@types`）を通じて共通の型を共有します。
+すべてのサービスは RESTful API 経由で通信し、共有型ライブラリ（`@types`）を通じて共通の型を共有します。
 
 ### 主要な設計原則
 
 1. **トランクベース開発**: メインブランチは常にデプロイ可能
 2. **機能フラグ**: 段階的なロールアウトのための環境ベースの機能切り替え
-3. **マルチテナンシー**: CosmosDBを使用したテナント分割データ
+3. **マルチテナンシー**: CosmosDB を使用したテナント分割データ
 4. **権限システム**: ドット記法ベースの詳細な権限制御
-5. **API優先**: すべてのサービスのOpenAPI/Swaggerドキュメント
+5. **API 優先**: すべてのサービスの OpenAPI/Swagger ドキュメント
 
 ## 🔧 サービス
 
 ### フロントエンドアプリケーション (`src/front`)
+
 - **リポジトリ**: [ws-demo-poly1](https://github.com/Takas0522/ws-demo-poly1.git)
 - **技術スタック**: React, TypeScript, Vite
 - **目的**: ボタンレベルの認可を持つ管理操作のユーザーインターフェース
 
 ### 認証サービス (`src/auth-service`)
+
 - **リポジトリ**: [ws-demo-poly3](https://github.com/Takas0522/ws-demo-poly3.git)
 - **技術スタック**: Node.js, Express, TypeScript
-- **目的**: JWT認証、トークン管理、セッション処理
+- **目的**: JWT 認証、トークン管理、セッション処理
 
 ### ユーザー管理サービス (`src/user-management-service`)
+
 - **リポジトリ**: [ws-demo-poly2](https://github.com/Takas0522/ws-demo-poly2.git)
 - **技術スタック**: Node.js, Express, TypeScript, CosmosDB
-- **目的**: ユーザーCRUD操作、プロファイル管理、ロール割り当て
+- **目的**: ユーザー CRUD 操作、プロファイル管理、ロール割り当て
 
 ### サービス設定サービス (`src/service-setting-service`)
+
 - **リポジトリ**: [ws-demo-poly4](https://github.com/Takas0522/ws-demo-poly4.git)
 - **技術スタック**: Node.js, Express, TypeScript, CosmosDB
 - **目的**: サービス構成管理と機能フラグ制御
 
 ### 共有型ライブラリ (`packages/@types`)
+
 - **パッケージ名**: `@saas-app/types`
 - **技術スタック**: TypeScript
-- **目的**: 全サービス間で共有されるTypeScript型定義
+- **目的**: 全サービス間で共有される TypeScript 型定義
 - **ドキュメント**: [README](./packages/@types/README.md)
 
-このパッケージは、User、Tenant、Permission、JWT、APIリクエスト/レスポンスなどの型定義を提供し、サービス間の型安全性を保証します。
+このパッケージは、User、Tenant、Permission、JWT、API リクエスト/レスポンスなどの型定義を提供し、サービス間の型安全性を保証します。
 
 ## 💻 技術スタック
 
 ### フロントエンド
+
 - **フレームワーク**: React 18+
 - **言語**: TypeScript
 - **ビルドツール**: Vite
-- **UIライブラリ**: 未定 (Material-UI/Ant Design)
+- **UI ライブラリ**: 未定 (Material-UI/Ant Design)
 - **状態管理**: 未定 (Redux/Zustand)
 
 ### バックエンドサービス
+
 - **ランタイム**: Node.js 18+
 - **フレームワーク**: Express.js
 - **言語**: TypeScript
 - **データベース**: Azure CosmosDB (SQL API)
 - **認証**: JWT (jsonwebtoken)
-- **APIドキュメント**: OpenAPI 3.0 (Swagger)
+- **API ドキュメント**: OpenAPI 3.0 (Swagger)
 
 ### インフラストラクチャ
+
 - **ホスティング**: Azure App Service
 - **データベース**: Azure CosmosDB
 - **CI/CD**: GitHub Actions
-- **コンテナ**: CosmosDBエミュレータ付きDevContainer
+- **コンテナ**: CosmosDB エミュレータ付き DevContainer
 - **監視**: Azure Application Insights (予定)
 
 ## 🚀 はじめに
 
 ### 前提条件
 
-- **Git**: バージョン2.13以降（サブモジュールサポート用）
-- **Node.js**: バージョン18以降
-- **Docker**: DevContainerとCosmosDBエミュレータ用
-- **VS Code**: Remote - Containers拡張機能の使用を推奨
+- **Git**: バージョン 2.13 以降（サブモジュールサポート用）
+- **Node.js**: バージョン 18 以降
+- **Docker**: DevContainer と CosmosDB エミュレータ用
+- **VS Code**: Remote - Containers 拡張機能の使用を推奨
 
 ### 初期セットアップ
 
 1. **サブモジュールを含めてリポジトリをクローン：**
 
-### DevContainerでの起動
+### DevContainer での起動
 
 1. リポジトリをクローンします：
+
    ```bash
    git clone --recursive https://github.com/Takas0522/ws-demo-poly-integration.git
    cd ws-demo-poly-integration
    ```
+
    `--recursive`オプションなしでクローンした場合は、サブモジュールを初期化してください：
+
    ```bash
    git submodule update --init --recursive
    ```
 
-2. **DevContainerで開く**（推奨）：
-   - VS Codeでプロジェクトを開く
+2. **DevContainer で開く**（推奨）：
+
+   - VS Code でプロジェクトを開く
    - プロンプトが表示されたら「コンテナで再度開く」をクリック
-   - DevContainerには、CosmosDBエミュレータと必要なすべてのツールが含まれています
+   - DevContainer には、CosmosDB エミュレータと必要なすべてのツールが含まれています
 
 3. **各サービスの依存関係をインストール：**
+
    ```bash
    # 共有型ライブラリ
    cd packages/@types
@@ -178,15 +191,16 @@ ws-demo-poly-integration/
    ```
 
 4. **環境変数を設定：**
+
    ```bash
    # ルートディレクトリで環境設定をコピー
    cp .env.template .env
    # または開発用のデフォルト設定を使用
    cp .env.development .env
    ```
-   
-   - ローカル開発にはCosmosDBエミュレータのデフォルト設定を使用
-   - JWT_SECRETなどの値は開発環境ではデフォルトのままで問題ありません
+
+   - ローカル開発には CosmosDB エミュレータのデフォルト設定を使用
+   - JWT_SECRET などの値は開発環境ではデフォルトのままで問題ありません
    - 詳細な設定については[環境設定ガイド](./docs/ENVIRONMENT_CONFIGURATION.md)を参照
 
 ### ローカルで実行
@@ -216,16 +230,19 @@ npm run dev
 ### サブモジュールの操作
 
 **すべてのサブモジュールを最新に更新：**
+
 ```bash
 git submodule update --remote --recursive
 ```
 
 **サブモジュールを含めて最新の変更をプル：**
+
 ```bash
 git pull --recurse-submodules
 ```
 
 **サブモジュール内で変更を行う：**
+
 ```bash
 cd src/[service-name]
 git checkout -b feature/my-feature
@@ -236,6 +253,7 @@ git push origin feature/my-feature
 ```
 
 **新しいサブモジュールコミットを参照するようにメインリポジトリを更新：**
+
 ```bash
 cd ../..  # メインリポジトリに戻る
 git add src/[service-name]
@@ -248,10 +266,11 @@ git push
 このプロジェクトは**トランクベース開発**に従っています。詳細なガイドラインは[CONTRIBUTING.md](./CONTRIBUTING.md)を参照してください。
 
 **主要なプラクティス：**
+
 - メインブランチは常にデプロイ可能
-- 短期間の機能ブランチ（2日以内）
+- 短期間の機能ブランチ（2 日以内）
 - 未完成機能の機能フラグ
-- GitHub Actions経由の継続的インテグレーション
+- GitHub Actions 経由の継続的インテグレーション
 - すべての変更にコードレビューが必要
 
 ### テスト
@@ -278,12 +297,25 @@ npm run type-check      # TypeScriptの型チェック
 
 ## 📚 ドキュメント
 
+### プロジェクト管理
+
+- **[docs/ISSUE_MANAGEMENT_GUIDELINE.md](./docs/ISSUE_MANAGEMENT_GUIDELINE.md)**: Polyrepo における issue 管理のガイドライン
+- **[docs/ISSUE_MIGRATION_SUMMARY.md](./docs/ISSUE_MIGRATION_SUMMARY.md)**: Issue 移行の概要と現在の構造
+
+### 開発ガイド
+
 - **[CONTRIBUTING.md](./CONTRIBUTING.md)**: 開発ガイドラインとコントリビューションプロセス
-- **[DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md)**: 詳細な開発ロードマップとissue分類
+- **[DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md)**: 詳細な開発ロードマップと issue 分類
+
+### 設定とインフラ
+
 - **[docs/ENVIRONMENT_CONFIGURATION.md](./docs/ENVIRONMENT_CONFIGURATION.md)**: 環境設定とフィーチャーフラグの完全ガイド
 - **[docs/CONFIGURATION_VALIDATION.md](./docs/CONFIGURATION_VALIDATION.md)**: 設定検証の実装ガイド
-- **[docs/AZURE_APP_SERVICE_CONFIGURATION.md](./docs/AZURE_APP_SERVICE_CONFIGURATION.md)**: Azure App Serviceでの環境設定ガイド
-- **[docs/api/](./docs/api/)**: 各サービスのAPIドキュメント
+- **[docs/AZURE_APP_SERVICE_CONFIGURATION.md](./docs/AZURE_APP_SERVICE_CONFIGURATION.md)**: Azure App Service での環境設定ガイド
+
+### API とアーキテクチャ
+
+- **[docs/api/](./docs/api/)**: 各サービスの API ドキュメント
 - **[docs/adr/](./docs/adr/)**: アーキテクチャ決定記録
 - **[docs/templates/](./docs/templates/)**: 新しいサービスとドキュメントのテンプレート
 
@@ -303,61 +335,63 @@ npm run type-check      # TypeScriptの型チェック
 
 ## 📄 ライセンス
 
-このプロジェクトはMITライセンスの下でライセンスされています - 詳細は[LICENSE](./LICENSE)ファイルを参照してください。
+このプロジェクトは MIT ライセンスの下でライセンスされています - 詳細は[LICENSE](./LICENSE)ファイルを参照してください。
 
 ## 📞 サポート
 
 質問、issues、またはコントリビューションについては：
 
-- **GitHub Issues**: [issueを作成](https://github.com/Takas0522/ws-demo-poly-integration/issues)
+- **GitHub Issues**: [issue を作成](https://github.com/Takas0522/ws-demo-poly-integration/issues)
 - **ドキュメント**: [docs/](./docs/)ディレクトリを参照
 - **開発計画**: [DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md)を参照
 
 ## 🗺️ ロードマップ
 
-6つのフェーズに整理された完全な開発ロードマップについては、[DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md)を参照してください：
+6 つのフェーズに整理された完全な開発ロードマップについては、[DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md)を参照してください：
 
-1. **フェーズ1**: 基盤と開発環境
-2. **フェーズ2**: データレイヤーとコアインフラストラクチャ
-3. **フェーズ3**: 認証と認可
-4. **フェーズ4**: サービス実装
-5. **フェーズ5**: データとテスト
-6. **フェーズ6**: デプロイとCI/CD
+1. **フェーズ 1**: 基盤と開発環境
+2. **フェーズ 2**: データレイヤーとコアインフラストラクチャ
+3. **フェーズ 3**: 認証と認可
+4. **フェーズ 4**: サービス実装
+5. **フェーズ 5**: データとテスト
+6. **フェーズ 6**: デプロイと CI/CD
 
 ---
 
-**モダンなTypeScript、React、Azureテクノロジーで❤️を込めて構築**
+**モダンな TypeScript、React、Azure テクノロジーで ❤️ を込めて構築**
 
-2. Visual Studio Codeでフォルダを開きます：
+2. Visual Studio Code でフォルダを開きます：
+
    ```bash
    code .
    ```
 
-3. VS Codeで「Reopen in Container」を選択します
+3. VS Code で「Reopen in Container」を選択します
+
    - コマンドパレット（`Ctrl+Shift+P` / `Cmd+Shift+P`）から `Dev Containers: Reopen in Container` を実行
 
 4. コンテナのビルドと起動を待ちます（初回は数分かかります）
 
 ### 含まれている開発環境
 
-DevContainerには以下がプリインストールされています：
+DevContainer には以下がプリインストールされています：
 
 - **Node.js 20** - フロントエンドとバックエンドサービス用
 - **Python 3.11** - スクリプトとツール用
-- **Azure CLI** - Azureリソース管理用
+- **Azure CLI** - Azure リソース管理用
 - **Git & GitHub CLI** - バージョン管理
 - **CosmosDB Emulator** - ローカル開発用データベース
 
-### CosmosDB Emulatorへの接続
+### CosmosDB Emulator への接続
 
-CosmosDB Emulatorは自動的に起動し、以下のエンドポイントで利用可能です：
+CosmosDB Emulator は自動的に起動し、以下のエンドポイントで利用可能です：
 
 - **エンドポイント**: `https://localhost:8081`
 - **プライマリキー**: `C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==`
 
 #### 接続テスト
 
-VS Code内のターミナルで以下のコマンドを実行して接続を確認：
+VS Code 内のターミナルで以下のコマンドを実行して接続を確認：
 
 ```bash
 # CosmosDB Emulatorの状態確認
@@ -367,9 +401,9 @@ curl -k https://localhost:8081/_explorer/emulator.pem
 az cosmosdb list-connection-strings --resource-group dummy --name dummy 2>/dev/null || echo "Emulator is running locally"
 ```
 
-#### VS Code拡張機能からの接続
+#### VS Code 拡張機能からの接続
 
-1. Azure Cosmos DB拡張機能を開く
+1. Azure Cosmos DB 拡張機能を開く
 2. 「Attach Emulator」をクリック
 3. デフォルトのエンドポイントとキーで接続
 
@@ -409,15 +443,15 @@ npm start
 
 ## 🔧 開発ツール
 
-### インストール済みVS Code拡張機能
+### インストール済み VS Code 拡張機能
 
 - **Azure Cosmos DB** - データベース管理
 - **Docker** - コンテナ管理
 - **ESLint & Prettier** - コードフォーマット
-- **Python & Pylance** - Python開発
-- **GitLens** - Git統合
+- **Python & Pylance** - Python 開発
+- **GitLens** - Git 統合
 - **REST Client** - API テスト
-- **OpenAPI** - API仕様管理
+- **OpenAPI** - API 仕様管理
 
 ### ポートフォワーディング
 
@@ -436,7 +470,7 @@ npm start
 
 ## 🤝 貢献
 
-詳細な開発手順とIssueについては、[DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)を参照してください。
+詳細な開発手順と Issue については、[DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)を参照してください。
 
 ## 📄 ライセンス
 
