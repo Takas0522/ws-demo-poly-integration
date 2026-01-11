@@ -1,59 +1,80 @@
-# Auth Service
+# Auth Service (FastAPI)
 
 JWT-based authentication service for the SaaS Management Application with tenant-aware authentication and refresh token mechanism.
 
 ## Features
 
-- ✅ JWT token generation with configurable expiry (1 hour access tokens)
+- ✅ JWT token generation with 1-hour expiry (configurable)
 - ✅ Refresh token mechanism with CosmosDB storage and TTL
-- ✅ Password hashing using bcryptjs
+- ✅ Password hashing using bcrypt via passlib
 - ✅ Tenant-aware authentication
-- ✅ Rate limiting for security
 - ✅ Account lockout after failed login attempts
 - ✅ Token revocation support
 - ✅ Comprehensive error handling
 
 ## Tech Stack
 
-- Node.js + Express + TypeScript
-- JWT (jsonwebtoken) with HS256/RS256 support
-- Azure CosmosDB for token storage
-- bcryptjs for password hashing
-- express-rate-limit for rate limiting
+- **Python 3.11+**
+- **FastAPI** - Modern, fast web framework
+- **Pydantic** - Data validation
+- **python-jose** - JWT handling
+- **passlib[bcrypt]** - Password hashing
+- **azure-cosmos** - CosmosDB client
+- **uvicorn** - ASGI server
 
 ## Installation
 
+### Using pip
+
 ```bash
-npm install
+pip install -r requirements.txt
+```
+
+### Using Poetry (recommended)
+
+```bash
+poetry install
 ```
 
 ## Development
 
+### Run the service
+
 ```bash
-# Run in development mode with hot reload
-npm run dev
+# Using uvicorn directly
+uvicorn app.main:app --reload --port 3001
 
-# Build for production
-npm run build
+# Or with Python
+python -m app.main
+```
 
-# Run production build
-npm start
+### Run tests
 
-# Run tests
-npm test
+```bash
+# Using pytest
+pytest
 
-# Run tests in watch mode
-npm run test:watch
+# With coverage
+pytest --cov=app tests/
 
-# Check test coverage
-npm run test:coverage
+# Specific test
+pytest tests/test_security.py
+```
+
+### Code quality
+
+```bash
+# Format code
+black app/ tests/
+
+# Sort imports
+isort app/ tests/
 
 # Type checking
-npm run type-check
+mypy app/
 
 # Linting
-npm run lint
-npm run lint:fix
+flake8 app/ tests/
 ```
 
 ## Environment Variables
@@ -67,8 +88,9 @@ NODE_ENV=development
 
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-JWT_EXPIRES_IN=1h
-JWT_REFRESH_EXPIRES_IN=7d
+JWT_ALGORITHM=HS256
+JWT_EXPIRES_IN=3600
+JWT_REFRESH_EXPIRES_IN=604800
 
 # CosmosDB
 COSMOSDB_ENDPOINT=https://localhost:8081
@@ -79,11 +101,10 @@ COSMOSDB_DATABASE=saas-management
 MAX_LOGIN_ATTEMPTS=5
 LOCKOUT_DURATION_MINUTES=15
 PASSWORD_MIN_LENGTH=8
-
-# Rate Limiting
-FEATURE_RATE_LIMITING=enabled
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
+PASSWORD_REQUIRE_UPPERCASE=true
+PASSWORD_REQUIRE_LOWERCASE=true
+PASSWORD_REQUIRE_NUMBERS=true
+PASSWORD_REQUIRE_SPECIAL_CHARS=true
 
 # CORS
 CORS_ORIGINS=http://localhost:3000,http://localhost:5173
@@ -100,28 +121,25 @@ Authenticate user and return JWT tokens.
 ```json
 {
   "email": "user@example.com",
-  "password": "SecurePassword123",
-  "tenantId": "tenant-123" // optional
+  "password": "SecurePassword123!",
+  "tenant_id": "tenant-123"
 }
 ```
 
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "tokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
-      "expiresIn": 3600,
-      "tokenType": "Bearer"
-    },
-    "user": {
-      "id": "user-123",
-      "email": "user@example.com",
-      "displayName": "John Doe",
-      "status": "active"
-    }
+  "tokens": {
+    "access_token": "******",
+    "refresh_token": "******",
+    "expires_in": 3600,
+    "token_type": "Bearer"
+  },
+  "user": {
+    "id": "user-123",
+    "email": "user@example.com",
+    "display_name": "John Doe",
+    "status": "active"
   }
 }
 ```
@@ -132,21 +150,18 @@ Refresh access token using refresh token.
 **Request:**
 ```json
 {
-  "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+  "refresh_token": "******"
 }
 ```
 
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "tokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
-      "expiresIn": 3600,
-      "tokenType": "Bearer"
-    }
+  "tokens": {
+    "access_token": "******",
+    "refresh_token": "******",
+    "expires_in": 3600,
+    "token_type": "Bearer"
   }
 }
 ```
@@ -156,14 +171,14 @@ Logout user by revoking refresh tokens.
 
 **Headers:**
 ```
-Authorization: Bearer <access-token>
+Authorization: ******
 ```
 
 **Request:**
 ```json
 {
-  "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
-  "allDevices": false // optional, revoke all tokens
+  "refresh_token": "******",
+  "all_devices": false
 }
 ```
 
@@ -180,22 +195,19 @@ Verify current access token.
 
 **Headers:**
 ```
-Authorization: Bearer <access-token>
+Authorization: ******
 ```
 
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "valid": true,
-    "user": {
-      "sub": "user-123",
-      "email": "user@example.com",
-      "tenantId": "tenant-123",
-      "roles": ["user"],
-      "permissions": ["users.read"]
-    }
+  "valid": true,
+  "user": {
+    "sub": "user-123",
+    "email": "user@example.com",
+    "tenantId": "tenant-123",
+    "roles": ["user"],
+    "permissions": ["users.read"]
   }
 }
 ```
@@ -205,21 +217,18 @@ Get current user information from token.
 
 **Headers:**
 ```
-Authorization: Bearer <access-token>
+Authorization: ******
 ```
 
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "id": "user-123",
-    "email": "user@example.com",
-    "displayName": "John Doe",
-    "tenantId": "tenant-123",
-    "roles": ["user"],
-    "permissions": ["users.read"]
-  }
+  "id": "user-123",
+  "email": "user@example.com",
+  "display_name": "John Doe",
+  "tenant_id": "tenant-123",
+  "roles": ["user"],
+  "permissions": ["users.read"]
 }
 ```
 
@@ -235,108 +244,73 @@ Check service health status.
   "service": "auth-service",
   "version": "1.0.0",
   "timestamp": "2024-01-11T12:00:00.000Z",
-  "uptime": 3600
+  "uptime": 3600.5
 }
 ```
 
-## Architecture
+## Project Structure
 
-### Components
+```
+src/auth-service/
+├── app/
+│   ├── api/              # API route handlers
+│   │   ├── auth.py       # Authentication endpoints
+│   │   └── root.py       # Root and health endpoints
+│   ├── core/             # Core functionality
+│   │   ├── config.py     # Configuration management
+│   │   └── security.py   # JWT and password utilities
+│   ├── middleware/       # FastAPI middleware
+│   │   └── auth.py       # Authentication dependencies
+│   ├── models/           # Database models (future)
+│   ├── schemas/          # Pydantic schemas
+│   │   └── auth.py       # Request/response models
+│   ├── services/         # Business logic
+│   │   ├── auth.py       # Authentication service
+│   │   └── cosmosdb.py   # CosmosDB service
+│   ├── utils/            # Utility functions
+│   └── main.py           # Application entry point
+├── tests/                # Test files
+│   └── test_security.py  # Security tests
+├── .gitignore
+├── pyproject.toml        # Poetry configuration
+├── requirements.txt      # Pip requirements
+└── README.md
+```
 
-1. **Token Service** (`services/token.service.ts`)
-   - JWT token generation and verification
-   - Access token (1 hour expiry)
-   - Refresh token (7 days expiry)
-   - Token validation
+## Security Features
 
-2. **Auth Service** (`services/auth.service.ts`)
-   - User authentication
-   - Token refresh
-   - Logout (token revocation)
-   - Failed login tracking
-   - Account lockout
-
-3. **CosmosDB Service** (`services/cosmosdb.service.ts`)
-   - Database connection management
-   - Container access
-   - Automatic initialization
-
-4. **Middleware**
-   - `auth.middleware.ts` - JWT authentication
-   - `rate-limit.middleware.ts` - Rate limiting
-
-5. **Utilities**
-   - `password.ts` - Password hashing and validation
-
-### Security Features
-
-- **Password Hashing**: bcryptjs with 10 salt rounds
+- **JWT-based Authentication**: Stateless authentication with access and refresh tokens
 - **Account Lockout**: Configurable failed login attempts and lockout duration
-- **Rate Limiting**: Configurable per-endpoint rate limits
-- **Token Expiry**: Access tokens expire in 1 hour, refresh tokens in 7 days
-- **Token Revocation**: Refresh tokens can be revoked individually or all at once
-- **Tenant Isolation**: Users can only access their own tenant's resources
+- **Password Hashing**: bcrypt via passlib with automatic salt generation
+- **Password Validation**: Configurable complexity requirements
+- **Token Revocation**: Support for single and multi-device logout
+- **Tenant Isolation**: Users can only access their tenant's resources
 
-### CosmosDB Schema
+## Interactive API Documentation
 
-#### Users Container
-Partition Key: `/tenantId`
+FastAPI automatically generates interactive API documentation:
 
-```typescript
-{
-  id: string;
-  email: string;
-  displayName: string;
-  passwordHash: string;
-  status: string;
-  tenantId: string;
-  roles: string[];
-  permissions: string[];
-  security: {
-    lastLoginAt?: string;
-    failedLoginAttempts: number;
-    lockedUntil?: string;
-  };
-}
-```
-
-#### Refresh Tokens Container
-Partition Key: `/userId`
-TTL: 7 days
-
-```typescript
-{
-  id: string;
-  userId: string;
-  tenantId: string;
-  tokenId: string; // jti from JWT
-  token: string;
-  expiresAt: string;
-  createdAt: string;
-}
-```
-
-## Testing
-
-Run tests:
-```bash
-npm test
-```
-
-Run with coverage:
-```bash
-npm run test:coverage
-```
+- **Swagger UI**: http://localhost:3001/docs
+- **ReDoc**: http://localhost:3001/redoc
 
 ## Production Considerations
 
-1. **JWT Algorithm**: Consider using RS256 (asymmetric) instead of HS256 in production for better security
-2. **Key Management**: Store JWT secrets in Azure Key Vault or similar secure storage
+1. **JWT Algorithm**: Consider using RS256 for better security isolation
+2. **Key Management**: Use Azure Key Vault for JWT secrets
 3. **HTTPS**: Always use HTTPS in production
-4. **Rate Limiting**: Adjust rate limits based on your traffic patterns
-5. **Monitoring**: Implement proper logging and monitoring (Application Insights)
-6. **Token Rotation**: Consider implementing automatic token rotation
-7. **Security Headers**: Add security headers (helmet.js)
+4. **Monitoring**: Implement proper logging and monitoring
+5. **Rate Limiting**: Add rate limiting middleware (e.g., slowapi)
+6. **Security Headers**: Add security headers middleware
+
+## Migration from Node.js/TypeScript
+
+This service replaces the previous Node.js/Express/TypeScript implementation with Python/FastAPI, providing:
+
+- Better performance with async/await
+- Automatic API documentation
+- Built-in data validation with Pydantic
+- Type hints for better code quality
+- Easier testing with pytest
 
 ## License
 
