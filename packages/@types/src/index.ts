@@ -10,9 +10,14 @@
  * - Permissions (dot notation system)
  * - JWT tokens
  * - API requests and responses
+ * - Auto-generated types from OpenAPI specifications
  * 
  * @packageDocumentation
  */
+
+// ============================================
+// Manual Type Definitions (Core Concepts)
+// ============================================
 
 // User types
 export * from './user.types';
@@ -39,3 +44,34 @@ export * as PermissionTypes from './permission.types';
 export * as JWTTypes from './jwt.types';
 export * as APITypes from './api.types';
 export * as AuthTypes from './auth.types';
+
+// ============================================
+// Auto-Generated Types from OpenAPI
+// ============================================
+
+/**
+ * Auto-generated types from OpenAPI specifications.
+ * 
+ * These types are generated from the OpenAPI YAML files in docs/api/
+ * and should not be manually edited.
+ * 
+ * To regenerate:
+ * ```bash
+ * npm run generate
+ * ```
+ * 
+ * @see {@link ../../docs/api/TYPE_GENERATION_PIPELINE.md}
+ */
+
+// Note: Generated types will be available after running 'npm run generate'
+// TODO: Uncomment the following lines after running type generation for the first time.
+// These exports will work once the OpenAPI specs have been processed by openapi-typescript.
+// To enable:
+// 1. Run: npm install
+// 2. Run: npm run generate
+// 3. Uncomment the exports below
+// 4. Run: npm run type-check to verify
+
+// export * as AuthAPI from './generated/auth.types';
+// export * as UsersAPI from './generated/users.types';
+// export * as SettingsAPI from './generated/settings.types';

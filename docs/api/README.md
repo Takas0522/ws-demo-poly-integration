@@ -10,6 +10,33 @@
 - サービス固有のAPIリファレンス
 - 認証と認可のガイド
 - 共通のAPIパターンと規約
+- インタラクティブなAPI Explorer
+- 自動型生成パイプライン
+
+## 🚀 クイックスタート
+
+### 1. API Explorerで確認
+
+ブラウザで [api-explorer.html](./api-explorer.html) を開いて、すべてのAPIをインタラクティブに探索できます。
+
+### 2. OpenAPI仕様を確認
+
+各サービスの `openapi.yaml` ファイルで完全なAPI仕様を確認：
+
+- [Authentication Service](./auth-service/openapi.yaml)
+- [User Management Service](./user-management-service/openapi.yaml)
+- [Service Settings Service](./service-setting-service/openapi.yaml)
+
+### 3. 型を生成
+
+OpenAPI仕様からTypeScript型を自動生成：
+
+```bash
+cd packages/@types
+npm run generate
+```
+
+詳細は [型生成パイプライン](./TYPE_GENERATION_PIPELINE.md) を参照。
 
 ## 🏗️ サービス
 
@@ -20,13 +47,32 @@
 
 ### ユーザー管理サービス
 - **パス**: [user-management-service/](./user-management-service/)
+- **OpenAPI仕様**: [openapi.yaml](./user-management-service/openapi.yaml)
 - **ベースURL**: `http://localhost:3002/api`
 - **目的**: ユーザーCRUD操作とプロファイル管理
+- **Swagger UI**: `http://localhost:3002/api-docs`
 
 ### サービス設定サービス
 - **パス**: [service-setting-service/](./service-setting-service/)
+- **OpenAPI仕様**: [openapi.yaml](./service-setting-service/openapi.yaml)
 - **ベースURL**: `http://localhost:3003/api`
 - **目的**: サービス構成と機能フラグ管理
+- **Swagger UI**: `http://localhost:3003/api-docs`
+
+## 📚 ドキュメント
+
+### ガイド
+
+- **[API Explorer](./api-explorer.html)** - インタラクティブなAPIドキュメント
+- **[API Versioning Strategy](./API_VERSIONING_STRATEGY.md)** - バージョニング戦略
+- **[Swagger UI Integration](./SWAGGER_UI_INTEGRATION.md)** - Swagger UI統合ガイド
+- **[Type Generation Pipeline](./TYPE_GENERATION_PIPELINE.md)** - 型生成パイプライン
+
+### サービス別ドキュメント
+
+- [認証サービスAPI](./auth-service/README.md)
+- [ユーザー管理サービスAPI](./user-management-service/README.md)
+- [サービス設定サービスAPI](./service-setting-service/README.md)
 
 ## 🔐 認証
 

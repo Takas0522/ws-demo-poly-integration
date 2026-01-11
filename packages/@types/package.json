@@ -15,7 +15,12 @@
     "prebuild": "npm run clean",
     "type-check": "tsc --noEmit",
     "watch": "tsc --watch",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "generate:auth": "openapi-typescript ../../docs/api/auth-service/openapi.yaml -o src/generated/auth.types.ts",
+    "generate:users": "openapi-typescript ../../docs/api/user-management-service/openapi.yaml -o src/generated/users.types.ts",
+    "generate:settings": "openapi-typescript ../../docs/api/service-setting-service/openapi.yaml -o src/generated/settings.types.ts",
+    "generate:all": "npm run generate:auth && npm run generate:users && npm run generate:settings",
+    "generate": "npm run generate:all"
   },
   "keywords": [
     "typescript",
@@ -27,6 +32,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "openapi-typescript": "^6.7.3",
     "typescript": "^5.3.3"
   },
   "engines": {
