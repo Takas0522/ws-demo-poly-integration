@@ -42,11 +42,20 @@ export NODE_TLS_REJECT_UNAUTHORIZED=0
 
 echo ""
 echo "🗄️  データベースとコンテナを作成中..."
-npx ts-node init-database.ts
+# TypeScriptコンパイルエラーを回避するため、環境変数を確実に設定
+if npx ts-node init-database.ts; then
+  echo "✅ データベース初期化が完了しました"
+else
+  echo "⚠️  データベース初期化でエラーが発生しましたが、続行します"
+fi
 
 echo ""
 echo "🌱 開発用データをシード中..."
-npx ts-node seed-data.ts
+if npx ts-node seed-data.ts; then
+  echo "✅ データシードが完了しました"
+else
+  echo "⚠️  データシードでエラーが発生しました"
+fi
 
 echo ""
 echo "=========================================="

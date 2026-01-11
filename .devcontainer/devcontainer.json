@@ -72,7 +72,7 @@
   },
   
   // Lifecycle scripts
-  "postCreateCommand": "npm --version && python --version && az --version && bash .devcontainer/init-cosmosdb.sh",
+  "postCreateCommand": "bash .devcontainer/setup-env.sh && npm --version && python --version && az --version && bash .devcontainer/init-cosmosdb.sh",
   
   // Forward ports for services
   "forwardPorts": [

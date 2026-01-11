@@ -6,6 +6,8 @@ This directory contains the development container configuration for the SaaS Man
 
 - **devcontainer.json** - Main DevContainer configuration
 - **docker-compose.yml** - Docker Compose configuration with CosmosDB Emulator
+- **setup-env.sh** - Script to automatically create `.env` file from `.env.development`
+- **init-cosmosdb.sh** - Script to initialize CosmosDB database and seed data
 - **test-cosmosdb.sh** - Script to test CosmosDB Emulator connectivity
 
 ## 🚀 Quick Start
@@ -14,6 +16,13 @@ This directory contains the development container configuration for the SaaS Man
 2. Install the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 3. Open this repository in VS Code
 4. Press `F1` and select "Dev Containers: Reopen in Container"
+5. Wait for the container to build and initialize (first time may take 5-10 minutes)
+
+The DevContainer will automatically:
+- Create `.env` file from `.env.development` (if not exists)
+- Wait for CosmosDB Emulator to start
+- Initialize database schema with 4 containers (Tenants, Users, Permissions, AuditLogs)
+- Seed initial development data
 
 ## 🔧 What's Included
 
@@ -45,10 +54,13 @@ This directory contains the development container configuration for the SaaS Man
 - **Primary Key**: `C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==`
 
 ### Environment Variables
-The following environment variables are automatically configured:
-- `COSMOS_DB_ENDPOINT` - Points to the local emulator
-- `COSMOS_DB_KEY` - The emulator's primary key
+The following environment variables are automatically configured in `docker-compose.yml`:
+- `COSMOSDB_ENDPOINT` - Points to the local emulator (`https://localhost:8081`)
+- `COSMOSDB_KEY` - The emulator's primary key (for local dev only)
+- `COSMOSDB_DATABASE` - Database name (`saas-management-dev`)
 - `NODE_TLS_REJECT_UNAUTHORIZED=0` - Allows self-signed certificates
+
+Additional environment variables are loaded from `.env` file (auto-created from `.env.development`)
 
 ### Testing Connectivity
 Run the connectivity test script:
@@ -83,11 +95,25 @@ The following ports are automatically forwarded:
 ## 📝 Post-Create Commands
 
 After the container is created, the following commands are automatically executed:
-```bash
-npm --version && python --version && az --version
-```
 
-This verifies that all required tools are installed correctly.
+1. **Environment Setup** - `.devcontainer/setup-env.sh`
+   - Creates `.env` file from `.env.development` if not exists
+   - Ensures environment variables are available for all services
+
+2. **Version Check** - Verifies required tools are installed
+   ```bash
+   npm --version && python --version && az --version
+   ```
+
+3. **Database Initialization** - `.devcontainer/init-cosmosdb.sh`
+   - Waits for CosmosDB Emulator to be ready (up to 5 minutes)
+   - Installs npm dependencies in `scripts/cosmosdb`
+   - Creates database and containers with proper partitioning
+   - Seeds initial development data with default users:
+     - **Admin**: `admin@example.com` / `Admin@123`
+     - **User**: `user@example.com` / `User@123`
+
+⚠️ **Important**: Change default passwords before deploying to production!
 
 ## 🔐 Security Notes
 
@@ -133,6 +159,22 @@ Add more features in the `features` section:
 1. Wait for the emulator to fully start (can take 2-3 minutes)
 2. Check logs: `docker logs <container-id>`
 3. Verify health check: Run `test-cosmosdb.sh`
+4. Manual reinitialization:
+   ```bash
+   cd /workspaces/ws-demo-poly-integration/scripts/cosmosdb
+   export COSMOSDB_ENDPOINT=https://localhost:8081
+   export COSMOSDB_KEY="C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw=="
+   export COSMOSDB_DATABASE=saas-management-dev
+   npm run init
+   ```
+
+### Database initialization failed
+1. Check if `.env` file exists in workspace root
+2. Verify environment variables are set correctly
+3. Re-run initialization manually:
+   ```bash
+   bash /workspaces/ws-demo-poly-integration/.devcontainer/init-cosmosdb.sh
+   ```
 
 ### Port already in use
 1. Check if another service is using port 8081
