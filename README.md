@@ -473,7 +473,39 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 3003
 - `3003` - Service Settings Service
 - `8081` - CosmosDB Emulator
 
-## 📚 ドキュメント
+## � トラブルシューティング
+
+### CosmosDB Emulator 関連の問題
+
+開発中に CosmosDB エミュレータで問題が発生した場合は、以下を試してください：
+
+#### 503 Service Unavailable エラー
+
+**症状**: サービス起動時に「Service Unavailable」や「high demand」エラーが発生
+
+**解決策**:
+
+```bash
+# 1. 不要なデータベースを削除してリソースを解放
+cd scripts/cosmosdb
+python -c "
+from azure.cosmos import CosmosClient
+import warnings
+warnings.filterwarnings('ignore')
+client = CosmosClient('https://localhost:8081', 'C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==', connection_verify=False)
+for db in client.list_databases():
+    if db['id'] not in ['saas-management-dev']:
+        client.delete_database(db['id'])
+        print(f'削除: {db[\"id\"]}')
+"
+
+# 2. またはDevContainerを再起動
+# VS Code: Ctrl+Shift+P > Dev Containers: Rebuild Container
+```
+
+詳細なトラブルシューティングガイドは[docs/COSMOSDB_TROUBLESHOOTING.md](./docs/COSMOSDB_TROUBLESHOOTING.md)を参照してください。
+
+## �📚 ドキュメント
 
 - [開発計画](DEVELOPMENT_PLAN.md) - プロジェクト全体の開発計画とフェーズ
 - [GitHub Issues](https://github.com/Takas0522/ws-demo-poly-integration/issues) - タスクと進捗管理

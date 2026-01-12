@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   app:
@@ -22,10 +22,10 @@ services:
     image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
     tty: true
     restart: unless-stopped
-    mem_limit: 3g
+    mem_limit: 4g # 3g -> 4gに増加してリソース不足を回避
     cpu_count: 2
     environment:
-      - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10
+      - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=5 # 10 -> 5に削減してメモリ使用量を削減
       - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true
       - AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=127.0.0.1
       - AZURE_COSMOS_EMULATOR_ENABLE_MONGODB_ENDPOINT=false
@@ -40,7 +40,8 @@ services:
       - cosmosdb-data:/tmp/cosmos/appdata
     # Health check to ensure CosmosDB is ready
     healthcheck:
-      test: ["CMD", "curl", "-k", "https://localhost:8081/_explorer/emulator.pem"]
+      test:
+        ["CMD", "curl", "-k", "https://localhost:8081/_explorer/emulator.pem"]
       interval: 30s
       timeout: 10s
       retries: 5
