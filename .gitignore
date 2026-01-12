@@ -98,6 +98,15 @@ local.settings.json
 
 # CosmosDB Emulator data
 cosmosdb-data/
+
+# Test results and artifacts
+test-results/
+playwright-report/
+*.png
+*.jpg
+*.jpeg
+test-results/screenshots/
+
 # OS generated files
 .Spotlight-V100
 .Trashes

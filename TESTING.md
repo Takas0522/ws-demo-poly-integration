@@ -281,21 +281,38 @@ Each package generates coverage reports in the `coverage/` directory:
 - Test edge cases and error conditions
 - Test both success and failure paths
 
+## 🔗 Integration & E2E Testing
+
+**Integration and E2E tests are now available!** See [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md) for comprehensive documentation.
+
+### Quick Overview
+
+#### Integration Tests (Issue #016 ✅)
+- **Location**: `tests/integration/`
+- **Coverage**: API testing, database operations, cross-service communication
+- **Run**: `npm run test:integration`
+
+#### E2E Tests (Issue #016 ✅)
+- **Location**: `tests/e2e/`
+- **Framework**: Playwright
+- **Coverage**: Authentication flows, user journeys, permission-based UI
+- **Run**: `npm run test:e2e`
+
+See the [Integration Testing Guide](./INTEGRATION_TESTING.md) for detailed information.
+
 ## 🚀 Future Enhancements
 
 ### Planned Improvements
 1. **Service Layer Tests**: Add tests for backend service layers when submodules are populated
-2. **Integration Tests**: Add integration tests for API endpoints
-3. **E2E Tests**: Add end-to-end tests using Playwright or Cypress
-4. **Performance Tests**: Add performance benchmarks
-5. **Visual Regression Tests**: Add screenshot comparison tests
+2. **Performance Tests**: Add performance benchmarks
+3. **Visual Regression Tests**: Add screenshot comparison tests
+4. **Load Testing**: Add stress and load testing for API endpoints
 
 ### Additional Coverage Areas
-- Authentication flow tests
-- Database operation tests (when services are implemented)
-- API endpoint tests
 - Error boundary tests
 - Loading state tests
+- Accessibility testing
+- Security testing
 
 ## 📚 Resources
 
@@ -305,13 +322,21 @@ Each package generates coverage reports in the `coverage/` directory:
 - [ts-jest Documentation](https://kulshekhar.github.io/ts-jest/)
 
 ### Related Files
-- `/packages/react-permissions/jest.config.js`
-- `/scripts/permissions/jest.config.js`
-- `/packages/@types/jest.config.js`
-- `/packages/react-permissions/src/__tests__/test-utils.ts`
+- **Unit Testing**:
+  - `/packages/react-permissions/jest.config.js`
+  - `/scripts/permissions/jest.config.js`
+  - `/packages/@types/jest.config.js`
+  - `/packages/react-permissions/src/__tests__/test-utils.ts`
+- **Integration & E2E Testing**:
+  - `/jest.integration.config.js`
+  - `/playwright.config.ts`
+  - `/tests/integration/` - Integration test suite
+  - `/tests/e2e/` - E2E test suite
+  - [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md) - Comprehensive guide
 
 ## ✅ Acceptance Criteria Status
 
+### Issue #015: Unit Testing ✅
 - [x] Jest/Vitest testing framework setup
 - [x] Test utilities and mock factories created
 - [x] Service layer tests implemented (permissions package)
@@ -319,8 +344,21 @@ Each package generates coverage reports in the `coverage/` directory:
 - [x] Authentication tests created (JWT token handling)
 - [x] 80%+ code coverage achieved
 
+### Issue #016: Integration Testing ✅
+- [x] Playwright for E2E browser testing
+- [x] API integration tests
+- [x] Frontend user journey tests
+- [x] Database integration tests with data isolation
+- [x] Cross-service communication tests
+- [x] Test environment management
+
 ## 🏁 Conclusion
 
-The unit testing framework is now fully established with comprehensive test coverage across all key packages. The framework follows industry best practices and provides a solid foundation for maintaining code quality as the project grows.
+The comprehensive testing framework is now fully established with unit, integration, and E2E test coverage across all key packages and services. The framework follows industry best practices and provides a solid foundation for maintaining code quality as the project grows.
 
-All packages meet or exceed the 80% coverage threshold, with utilities, mock factories, and clear testing patterns in place for future development.
+**Testing Coverage:**
+- **Unit Tests**: 215+ tests across packages (80%+ coverage)
+- **Integration Tests**: API, database, and cross-service communication
+- **E2E Tests**: Complete user journeys with Playwright
+
+For integration and E2E testing details, see [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md).
