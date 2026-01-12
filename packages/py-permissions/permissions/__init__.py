@@ -41,6 +41,9 @@ from .types import (
     UserPermissionContext,
     PermissionCheckResult,
     PermissionValidationResult,
+    ScopedPermission,
+    User,
+    TenantUser,
 )
 
 from .parser import (
@@ -97,6 +100,11 @@ from .cache import (
     set_default_cache,
 )
 
+from .advanced_checker import (
+    PermissionChecker,
+    invalidate_permission_cache,
+)
+
 __version__ = "1.0.0"
 
 __all__ = [
@@ -108,6 +116,9 @@ __all__ = [
     "UserPermissionContext",
     "PermissionCheckResult",
     "PermissionValidationResult",
+    "ScopedPermission",
+    "User",
+    "TenantUser",
     
     # Parser
     "validate_permission_format",
@@ -136,6 +147,10 @@ __all__ = [
     "get_user_permissions",
     "can_perform_action",
     "create_permission_context",
+    
+    # Advanced Checker
+    "PermissionChecker",
+    "invalidate_permission_cache",
     
     # Middleware
     "PermissionMiddlewareOptions",

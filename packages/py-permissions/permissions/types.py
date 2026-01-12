@@ -5,7 +5,7 @@ This module provides Pydantic models and type definitions for the dot-notation
 permission system with RBAC support.
 """
 
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Dict, Any
 from pydantic import BaseModel, Field
 
 
@@ -67,3 +67,32 @@ class PermissionValidationResult(BaseModel):
     
     valid: bool = Field(..., description="Whether the permission format is valid")
     error: Optional[str] = Field(None, description="Error message if invalid")
+
+
+class ScopedPermission(BaseModel):
+    """Permission with scope information."""
+    
+    name: str = Field(..., description="Permission name (e.g., 'users.create')")
+    scope: PermissionScope = Field(default="tenant", description="Permission scope")
+
+
+class User(BaseModel):
+    """User model with scoped permissions."""
+    
+    id: str = Field(..., description="User ID")
+    permissions: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="User permissions with scope (e.g., [{'name': 'users.*', 'scope': 'global'}])"
+    )
+
+
+class TenantUser(BaseModel):
+    """TenantUser model representing user-tenant relationship."""
+    
+    user_id: str = Field(..., description="User ID")
+    tenant_id: str = Field(..., description="Tenant ID")
+    permissions: List[str] = Field(
+        default_factory=list,
+        description="Tenant-specific permissions"
+    )
+    roles: List[str] = Field(default_factory=list, description="Tenant-specific roles")
