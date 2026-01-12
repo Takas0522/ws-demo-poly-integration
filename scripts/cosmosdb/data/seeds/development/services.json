@@ -1,0 +1,212 @@
+[
+  {
+    "id": "service-file-management",
+    "tenantId": "system-internal",
+    "name": "file-management",
+    "displayName": {
+      "ja": "ファイル管理",
+      "en": "File Management"
+    },
+    "description": {
+      "ja": "安全なファイルストレージと管理機能を提供します",
+      "en": "Provides secure file storage and management capabilities"
+    },
+    "category": "storage",
+    "icon": "folder-icon",
+    "status": "active",
+    "requiredPlan": ["basic", "professional", "enterprise"],
+    "features": [
+      {
+        "key": "upload",
+        "displayName": {
+          "ja": "ファイルアップロード",
+          "en": "File Upload"
+        },
+        "description": {
+          "ja": "ファイルをアップロードできます",
+          "en": "Upload files"
+        },
+        "enabled": true
+      },
+      {
+        "key": "versioning",
+        "displayName": {
+          "ja": "バージョン管理",
+          "en": "Versioning"
+        },
+        "description": {
+          "ja": "ファイルのバージョンを管理",
+          "en": "Manage file versions"
+        },
+        "enabled": true
+      }
+    ],
+    "pricing": [
+      {
+        "plan": "basic",
+        "price": 1000,
+        "currency": "JPY",
+        "billingCycle": "monthly"
+      },
+      {
+        "plan": "professional",
+        "price": 2500,
+        "currency": "JPY",
+        "billingCycle": "monthly"
+      },
+      {
+        "plan": "enterprise",
+        "price": 5000,
+        "currency": "JPY",
+        "billingCycle": "monthly"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "releaseDate": "2026-01-01T00:00:00Z",
+      "deprecated": false
+    }
+  },
+  {
+    "id": "service-external-sharing",
+    "tenantId": "system-internal",
+    "name": "external-sharing",
+    "displayName": {
+      "ja": "外部共有",
+      "en": "External Sharing"
+    },
+    "description": {
+      "ja": "外部ユーザーとのセキュアなファイル共有機能を提供します",
+      "en": "Provides secure file sharing capabilities with external users"
+    },
+    "category": "collaboration",
+    "icon": "share-icon",
+    "status": "active",
+    "requiredPlan": ["professional", "enterprise"],
+    "features": [
+      {
+        "key": "public-links",
+        "displayName": {
+          "ja": "公開リンク",
+          "en": "Public Links"
+        },
+        "description": {
+          "ja": "公開リンクでファイルを共有",
+          "en": "Share files via public links"
+        },
+        "enabled": true
+      },
+      {
+        "key": "password-protection",
+        "displayName": {
+          "ja": "パスワード保護",
+          "en": "Password Protection"
+        },
+        "description": {
+          "ja": "共有リンクをパスワードで保護",
+          "en": "Protect shared links with passwords"
+        },
+        "enabled": true
+      },
+      {
+        "key": "expiration",
+        "displayName": {
+          "ja": "有効期限設定",
+          "en": "Expiration Settings"
+        },
+        "description": {
+          "ja": "共有リンクに有効期限を設定",
+          "en": "Set expiration dates for shared links"
+        },
+        "enabled": true
+      }
+    ],
+    "pricing": [
+      {
+        "plan": "professional",
+        "price": 1500,
+        "currency": "JPY",
+        "billingCycle": "monthly"
+      },
+      {
+        "plan": "enterprise",
+        "price": 3000,
+        "currency": "JPY",
+        "billingCycle": "monthly"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "releaseDate": "2026-01-01T00:00:00Z",
+      "deprecated": false
+    }
+  },
+  {
+    "id": "service-ai-agent",
+    "tenantId": "system-internal",
+    "name": "ai-agent",
+    "displayName": {
+      "ja": "AIエージェント",
+      "en": "AI Agent"
+    },
+    "description": {
+      "ja": "インテリジェントなAIアシスタント機能を提供します",
+      "en": "Provides intelligent AI assistant capabilities"
+    },
+    "category": "ai",
+    "icon": "ai-icon",
+    "status": "beta",
+    "requiredPlan": ["enterprise"],
+    "features": [
+      {
+        "key": "chat-assistant",
+        "displayName": {
+          "ja": "チャットアシスタント",
+          "en": "Chat Assistant"
+        },
+        "description": {
+          "ja": "自然言語でのチャットサポート",
+          "en": "Natural language chat support"
+        },
+        "enabled": true
+      },
+      {
+        "key": "document-analysis",
+        "displayName": {
+          "ja": "ドキュメント分析",
+          "en": "Document Analysis"
+        },
+        "description": {
+          "ja": "ドキュメントの自動分析と要約",
+          "en": "Automatic document analysis and summarization"
+        },
+        "enabled": true
+      },
+      {
+        "key": "workflow-automation",
+        "displayName": {
+          "ja": "ワークフロー自動化",
+          "en": "Workflow Automation"
+        },
+        "description": {
+          "ja": "AIによるワークフロー自動化",
+          "en": "AI-powered workflow automation"
+        },
+        "enabled": false
+      }
+    ],
+    "pricing": [
+      {
+        "plan": "enterprise",
+        "price": 10000,
+        "currency": "JPY",
+        "billingCycle": "monthly"
+      }
+    ],
+    "metadata": {
+      "version": "0.9.0",
+      "releaseDate": "2026-01-10T00:00:00Z",
+      "deprecated": false
+    }
+  }
+]

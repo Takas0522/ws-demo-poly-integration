@@ -1,5 +1,47 @@
 [
   {
+    "id": "system-internal",
+    "tenantId": "system-internal",
+    "name": "管理会社",
+    "status": "active",
+    "subscription": {
+      "plan": "enterprise",
+      "startDate": "2026-01-01T00:00:00.000Z",
+      "endDate": "2099-12-31T23:59:59.999Z",
+      "maxUsers": 9999
+    },
+    "settings": {
+      "timezone": "Asia/Tokyo",
+      "locale": "ja-JP",
+      "features": {
+        "twoFactorAuth": true,
+        "apiAccess": true,
+        "advancedReporting": true
+      },
+      "allowedDomains": ["@company.com", "@company.co.jp"]
+    },
+    "services": [
+      {
+        "serviceId": "service-file-management",
+        "enabled": true,
+        "enabledAt": "2026-01-01T00:00:00Z",
+        "disabledAt": null
+      },
+      {
+        "serviceId": "service-external-sharing",
+        "enabled": true,
+        "enabledAt": "2026-01-01T00:00:00Z",
+        "disabledAt": null
+      },
+      {
+        "serviceId": "service-ai-agent",
+        "enabled": true,
+        "enabledAt": "2026-01-10T00:00:00Z",
+        "disabledAt": null
+      }
+    ]
+  },
+  {
     "id": "dev-tenant",
     "tenantId": "dev-tenant",
     "name": "Development Tenant",
@@ -17,8 +59,23 @@
         "twoFactorAuth": true,
         "apiAccess": true,
         "advancedReporting": true
+      },
+      "allowedDomains": []
+    },
+    "services": [
+      {
+        "serviceId": "service-file-management",
+        "enabled": true,
+        "enabledAt": "2026-01-01T00:00:00Z",
+        "disabledAt": null
+      },
+      {
+        "serviceId": "service-external-sharing",
+        "enabled": true,
+        "enabledAt": "2026-01-01T00:00:00Z",
+        "disabledAt": null
       }
-    }
+    ]
   },
   {
     "id": "demo-tenant",
@@ -38,7 +95,16 @@
         "twoFactorAuth": true,
         "apiAccess": true,
         "advancedReporting": false
+      },
+      "allowedDomains": []
+    },
+    "services": [
+      {
+        "serviceId": "service-file-management",
+        "enabled": true,
+        "enabledAt": "2026-01-01T00:00:00Z",
+        "disabledAt": null
       }
-    }
+    ]
   }
 ]
