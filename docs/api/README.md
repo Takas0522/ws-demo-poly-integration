@@ -1,27 +1,27 @@
-# APIドキュメント
+# API ドキュメント
 
-このディレクトリには、SaaS管理者Webアプリケーションのすべてのサービスに関するAPIドキュメントが含まれています。
+このディレクトリには、SaaS 管理者 Web アプリケーションのすべてのサービスに関する API ドキュメントが含まれています。
 
 ## 📋 概要
 
-このアプリケーションの各サービスは、OpenAPI 3.0仕様を使用して文書化されたRESTful APIを公開しています。このディレクトリは以下を提供します：
+このアプリケーションの各サービスは、OpenAPI 3.0 仕様を使用して文書化された RESTful API を公開しています。このディレクトリは以下を提供します：
 
-- 統一されたAPIドキュメント標準
-- サービス固有のAPIリファレンス
+- 統一された API ドキュメント標準
+- サービス固有の API リファレンス
 - 認証と認可のガイド
-- 共通のAPIパターンと規約
-- インタラクティブなAPI Explorer
+- 共通の API パターンと規約
+- インタラクティブな API Explorer
 - 自動型生成パイプライン
 
 ## 🚀 クイックスタート
 
-### 1. API Explorerで確認
+### 1. API Explorer で確認
 
-ブラウザで [api-explorer.html](./api-explorer.html) を開いて、すべてのAPIをインタラクティブに探索できます。
+ブラウザで [api-explorer.html](./api-explorer.html) を開いて、すべての API をインタラクティブに探索できます。
 
-### 2. OpenAPI仕様を確認
+### 2. OpenAPI 仕様を確認
 
-各サービスの `openapi.yaml` ファイルで完全なAPI仕様を確認：
+各サービスの `openapi.yaml` ファイルで完全な API 仕様を確認：
 
 - [Authentication Service](./auth-service/openapi.yaml)
 - [User Management Service](./user-management-service/openapi.yaml)
@@ -29,7 +29,7 @@
 
 ### 3. 型を生成
 
-OpenAPI仕様からTypeScript型を自動生成：
+OpenAPI 仕様から TypeScript 型を自動生成：
 
 ```bash
 cd packages/@types
@@ -41,42 +41,49 @@ npm run generate
 ## 🏗️ サービス
 
 ### 認証サービス
+
 - **パス**: [auth-service/](./auth-service/)
-- **ベースURL**: `http://localhost:3001/api`
-- **目的**: JWT認証とトークン管理
+- **技術スタック**: Python, FastAPI
+- **ベース URL**: `http://localhost:3001/api`
+- **目的**: JWT 認証、トークン管理、権限検証
+- **Swagger UI**: `http://localhost:3001/docs`
 
 ### ユーザー管理サービス
+
 - **パス**: [user-management-service/](./user-management-service/)
-- **OpenAPI仕様**: [openapi.yaml](./user-management-service/openapi.yaml)
-- **ベースURL**: `http://localhost:3002/api`
-- **目的**: ユーザーCRUD操作とプロファイル管理
-- **Swagger UI**: `http://localhost:3002/api-docs`
+- **OpenAPI 仕様**: [openapi.yaml](./user-management-service/openapi.yaml)
+- **技術スタック**: Python, FastAPI, CosmosDB
+- **ベース URL**: `http://localhost:3002/api`
+- **目的**: ユーザー CRUD 操作とプロファイル管理
+- **Swagger UI**: `http://localhost:3002/docs`
 
 ### サービス設定サービス
+
 - **パス**: [service-setting-service/](./service-setting-service/)
-- **OpenAPI仕様**: [openapi.yaml](./service-setting-service/openapi.yaml)
-- **ベースURL**: `http://localhost:3003/api`
+- **OpenAPI 仕様**: [openapi.yaml](./service-setting-service/openapi.yaml)
+- **技術スタック**: Python, FastAPI, CosmosDB
+- **ベース URL**: `http://localhost:3003/api`
 - **目的**: サービス構成と機能フラグ管理
-- **Swagger UI**: `http://localhost:3003/api-docs`
+- **Swagger UI**: `http://localhost:3003/docs`
 
 ## 📚 ドキュメント
 
 ### ガイド
 
-- **[API Explorer](./api-explorer.html)** - インタラクティブなAPIドキュメント
+- **[API Explorer](./api-explorer.html)** - インタラクティブな API ドキュメント
 - **[API Versioning Strategy](./API_VERSIONING_STRATEGY.md)** - バージョニング戦略
-- **[Swagger UI Integration](./SWAGGER_UI_INTEGRATION.md)** - Swagger UI統合ガイド
+- **[Swagger UI Integration](./SWAGGER_UI_INTEGRATION.md)** - Swagger UI 統合ガイド
 - **[Type Generation Pipeline](./TYPE_GENERATION_PIPELINE.md)** - 型生成パイプライン
 
 ### サービス別ドキュメント
 
-- [認証サービスAPI](./auth-service/README.md)
-- [ユーザー管理サービスAPI](./user-management-service/README.md)
-- [サービス設定サービスAPI](./service-setting-service/README.md)
+- [認証サービス API](./auth-service/README.md)
+- [ユーザー管理サービス API](./user-management-service/README.md)
+- [サービス設定サービス API](./service-setting-service/README.md)
 
 ## 🔐 認証
 
-すべてのAPI（公開エンドポイントを除く）はJWT認証が必要です。
+すべての API（公開エンドポイントを除く）は JWT 認証が必要です。
 
 ### トークンの取得
 
@@ -91,6 +98,7 @@ Content-Type: application/json
 ```
 
 **レスポンス：**
+
 ```json
 {
   "success": true,
@@ -122,13 +130,14 @@ POST /api/auth/refresh
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-## 📡 共通APIパターン
+## 📡 共通 API パターン
 
 ### リクエスト形式
 
-すべてのAPIリクエストは以下の規約に従う必要があります：
+すべての API リクエストは以下の規約に従う必要があります：
 
 **ヘッダー：**
+
 ```
 Content-Type: application/json
 Authorization: Bearer <token>
@@ -136,21 +145,24 @@ X-Tenant-ID: <tenant-id>  (マルチテナント操作用)
 ```
 
 **リスト用のクエリパラメータ：**
+
 - `page` (number): ページ番号（デフォルト: 1）
 - `limit` (number): ページあたりのアイテム数（デフォルト: 20、最大: 100）
 - `sort` (string): ソートフィールド（降順は`-`プレフィックス）
 - `filter` (string): フィルター式
 
 **例：**
+
 ```bash
 GET /api/users?page=1&limit=20&sort=-createdAt&filter=active:true
 ```
 
 ### レスポンス形式
 
-すべてのAPIレスポンスは標準形式に従います：
+すべての API レスポンスは標準形式に従います：
 
 **成功レスポンス：**
+
 ```json
 {
   "success": true,
@@ -165,6 +177,7 @@ GET /api/users?page=1&limit=20&sort=-createdAt&filter=active:true
 ```
 
 **リストレスポンス：**
+
 ```json
 {
   "success": true,
@@ -181,6 +194,7 @@ GET /api/users?page=1&limit=20&sort=-createdAt&filter=active:true
 ```
 
 **エラーレスポンス：**
+
 ```json
 {
   "success": false,
@@ -201,11 +215,13 @@ GET /api/users?page=1&limit=20&sort=-createdAt&filter=active:true
 ## 🔢 ステータスコード
 
 ### 成功コード
-- **200 OK**: 成功したGET、PUT、またはPATCHリクエスト
-- **201 Created**: リソースを作成する成功したPOSTリクエスト
-- **204 No Content**: 成功したDELETEリクエスト
+
+- **200 OK**: 成功した GET、PUT、または PATCH リクエスト
+- **201 Created**: リソースを作成する成功した POST リクエスト
+- **204 No Content**: 成功した DELETE リクエスト
 
 ### クライアントエラーコード
+
 - **400 Bad Request**: 無効なリクエスト形式またはパラメータ
 - **401 Unauthorized**: 認証トークンがないか無効
 - **403 Forbidden**: 有効な認証だが権限不足
@@ -215,6 +231,7 @@ GET /api/users?page=1&limit=20&sort=-createdAt&filter=active:true
 - **429 Too Many Requests**: レート制限を超過
 
 ### サーバーエラーコード
+
 - **500 Internal Server Error**: 予期しないサーバーエラー
 - **502 Bad Gateway**: アップストリームサービスエラー
 - **503 Service Unavailable**: サービスが一時的に利用不可
@@ -224,38 +241,44 @@ GET /api/users?page=1&limit=20&sort=-createdAt&filter=active:true
 
 すべてのサービスで使用される標準エラーコード：
 
-### 認証エラー (AUTH_*)
+### 認証エラー (AUTH\_\*)
+
 - `AUTH_INVALID_CREDENTIALS`: 無効なメールまたはパスワード
-- `AUTH_TOKEN_EXPIRED`: JWTトークンの有効期限切れ
-- `AUTH_TOKEN_INVALID`: JWTトークンが不正または無効
+- `AUTH_TOKEN_EXPIRED`: JWT トークンの有効期限切れ
+- `AUTH_TOKEN_INVALID`: JWT トークンが不正または無効
 - `AUTH_UNAUTHORIZED`: 認証トークンが提供されていない
 
-### 認可エラー (AUTHZ_*)
+### 認可エラー (AUTHZ\_\*)
+
 - `AUTHZ_INSUFFICIENT_PERMISSIONS`: ユーザーに必要な権限がない
 - `AUTHZ_FORBIDDEN`: このユーザーにはアクションが許可されていない
 
-### 検証エラー (VALIDATION_*)
+### 検証エラー (VALIDATION\_\*)
+
 - `VALIDATION_FAILED`: 一般的な検証失敗
 - `VALIDATION_REQUIRED_FIELD`: 必須フィールドが欠落
 - `VALIDATION_INVALID_FORMAT`: フィールドの形式が無効
 - `VALIDATION_OUT_OF_RANGE`: 許可された範囲外の値
 
-### リソースエラー (RESOURCE_*)
+### リソースエラー (RESOURCE\_\*)
+
 - `RESOURCE_NOT_FOUND`: リクエストされたリソースが存在しない
 - `RESOURCE_ALREADY_EXISTS`: 同じ識別子のリソースが存在
 - `RESOURCE_CONFLICT`: 操作がリソースの状態と競合
 
-### データベースエラー (DB_*)
+### データベースエラー (DB\_\*)
+
 - `DB_CONNECTION_ERROR`: データベースへの接続に失敗
 - `DB_QUERY_ERROR`: データベースクエリが失敗
 - `DB_CONSTRAINT_VIOLATION`: データベース制約に違反
 
-### レート制限 (RATE_LIMIT_*)
+### レート制限 (RATE*LIMIT*\*)
+
 - `RATE_LIMIT_EXCEEDED`: 時間枠内のリクエストが多すぎる
 
 ## 🔄 バージョニング
 
-APIはURLパスバージョニングを使用してバージョン管理されます：
+API は URL パスバージョニングを使用してバージョン管理されます：
 
 ```
 /api/v1/users
@@ -265,8 +288,9 @@ APIはURLパスバージョニングを使用してバージョン管理され�
 **現在のバージョン**: v1
 
 **バージョンサポートポリシー**:
+
 - 現在のバージョン（v1）：完全にサポート
-- 前のバージョン（v0）：非推奨、6か月のサンセット期間
+- 前のバージョン（v0）：非推奨、6 か月のサンセット期間
 - 古いバージョン：サポートされていない
 
 ## 📄 ページネーション
@@ -276,11 +300,13 @@ APIはURLパスバージョニングを使用してバージョン管理され�
 ### オフセットベースのページネーション（デフォルト）
 
 **リクエスト：**
+
 ```bash
 GET /api/users?page=2&limit=20
 ```
 
 **レスポンス：**
+
 ```json
 {
   "success": true,
@@ -297,11 +323,13 @@ GET /api/users?page=2&limit=20
 ### カーソルベースのページネーション
 
 **リクエスト：**
+
 ```bash
 GET /api/users?cursor=eyJpZCI6IjEyMyJ9&limit=20
 ```
 
 **レスポンス：**
+
 ```json
 {
   "success": true,
@@ -321,11 +349,13 @@ GET /api/users?cursor=eyJpZCI6IjEyMyJ9&limit=20
 クエリパラメータを使用してフィルタリング：
 
 **シンプルフィルター：**
+
 ```bash
 GET /api/users?status=active&role=admin
 ```
 
 **複雑なフィルター（JSON）：**
+
 ```bash
 GET /api/users?filter={"status":"active","createdAt":{"$gte":"2026-01-01"}}
 ```
@@ -335,16 +365,19 @@ GET /api/users?filter={"status":"active","createdAt":{"$gte":"2026-01-01"}}
 フィールド名を指定して`sort`パラメータを使用：
 
 **昇順：**
+
 ```bash
 GET /api/users?sort=name
 ```
 
 **降順：**
+
 ```bash
 GET /api/users?sort=-createdAt
 ```
 
 **複数フィールド：**
+
 ```bash
 GET /api/users?sort=status,-createdAt
 ```
@@ -352,17 +385,20 @@ GET /api/users?sort=status,-createdAt
 ## 🔐 セキュリティベストプラクティス
 
 ### 入力検証
+
 - 処理前にすべての入力を検証
 - 厳格な型チェックを適用
-- SQLインジェクション防止
-- テキスト入力のXSS保護
+- SQL インジェクション防止
+- テキスト入力の XSS 保護
 
 ### レート制限
-- **匿名ユーザー**: 60リクエスト/分
-- **認証済みユーザー**: 300リクエスト/分
-- **プレミアムユーザー**: 1000リクエスト/分
+
+- **匿名ユーザー**: 60 リクエスト/分
+- **認証済みユーザー**: 300 リクエスト/分
+- **プレミアムユーザー**: 1000 リクエスト/分
 
 レート制限ヘッダー：
+
 ```
 X-RateLimit-Limit: 300
 X-RateLimit-Remaining: 275
@@ -370,14 +406,16 @@ X-RateLimit-Reset: 1704672000
 ```
 
 ### CORS
+
 Cross-Origin Resource Sharing（CORS）は以下のために設定されています：
+
 - 開発環境：`http://localhost:*`
 - ステージング環境：`https://*.staging.example.com`
 - 本番環境：`https://*.example.com`
 
-## 🧪 APIのテスト
+## 🧪 API のテスト
 
-### cURLを使用
+### cURL を使用
 
 ```bash
 # ログイン
@@ -390,13 +428,13 @@ curl -X GET http://localhost:3002/api/users \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-### Postmanを使用
+### Postman を使用
 
-各サービスのドキュメントフォルダからPostmanにOpenAPI仕様ファイルをインポートします。
+各サービスのドキュメントフォルダから Postman に OpenAPI 仕様ファイルをインポートします。
 
-### Swagger UIを使用
+### Swagger UI を使用
 
-各サービスは対話的なAPIテストのためのSwagger UIを提供します：
+各サービスは対話的な API テストのための Swagger UI を提供します：
 
 - 認証サービス：`http://localhost:3001/api-docs`
 - ユーザーサービス：`http://localhost:3002/api-docs`
@@ -412,7 +450,7 @@ curl -X GET http://localhost:3002/api/users \
 X-Request-ID: req-abc123def456
 ```
 
-このIDを使用して、ログ内でサービス間のリクエストをトレースします。
+この ID を使用して、ログ内でサービス間のリクエストをトレースします。
 
 ### ヘルスチェック
 
@@ -426,13 +464,13 @@ GET /health/live      # ライブネスチェック
 
 ## 🔧 開発ツール
 
-### APIテストコレクション
+### API テストコレクション
 
-Postmanコレクションは各サービスの`/docs`ディレクトリで利用可能です。
+Postman コレクションは各サービスの`/docs`ディレクトリで利用可能です。
 
 ### コード生成
 
-OpenAPI仕様を使用してクライアントSDKを生成できます：
+OpenAPI 仕様を使用してクライアント SDK を生成できます：
 
 ```bash
 # TypeScriptクライアントを生成
@@ -450,10 +488,10 @@ npm run generate:client:python
 
 ## 🤝 コントリビューション
 
-新しいAPIを追加する場合：
+新しい API を追加する場合：
 
 1. ここで文書化された規約に従う
-2. OpenAPI仕様を更新
+2. OpenAPI 仕様を更新
 3. すべてのエンドポイントの例を追加
 4. エラーコードをドキュメント化
 5. 統合テストを含める

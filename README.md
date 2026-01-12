@@ -80,19 +80,19 @@ ws-demo-poly-integration/
 ### 認証サービス (`src/auth-service`)
 
 - **リポジトリ**: [ws-demo-poly3](https://github.com/Takas0522/ws-demo-poly3.git)
-- **技術スタック**: Node.js, Express, TypeScript
-- **目的**: JWT 認証、トークン管理、セッション処理
+- **技術スタック**: Python, FastAPI
+- **目的**: JWT 認証、トークン管理、権限検証
 
 ### ユーザー管理サービス (`src/user-management-service`)
 
 - **リポジトリ**: [ws-demo-poly2](https://github.com/Takas0522/ws-demo-poly2.git)
-- **技術スタック**: Node.js, Express, TypeScript, CosmosDB
+- **技術スタック**: Python, FastAPI, CosmosDB
 - **目的**: ユーザー CRUD 操作、プロファイル管理、ロール割り当て
 
 ### サービス設定サービス (`src/service-setting-service`)
 
 - **リポジトリ**: [ws-demo-poly4](https://github.com/Takas0522/ws-demo-poly4.git)
-- **技術スタック**: Node.js, Express, TypeScript, CosmosDB
+- **技術スタック**: Python, FastAPI, CosmosDB
 - **目的**: サービス構成管理と機能フラグ制御
 
 ### 共有型ライブラリ (`packages/@types`)
@@ -116,11 +116,11 @@ ws-demo-poly-integration/
 
 ### バックエンドサービス
 
-- **ランタイム**: Node.js 18+
-- **フレームワーク**: Express.js
-- **言語**: TypeScript
+- **ランタイム**: Python 3.11+
+- **フレームワーク**: FastAPI
+- **言語**: Python
 - **データベース**: Azure CosmosDB (SQL API)
-- **認証**: JWT (jsonwebtoken)
+- **認証**: JWT (python-jose)
 - **API ドキュメント**: OpenAPI 3.0 (Swagger)
 
 ### インフラストラクチャ
@@ -177,17 +177,17 @@ ws-demo-poly-integration/
    cd ../../src/front
    npm install
 
-   # 認証サービス
+   # 認証サービス (Python/FastAPI)
    cd ../auth-service
-   npm install
+   pip install -r requirements.txt
 
-   # ユーザー管理サービス
+   # ユーザー管理サービス (Python/FastAPI)
    cd ../user-management-service
-   npm install
+   pip install -r requirements.txt
 
-   # サービス設定サービス
+   # サービス設定サービス (Python/FastAPI)
    cd ../service-setting-service
-   npm install
+   pip install -r requirements.txt
    ```
 
 4. **環境変数を設定：**
@@ -212,17 +212,17 @@ ws-demo-poly-integration/
 cd src/front
 npm run dev
 
-# 認証サービス (デフォルト: http://localhost:3001)
+# 認証サービス (Python/FastAPI, デフォルト: http://localhost:3001)
 cd src/auth-service
-npm run dev
+uvicorn app.main:app --reload --host 0.0.0.0 --port 3001
 
-# ユーザー管理サービス (デフォルト: http://localhost:3002)
+# ユーザー管理サービス (Python/FastAPI, デフォルト: http://localhost:3002)
 cd src/user-management-service
-npm run dev
+uvicorn app.main:app --reload --host 0.0.0.0 --port 3002
 
-# サービス設定サービス (デフォルト: http://localhost:3003)
+# サービス設定サービス (Python/FastAPI, デフォルト: http://localhost:3003)
 cd src/service-setting-service
-npm run dev
+uvicorn app.main:app --reload --host 0.0.0.0 --port 3003
 ```
 
 ## 🛠️ 開発
@@ -278,10 +278,14 @@ git push
 各サービスには独自のテストスイートがあります。コミット前にテストを実行してください：
 
 ```bash
-# 各サービスディレクトリで
+# フロントエンドサービス (TypeScript)
 npm test                 # ユニットテストを実行
 npm run test:integration # 統合テストを実行
 npm run test:coverage    # カバレッジレポートを生成
+
+# Pythonサービス (auth-service, user-management-service, service-setting-service)
+pytest                   # ユニットテストを実行
+pytest --cov=app tests/  # カバレッジ付きで実行
 ```
 
 ### コード品質
@@ -289,10 +293,16 @@ npm run test:coverage    # カバレッジレポートを生成
 高いコード品質基準を維持しています：
 
 ```bash
-# 各サービスディレクトリで
+# TypeScriptサービス (front)
 npm run lint            # コードスタイルをチェック
 npm run lint:fix        # スタイルの問題を自動修正
 npm run type-check      # TypeScriptの型チェック
+
+# Pythonサービス (auth-service, user-management-service, service-setting-service)
+black app/ tests/       # コードフォーマット
+isort app/ tests/       # importソート
+mypy app/               # 型チェック
+flake8 app/ tests/      # リント
 ```
 
 ## 📚 ドキュメント
@@ -376,8 +386,8 @@ npm run type-check      # TypeScriptの型チェック
 
 DevContainer には以下がプリインストールされています：
 
-- **Node.js 20** - フロントエンドとバックエンドサービス用
-- **Python 3.11** - スクリプトとツール用
+- **Python 3.11** - バックエンドサービス用 (FastAPI)
+- **Node.js 20** - フロントエンドと共有ライブラリ用
 - **Azure CLI** - Azure リソース管理用
 - **Git & GitHub CLI** - バージョン管理
 - **CosmosDB Emulator** - ローカル開発用データベース
@@ -420,25 +430,25 @@ git submodule update --init --recursive
 各サービスのディレクトリに移動して起動します：
 
 ```bash
-# Frontend
+# Frontend (React + TypeScript)
 cd src/front
 npm install
 npm run dev
 
-# Auth Service
+# Auth Service (Python + FastAPI)
 cd src/auth-service
-npm install
-npm start
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 0.0.0.0 --port 3001
 
-# User Management Service
+# User Management Service (Python + FastAPI)
 cd src/user-management-service
-npm install
-npm start
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 0.0.0.0 --port 3002
 
-# Service Settings Service
+# Service Settings Service (Python + FastAPI)
 cd src/service-setting-service
-npm install
-npm start
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 0.0.0.0 --port 3003
 ```
 
 ## 🔧 開発ツール
