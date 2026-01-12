@@ -8,10 +8,15 @@ import {
   Tenant,
   User,
   Permission,
+  TenantUser,
+  Service,
   Validators,
+  ValidValues,
   isTenant,
   isUser,
   isPermission,
+  isTenantUser,
+  isService,
   TenantStatus,
   UserStatus,
   SubscriptionPlan,
@@ -457,4 +462,333 @@ export function printValidationResults(result: ValidationResult): void {
     console.log('✅ Validation passed with warnings. Review warnings before proceeding.');
   }
   console.log('');
+}
+
+/**
+ * V2: Validate TenantUser data
+ */
+export function validateTenantUser(tenantUser: any, index: number, validUserIds: Set<string>, validTenantIds: Set<string>): ValidationResult {
+  const result: ValidationResult = { valid: true, errors: [], warnings: [] };
+  const entityId = `TenantUser[${index}]`;
+
+  // Validate required fields
+  if (!tenantUser.id || tenantUser.id.trim() === '') {
+    result.valid = false;
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'id',
+      message: 'id field is required and cannot be empty',
+    });
+  }
+
+  // Validate ID format
+  if (tenantUser.id && !tenantUser.id.startsWith('tenantuser-')) {
+    result.warnings.push({
+      type: 'warning',
+      entity: entityId,
+      field: 'id',
+      message: `ID should start with "tenantuser-" but got "${tenantUser.id}"`,
+    });
+  }
+
+  // Validate userId
+  if (!tenantUser.userId || tenantUser.userId.trim() === '') {
+    result.valid = false;
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'userId',
+      message: 'userId field is required and cannot be empty',
+    });
+  } else if (!validUserIds.has(tenantUser.userId)) {
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'userId',
+      message: `userId "${tenantUser.userId}" does not exist in Users collection`,
+      value: tenantUser.userId,
+    });
+    result.valid = false;
+  }
+
+  // Validate tenantId
+  if (!tenantUser.tenantId || tenantUser.tenantId.trim() === '') {
+    result.valid = false;
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'tenantId',
+      message: 'tenantId field is required and cannot be empty',
+    });
+  } else if (!validTenantIds.has(tenantUser.tenantId)) {
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'tenantId',
+      message: `tenantId "${tenantUser.tenantId}" does not exist in Tenants collection`,
+      value: tenantUser.tenantId,
+    });
+    result.valid = false;
+  }
+
+  // Validate status
+  if (!ValidValues.TENANT_USER_STATUSES.includes(tenantUser.status as any)) {
+    result.valid = false;
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'status',
+      message: `Invalid status. Must be one of: ${ValidValues.TENANT_USER_STATUSES.join(', ')}`,
+      value: tenantUser.status,
+    });
+  }
+
+  // Validate roles array
+  if (!Array.isArray(tenantUser.roles)) {
+    result.valid = false;
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'roles',
+      message: 'roles must be an array',
+    });
+  }
+
+  // Validate permissions array
+  if (!Array.isArray(tenantUser.permissions)) {
+    result.valid = false;
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'permissions',
+      message: 'permissions must be an array',
+    });
+  } else {
+    tenantUser.permissions.forEach((perm: string, permIndex: number) => {
+      if (!Validators.isValidPermissionName(perm)) {
+        result.warnings.push({
+          type: 'warning',
+          entity: entityId,
+          field: `permissions[${permIndex}]`,
+          message: `Permission name "${perm}" does not follow dot notation format`,
+          value: perm,
+        });
+      }
+    });
+  }
+
+  // Validate timestamps
+  if (tenantUser.joinedAt && !Validators.isValidISOTimestamp(tenantUser.joinedAt)) {
+    result.warnings.push({
+      type: 'warning',
+      entity: entityId,
+      field: 'joinedAt',
+      message: 'joinedAt is not a valid ISO 8601 timestamp',
+      value: tenantUser.joinedAt,
+    });
+  }
+
+  if (tenantUser.leftAt && tenantUser.leftAt !== null && !Validators.isValidISOTimestamp(tenantUser.leftAt)) {
+    result.warnings.push({
+      type: 'warning',
+      entity: entityId,
+      field: 'leftAt',
+      message: 'leftAt is not a valid ISO 8601 timestamp',
+      value: tenantUser.leftAt,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * V2: Validate Service data
+ */
+export function validateService(service: any, index: number): ValidationResult {
+  const result: ValidationResult = { valid: true, errors: [], warnings: [] };
+  const entityId = `Service[${index}]`;
+
+  // Validate required fields
+  if (!service.id || service.id.trim() === '') {
+    result.valid = false;
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'id',
+      message: 'id field is required and cannot be empty',
+    });
+  }
+
+  // Validate ID format
+  if (service.id && !service.id.startsWith('service-')) {
+    result.warnings.push({
+      type: 'warning',
+      entity: entityId,
+      field: 'id',
+      message: `ID should start with "service-" but got "${service.id}"`,
+    });
+  }
+
+  // Validate tenantId (must be "system-internal")
+  if (service.tenantId !== 'system-internal') {
+    result.valid = false;
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'tenantId',
+      message: 'Service tenantId must be "system-internal"',
+      value: service.tenantId,
+    });
+  }
+
+  // Validate name
+  if (!service.name || service.name.trim() === '') {
+    result.valid = false;
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'name',
+      message: 'name field is required and cannot be empty',
+    });
+  }
+
+  // Validate displayName (localized)
+  if (!service.displayName || typeof service.displayName !== 'object') {
+    result.valid = false;
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'displayName',
+      message: 'displayName must be an object with ja and en properties',
+    });
+  } else {
+    if (!service.displayName.ja || service.displayName.ja.trim() === '') {
+      result.valid = false;
+      result.errors.push({
+        type: 'error',
+        entity: entityId,
+        field: 'displayName.ja',
+        message: 'Japanese display name is required',
+      });
+    }
+    if (!service.displayName.en || service.displayName.en.trim() === '') {
+      result.valid = false;
+      result.errors.push({
+        type: 'error',
+        entity: entityId,
+        field: 'displayName.en',
+        message: 'English display name is required',
+      });
+    }
+  }
+
+  // Validate description (localized)
+  if (!service.description || typeof service.description !== 'object') {
+    result.valid = false;
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'description',
+      message: 'description must be an object with ja and en properties',
+    });
+  } else {
+    if (!service.description.ja || service.description.ja.trim() === '') {
+      result.valid = false;
+      result.errors.push({
+        type: 'error',
+        entity: entityId,
+        field: 'description.ja',
+        message: 'Japanese description is required',
+      });
+    }
+    if (!service.description.en || service.description.en.trim() === '') {
+      result.valid = false;
+      result.errors.push({
+        type: 'error',
+        entity: entityId,
+        field: 'description.en',
+        message: 'English description is required',
+      });
+    }
+  }
+
+  // Validate status
+  if (!ValidValues.SERVICE_STATUSES.includes(service.status as any)) {
+    result.valid = false;
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'status',
+      message: `Invalid status. Must be one of: ${ValidValues.SERVICE_STATUSES.join(', ')}`,
+      value: service.status,
+    });
+  }
+
+  // Validate requiredPlan array
+  if (!Array.isArray(service.requiredPlan)) {
+    result.valid = false;
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'requiredPlan',
+      message: 'requiredPlan must be an array',
+    });
+  } else {
+    service.requiredPlan.forEach((plan: string, planIndex: number) => {
+      if (!ValidValues.SUBSCRIPTION_PLANS.includes(plan as any)) {
+        result.errors.push({
+          type: 'error',
+          entity: entityId,
+          field: `requiredPlan[${planIndex}]`,
+          message: `Invalid plan. Must be one of: ${ValidValues.SUBSCRIPTION_PLANS.join(', ')}`,
+          value: plan,
+        });
+        result.valid = false;
+      }
+    });
+  }
+
+  // Validate features array
+  if (!Array.isArray(service.features)) {
+    result.valid = false;
+    result.errors.push({
+      type: 'error',
+      entity: entityId,
+      field: 'features',
+      message: 'features must be an array',
+    });
+  } else {
+    service.features.forEach((feature: any, featureIndex: number) => {
+      if (!feature.key || feature.key.trim() === '') {
+        result.errors.push({
+          type: 'error',
+          entity: entityId,
+          field: `features[${featureIndex}].key`,
+          message: 'Feature key is required',
+        });
+        result.valid = false;
+      }
+      if (!feature.displayName || typeof feature.displayName !== 'object') {
+        result.errors.push({
+          type: 'error',
+          entity: entityId,
+          field: `features[${featureIndex}].displayName`,
+          message: 'Feature displayName must be an object with ja and en properties',
+        });
+        result.valid = false;
+      }
+      if (typeof feature.enabled !== 'boolean') {
+        result.errors.push({
+          type: 'error',
+          entity: entityId,
+          field: `features[${featureIndex}].enabled`,
+          message: 'Feature enabled must be a boolean',
+        });
+        result.valid = false;
+      }
+    });
+  }
+
+  return result;
 }

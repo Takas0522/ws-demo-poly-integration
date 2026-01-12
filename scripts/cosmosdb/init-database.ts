@@ -116,6 +116,41 @@ const auditLogsIndexingPolicy: IndexingPolicy = {
 };
 
 /**
+ * V2: Indexing policy for TenantUsers container
+ */
+const tenantUsersIndexingPolicy: IndexingPolicy = {
+  indexingMode: "consistent",
+  automatic: true,
+  includedPaths: [{ path: "/*" }],
+  excludedPaths: [{ path: "/_etag/?" }],
+  compositeIndexes: [
+    [
+      { path: "/userId", order: "ascending" },
+      { path: "/status", order: "ascending" },
+    ],
+    [
+      { path: "/tenantId", order: "ascending" },
+      { path: "/status", order: "ascending" },
+    ],
+  ],
+};
+
+/**
+ * V2: Indexing policy for Services container
+ */
+const servicesIndexingPolicy: IndexingPolicy = {
+  indexingMode: "consistent",
+  automatic: true,
+  includedPaths: [{ path: "/*" }],
+  excludedPaths: [
+    { path: "/features/*" },
+    { path: "/pricing/*" },
+    { path: "/metadata/*" },
+    { path: "/_etag/?" },
+  ],
+};
+
+/**
  * Container definitions with throughput
  */
 interface ContainerConfig {
@@ -154,6 +189,23 @@ const containers: ContainerConfig[] = [
       partitionKey: { paths: ["/tenantId"] },
       indexingPolicy: auditLogsIndexingPolicy,
       defaultTtl: 7776000, // 90 days in seconds
+    },
+    throughput: 400,
+  },
+  // V2: New containers
+  {
+    definition: {
+      id: "TenantUsers",
+      partitionKey: { paths: ["/userId"] },
+      indexingPolicy: tenantUsersIndexingPolicy,
+    },
+    throughput: 400,
+  },
+  {
+    definition: {
+      id: "Services",
+      partitionKey: { paths: ["/tenantId"] },
+      indexingPolicy: servicesIndexingPolicy,
     },
     throughput: 400,
   },
