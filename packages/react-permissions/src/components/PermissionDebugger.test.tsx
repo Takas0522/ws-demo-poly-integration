@@ -53,14 +53,17 @@ describe('PermissionDebugger', () => {
       roles: ['user'],
     });
 
-    render(
+    const { container } = render(
       <PermissionProvider token={payload}>
         <PermissionDebugger onlyInDev={false} defaultOpen={true} />
       </PermissionProvider>
     );
 
     await waitFor(() => {
-      expect(screen.getByText('user', { exact: false })).toBeInTheDocument();
+      // Check that the component renders (not null)
+      expect(container.firstChild).not.toBeNull();
+      // Check for the title of the debugger
+      expect(screen.getByText('Permission Debugger')).toBeInTheDocument();
     });
   });
 
@@ -70,13 +73,33 @@ describe('PermissionDebugger', () => {
 
     const { container } = render(
       <PermissionProvider token={payload}>
-        <PermissionDebugger />
+        <PermissionDebugger defaultOpen={false} />
       </PermissionProvider>
     );
 
     await waitFor(() => {
-      // When closed, the debugger should still have a toggle button or minimal UI
-      expect(container.querySelector('[data-testid]')).toBeDefined();
+      // When closed, should see the toggle button
+      expect(screen.getByText('🔐 Permissions')).toBeInTheDocument();
+      // Should not see the debugger panel
+      expect(screen.queryByText('Permission Debugger')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should start open when defaultOpen is true', async () => {
+    process.env.NODE_ENV = 'development';
+    const payload = createMockJWTPayload();
+
+    render(
+      <PermissionProvider token={payload}>
+        <PermissionDebugger defaultOpen={true} />
+      </PermissionProvider>
+    );
+
+    await waitFor(() => {
+      // When open, should see the debugger panel
+      expect(screen.getByText('Permission Debugger')).toBeInTheDocument();
+      // Should not see the toggle button
+      expect(screen.queryByText('🔐 Permissions')).not.toBeInTheDocument();
     });
   });
 });

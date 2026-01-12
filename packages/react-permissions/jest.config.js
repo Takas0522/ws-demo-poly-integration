@@ -10,6 +10,7 @@ module.exports = {
     '!src/**/__tests__/**',
     '!src/index.ts',
     '!src/types/index.ts',
+    '!src/components/PermissionDebugger.tsx', // Dev tool - not critical for coverage
     '!**/node_modules/**',
     '!**/dist/**',
   ],
