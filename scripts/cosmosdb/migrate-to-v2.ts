@@ -183,8 +183,14 @@ async function migrateUsersToV2(): Promise<number> {
     // Add V2 fields
     const updatedUser: User = {
       ...user,
-      userType: 'internal',  // Default to internal
-      primaryTenantId: user.tenantId  // Use existing tenantId as primary
+      // Default to 'internal' for all existing users
+      // Business Logic: Existing users are assumed to be internal company users
+      // who can log into the system. External users (userType='external') should
+      // be created explicitly through the API after migration.
+      userType: 'internal',
+      // Use existing tenantId as primaryTenantId
+      // This maintains the current tenant relationship as the primary one
+      primaryTenantId: user.tenantId
     };
     
     updatedUser.updatedAt = new Date().toISOString();

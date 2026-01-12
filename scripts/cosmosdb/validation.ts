@@ -11,6 +11,7 @@ import {
   TenantUser,
   Service,
   Validators,
+  ValidValues,
   isTenant,
   isUser,
   isPermission,
@@ -532,14 +533,13 @@ export function validateTenantUser(tenantUser: any, index: number, validUserIds:
   }
 
   // Validate status
-  const validStatuses = ['active', 'inactive', 'suspended'];
-  if (!validStatuses.includes(tenantUser.status)) {
+  if (!ValidValues.TENANT_USER_STATUSES.includes(tenantUser.status as any)) {
     result.valid = false;
     result.errors.push({
       type: 'error',
       entity: entityId,
       field: 'status',
-      message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
+      message: `Invalid status. Must be one of: ${ValidValues.TENANT_USER_STATUSES.join(', ')}`,
       value: tenantUser.status,
     });
   }
@@ -714,14 +714,13 @@ export function validateService(service: any, index: number): ValidationResult {
   }
 
   // Validate status
-  const validStatuses = ['active', 'inactive', 'beta'];
-  if (!validStatuses.includes(service.status)) {
+  if (!ValidValues.SERVICE_STATUSES.includes(service.status as any)) {
     result.valid = false;
     result.errors.push({
       type: 'error',
       entity: entityId,
       field: 'status',
-      message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
+      message: `Invalid status. Must be one of: ${ValidValues.SERVICE_STATUSES.join(', ')}`,
       value: service.status,
     });
   }
@@ -736,14 +735,13 @@ export function validateService(service: any, index: number): ValidationResult {
       message: 'requiredPlan must be an array',
     });
   } else {
-    const validPlans: SubscriptionPlan[] = ['free', 'basic', 'professional', 'enterprise'];
     service.requiredPlan.forEach((plan: string, planIndex: number) => {
-      if (!validPlans.includes(plan as SubscriptionPlan)) {
+      if (!ValidValues.SUBSCRIPTION_PLANS.includes(plan as any)) {
         result.errors.push({
           type: 'error',
           entity: entityId,
           field: `requiredPlan[${planIndex}]`,
-          message: `Invalid plan. Must be one of: ${validPlans.join(', ')}`,
+          message: `Invalid plan. Must be one of: ${ValidValues.SUBSCRIPTION_PLANS.join(', ')}`,
           value: plan,
         });
         result.valid = false;

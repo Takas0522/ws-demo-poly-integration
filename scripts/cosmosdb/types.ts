@@ -430,3 +430,13 @@ export const Defaults = {
   MAX_LOGIN_ATTEMPTS: 5,
   ACCOUNT_LOCKOUT_DURATION_MINUTES: 15,
 } as const;
+
+/**
+ * V2: Constants for valid values
+ */
+export const ValidValues = {
+  TENANT_USER_STATUSES: ['active', 'inactive', 'suspended'] as const,
+  SERVICE_STATUSES: ['active', 'inactive', 'beta'] as const,
+  USER_TYPES: ['internal', 'external'] as const,
+  SUBSCRIPTION_PLANS: ['free', 'basic', 'professional', 'enterprise'] as const,
+} as const;
