@@ -2,13 +2,13 @@
 
 ## 概要
 
-このドキュメントは、SaaS管理アプリケーションにおける複数テナント所属対応、管理会社内/外ユーザー区別、グローバル権限システムの実装ガイドです。
+このドキュメントは、SaaS 管理アプリケーションにおける複数テナント所属対応、管理会社内/外ユーザー区別、グローバル権限システムの実装ガイドです。
 
 ## アーキテクチャ概要
 
 ### コアコンセプト
 
-1. **複数テナント所属**: 1ユーザーが複数のテナント（顧客組織）に所属可能
+1. **複数テナント所属**: 1 ユーザーが複数のテナント（顧客組織）に所属可能
 2. **管理会社内/外ユーザー**: ログイン可否とメールドメイン制限を区別
 3. **テナント固有権限**: テナントごとに異なるロール・権限を付与
 4. **グローバル権限**: 全テナント横断でアクセス可能な管理者権限
@@ -21,13 +21,13 @@
 
 ```typescript
 interface TenantUser {
-  id: string;                    // "tenantuser-{uuid}"
-  userId: string;                 // パーティションキー
+  id: string; // "tenantuser-{uuid}"
+  userId: string; // パーティションキー
   tenantId: string;
-  roles: string[];                // テナント固有のロール
-  permissions: string[];          // テナント固有の権限
-  status: 'active' | 'inactive';
-  joinedAt: string;               // ISO 8601
+  roles: string[]; // テナント固有のロール
+  permissions: string[]; // テナント固有の権限
+  status: "active" | "inactive";
+  joinedAt: string; // ISO 8601
   createdAt: string;
   updatedAt: string;
   createdBy: string;
@@ -38,8 +38,9 @@ interface TenantUser {
 **パーティションキー**: `/userId`
 
 **インデックス戦略**:
+
 - ユーザーの所属テナント一覧取得: 単一パーティションクエリ（高速）
-- テナントのユーザー一覧取得: クロスパーティションクエリ（Redisキャッシング推奨）
+- テナントのユーザー一覧取得: クロスパーティションクエリ（Redis キャッシング推奨）
 
 ### 2. Users コンテナ（拡張）
 
@@ -47,24 +48,26 @@ interface TenantUser {
 interface User {
   // 既存フィールド
   id: string;
-  tenantId: string;               // パーティションキー（プライマリテナント）
+  tenantId: string; // パーティションキー（プライマリテナント）
   email: string;
   username: string;
   // ... その他既存フィールド
 
   // 新規フィールド
-  userType: 'internal' | 'external';  // 管理会社内/外
-  primaryTenantId: string;            // プライマリテナント（通常はsystem-internal）
+  userType: "internal" | "external"; // 管理会社内/外
+  primaryTenantId: string; // プライマリテナント（通常はsystem-internal）
 }
 ```
 
-**userType別の動作**:
+**userType 別の動作**:
+
 - `internal`: システムログイン可能、複数テナント所属可能、メールドメイン制限あり
 - `external`: システムログイン不可、単一テナントのみ所属可能
 
 **プライマリテナント**:
+
 - 管理会社内ユーザー: `system-internal`
-- 管理会社外ユーザー: 所属テナントID
+- 管理会社外ユーザー: 所属テナント ID
 
 ### 3. Services コンテナ（新規）
 
@@ -72,14 +75,14 @@ interface User {
 
 ```typescript
 interface Service {
-  id: string;                     // "service-{uuid}"
-  tenantId: string;               // パーティションキー（"system-internal"）
-  name: string;                   // "ファイル管理", "外部共有", "AIエージェント"
+  id: string; // "service-{uuid}"
+  tenantId: string; // パーティションキー（"system-internal"）
+  name: string; // "ファイル管理", "外部共有", "AIエージェント"
   displayName: string;
   description: string;
-  category: string;               // "storage", "collaboration", "ai"
-  status: 'active' | 'inactive';
-  requiredPlan: string[];         // ["basic", "professional", "enterprise"]
+  category: string; // "storage", "collaboration", "ai"
+  status: "active" | "inactive";
+  requiredPlan: string[]; // ["basic", "professional", "enterprise"]
   features: {
     key: string;
     displayName: string;
@@ -99,14 +102,18 @@ interface Tenant {
   tenantId: string;
   name: string;
   status: string;
-  subscription: { /* ... */ };
-  
+  subscription: {
+    /* ... */
+  };
+
   // 新規フィールド
   settings: {
     timezone: string;
     locale: string;
-    features: { /* ... */ };
-    allowedDomains: string[];     // ["@company.com", "@partner.co.jp"]
+    features: {
+      /* ... */
+    };
+    allowedDomains: string[]; // ["@company.com", "@partner.co.jp"]
   };
 }
 ```
@@ -122,12 +129,12 @@ def check_permission(user: User, tenant_id: str, permission: str) -> bool:
     # 1. グローバル権限チェック（Users.permissions with scope='global'）
     if has_global_permission(user, permission):
         return True
-    
+
     # 2. テナント固有権限チェック（TenantUsers.permissions）
     tenant_user = get_tenant_user(user.id, tenant_id)
     if tenant_user and has_tenant_permission(tenant_user, permission):
         return True
-    
+
     return False
 
 def has_global_permission(user: User, permission: str) -> bool:
@@ -153,11 +160,11 @@ def has_tenant_permission(tenant_user: TenantUser, permission: str) -> bool:
 
 #### 権限スコープ
 
-| スコープ | 説明 | 使用例 |
-|---------|------|--------|
-| `global` | 全テナント横断 | `system.*`, `admin.*` with scope='global' |
-| `tenant` | 特定テナント内のみ | `users.create` in TenantUsers |
-| `own` | 自分のリソースのみ | `profile.update` |
+| スコープ | 説明               | 使用例                                    |
+| -------- | ------------------ | ----------------------------------------- |
+| `global` | 全テナント横断     | `system.*`, `admin.*` with scope='global' |
+| `tenant` | 特定テナント内のみ | `users.create` in TenantUsers             |
+| `own`    | 自分のリソースのみ | `profile.update`                          |
 
 ### ロールと権限のマッピング
 
@@ -203,7 +210,7 @@ sequenceDiagram
     Frontend->>AuthService: email, password
     AuthService->>CosmosDB: ユーザー検索
     CosmosDB-->>AuthService: User + userType
-    
+
     alt userType == 'external'
         AuthService-->>Frontend: 401 Unauthorized
         Frontend-->>User: ログイン不可メッセージ
@@ -220,9 +227,9 @@ sequenceDiagram
 ```typescript
 // JWTクレーム構造
 interface JWTPayload {
-  sub: string;              // user.id
+  sub: string; // user.id
   email: string;
-  userType: 'internal' | 'external';
+  userType: "internal" | "external";
   primaryTenantId: string;
   selectedTenantId: string; // ユーザーが選択したテナント
   tenants: {
@@ -232,7 +239,7 @@ interface JWTPayload {
   }[];
   permissions: {
     name: string;
-    scope: 'global' | 'tenant' | 'own';
+    scope: "global" | "tenant" | "own";
   }[];
   iat: number;
   exp: number;
@@ -248,7 +255,7 @@ interface SwitchTenantRequest {
 }
 
 interface SwitchTenantResponse {
-  accessToken: string;      // 新しいJWT（selectedTenantId更新）
+  accessToken: string; // 新しいJWT（selectedTenantId更新）
   tenant: {
     id: string;
     name: string;
@@ -275,20 +282,20 @@ def validate_email_domain(email: str, tenant: Tenant) -> bool:
             status_code=400,
             detail="テナントに許可ドメインが設定されていません"
         )
-    
+
     domain = email.split('@')[1] if '@' in email else None
     if not domain:
         raise HTTPException(status_code=400, detail="無効なメールアドレス")
-    
-    allowed = [f"@{d}" if not d.startswith('@') else d 
+
+    allowed = [f"@{d}" if not d.startswith('@') else d
                for d in tenant.settings['allowedDomains']]
-    
+
     if f"@{domain}" not in allowed:
         raise HTTPException(
             status_code=400,
             detail=f"許可されたドメイン（{', '.join(allowed)}）のメールアドレスを使用してください"
         )
-    
+
     return True
 
 # ユーザー作成時
@@ -297,7 +304,7 @@ async def create_user(user_data: UserCreate):
     if user_data.userType == 'internal':
         tenant = await get_tenant('system-internal')
         validate_email_domain(user_data.email, tenant)
-    
+
     # ユーザー作成処理
     # ...
 ```
@@ -307,28 +314,29 @@ async def create_user(user_data: UserCreate):
 ```typescript
 // リアルタイム検証
 const validateEmailDomain = async (email: string) => {
-  const response = await api.post('/api/users/validate-email', { email });
+  const response = await api.post("/api/users/validate-email", { email });
   return response.data.valid;
 };
 
 // フォームバリデーション
 const schema = yup.object({
-  email: yup.string()
-    .email('有効なメールアドレスを入力してください')
-    .test('domain-check', '許可されたドメインではありません', async (value) => {
+  email: yup
+    .string()
+    .email("有効なメールアドレスを入力してください")
+    .test("domain-check", "許可されたドメインではありません", async (value) => {
       if (!value) return false;
       return await validateEmailDomain(value);
-    })
+    }),
 });
 ```
 
-## Redisキャッシング戦略
+## Redis キャッシング戦略
 
 ### キャッシュ対象
 
-1. **TenantUsersクエリ結果** (TTL: 5分)
-2. **サービス設定** (TTL: 10分)
-3. **権限定義** (TTL: 15分)
+1. **TenantUsers クエリ結果** (TTL: 5 分)
+2. **サービス設定** (TTL: 10 分)
+3. **権限定義** (TTL: 15 分)
 
 ### 実装例
 
@@ -341,12 +349,12 @@ redis_client = redis.Redis(host='localhost', port=6379, decode_responses=True)
 
 async def get_user_tenants(user_id: str) -> List[TenantUser]:
     cache_key = f"user:tenants:{user_id}"
-    
+
     # キャッシュチェック
     cached = redis_client.get(cache_key)
     if cached:
         return json.loads(cached)
-    
+
     # CosmosDBクエリ
     query = f"SELECT * FROM c WHERE c.userId = @user_id AND c.status = 'active'"
     items = list(container.query_items(
@@ -354,10 +362,10 @@ async def get_user_tenants(user_id: str) -> List[TenantUser]:
         parameters=[{"name": "@user_id", "value": user_id}],
         partition_key=user_id
     ))
-    
+
     # キャッシュ保存（5分）
     redis_client.setex(cache_key, 300, json.dumps(items))
-    
+
     return items
 
 async def invalidate_user_tenants_cache(user_id: str):
@@ -371,8 +379,8 @@ async def invalidate_user_tenants_cache(user_id: str):
 
 ```tsx
 // components/TenantSelector.tsx
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const TenantSelector = () => {
   const { user, selectedTenant, tenants, switchTenant } = useAuth();
@@ -390,7 +398,7 @@ export const TenantSelector = () => {
         className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg"
       >
         <BuildingIcon className="w-5 h-5" />
-        <span>{selectedTenant?.name || 'テナント選択'}</span>
+        <span>{selectedTenant?.name || "テナント選択"}</span>
         <ChevronDownIcon className="w-4 h-4" />
       </button>
 
@@ -401,12 +409,12 @@ export const TenantSelector = () => {
               key={tenant.id}
               onClick={() => handleSwitch(tenant.id)}
               className={`w-full px-4 py-3 text-left hover:bg-gray-50 ${
-                selectedTenant?.id === tenant.id ? 'bg-blue-50' : ''
+                selectedTenant?.id === tenant.id ? "bg-blue-50" : ""
               }`}
             >
               <div className="font-medium">{tenant.name}</div>
               <div className="text-sm text-gray-500">
-                {tenant.roles.join(', ')}
+                {tenant.roles.join(", ")}
               </div>
             </button>
           ))}
@@ -417,7 +425,7 @@ export const TenantSelector = () => {
 };
 ```
 
-### 複数テナント紐付けUI
+### 複数テナント紐付け UI
 
 ```tsx
 // pages/users/[id]/tenants.tsx
@@ -429,7 +437,7 @@ export const UserTenantsPage = () => {
     await api.post(`/api/users/${userId}/tenants`, {
       tenantId,
       roles,
-      permissions: []
+      permissions: [],
     });
     // 再取得
   };
@@ -442,15 +450,18 @@ export const UserTenantsPage = () => {
   return (
     <div className="space-y-6">
       <h2>所属テナント管理</h2>
-      
+
       {/* 既存の所属テナント */}
       <div className="space-y-2">
         {userTenants.map((tu) => (
-          <div key={tu.tenantId} className="flex items-center justify-between p-4 border rounded">
+          <div
+            key={tu.tenantId}
+            className="flex items-center justify-between p-4 border rounded"
+          >
             <div>
               <div className="font-medium">{tu.tenant.name}</div>
               <div className="text-sm text-gray-500">
-                ロール: {tu.roles.join(', ')}
+                ロール: {tu.roles.join(", ")}
               </div>
             </div>
             <button onClick={() => removeTenant(tu.tenantId)}>削除</button>
@@ -459,9 +470,7 @@ export const UserTenantsPage = () => {
       </div>
 
       {/* テナント追加 */}
-      <button onClick={() => setShowAddModal(true)}>
-        テナント追加
-      </button>
+      <button onClick={() => setShowAddModal(true)}>テナント追加</button>
     </div>
   );
 };
@@ -471,8 +480,8 @@ export const UserTenantsPage = () => {
 
 ### 1. テナント間データ漏洩防止
 
-- 全APIリクエストで`selectedTenantId`を検証
-- CosmosDBクエリに必ずパーティションキー（tenantId）を含める
+- 全 API リクエストで`selectedTenantId`を検証
+- CosmosDB クエリに必ずパーティションキー（tenantId）を含める
 - グローバル権限を持つユーザーのみクロステナントクエリ許可
 
 ### 2. 権限エスカレーション防止
@@ -483,20 +492,20 @@ async def update_user_tenant_roles(user_id: str, tenant_id: str, new_roles: List
     # 自分より上位のロールを付与できないようにする
     current_user_roles = get_current_user_roles(tenant_id)
     max_role_level = get_max_role_level(current_user_roles)
-    
+
     for role in new_roles:
         if get_role_level(role) > max_role_level:
             raise HTTPException(403, "自分より上位のロールは付与できません")
-    
+
     # 更新処理
     # ...
 ```
 
 ### 3. セッション管理
 
-- JWT有効期限: 1時間
-- リフレッシュトークン: 7日間
-- テナント切り替え時に新しいJWT発行
+- JWT 有効期限: 1 時間
+- リフレッシュトークン: 7 日間
+- テナント切り替え時に新しい JWT 発行
 - ログアウト時に全トークンを無効化
 
 ## パフォーマンス最適化
@@ -526,7 +535,7 @@ async def bulk_add_users_to_tenant(tenant_id: str, user_ids: List[str]):
             # ...
         )
         operations.append(('create', tenant_user))
-    
+
     # CosmosDB bulk insert
     await container.execute_batch_operations(operations)
 ```
@@ -539,17 +548,19 @@ async def bulk_add_users_to_tenant(tenant_id: str, user_ids: List[str]):
 
 ## トラブルシューティング
 
-### Q: ユーザーがテナントAでログインできない
+### Q: ユーザーがテナント A でログインできない
 
 **チェックポイント**:
-1. TenantUsersテーブルにレコードが存在するか
+
+1. TenantUsers テーブルにレコードが存在するか
 2. status が 'active' か
 3. userType が 'internal' か
-4. JWTのtenants配列にテナントAが含まれているか
+4. JWT の tenants 配列にテナント A が含まれているか
 
 ### Q: 権限チェックが失敗する
 
 **チェックポイント**:
+
 1. グローバル権限とテナント固有権限の優先順位を確認
 2. 権限名が正しいか（ワイルドカードマッチを考慮）
 3. スコープ（global/tenant/own）が正しいか
@@ -558,7 +569,8 @@ async def bulk_add_users_to_tenant(tenant_id: str, user_ids: List[str]):
 ### Q: メールドメイン検証が通らない
 
 **チェックポイント**:
-1. Tenant.settings.allowedDomainsが設定されているか
+
+1. Tenant.settings.allowedDomains が設定されているか
 2. ドメイン形式が正しいか（@付きか、なしか）
 3. 大文字小文字を区別しているか（区別しないべき）
 
@@ -569,7 +581,7 @@ async def bulk_add_users_to_tenant(tenant_id: str, user_ids: List[str]):
 - [権限システム ADR](./adr/005-dot-notation-permission-system.md)
 - [開発計画](../DEVELOPMENT_PLAN.md)
 
-## Issue参照
+## Issue 参照
 
 - **#021**: Schema Extension - TenantUsers, Services, userType Field
 - **#022**: Seed Data Reconstruction
