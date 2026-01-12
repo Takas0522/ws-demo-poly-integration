@@ -78,45 +78,149 @@
 - **019**: Monitoring & Logging Infrastructure
 - **020**: Security & Performance Optimization
 
+---
+
+### **Phase 4B: Backend Extensions & Data Layer (Issues 021-027)**
+- **期間**: 3-4週間（Phase 6と並行）
+- **並列実行可能**: 認証・権限 (023-024) + API実装 (025-027)
+- **クリティカルパス**: スキーマ拡張 (021) → 全ての後続開発
+
+#### Issues:
+- **021**: Schema Extension - TenantUsers, Services, userType Field
+- **022**: Seed Data Reconstruction - Multi-tenant & Service Catalog
+- **023**: Auth Service Extension - userType Validation & Tenant Selection
+- **024**: Permission System Extension - Global Permission Priority Logic
+- **025**: Backend API - Tenant Management
+- **026**: Backend API - User & TenantUsers Management with Redis Caching
+- **027**: Backend API - Service Management & Analytics
+
+---
+
+### **Phase 4C: Frontend UI Implementation (Issues 028-035)**
+- **期間**: 4-5週間（Phase 4Bと一部並行）
+- **並列実行可能**: 管理UI (030-032) + Tailwind (028)は早期並行開始可
+- **クリティカルパス**: Tailwind統合 (028) → 全てのUI実装
+
+#### Issues:
+- **028**: Tailwind CSS Integration & Design System
+- **029**: Frontend UI - Authentication & Tenant Selection
+- **030**: Frontend UI - Tenant Management
+- **031**: Frontend UI - User Management with Multi-tenant Support
+- **032**: Frontend UI - Service Settings
+- **033**: Frontend - Dashboard & Global Search
+- **034**: Frontend - UX Enhancement (Error Handling, Loading States)
+- **035**: Shared Types Update - TenantUser, Service, Extended Models
+
+---
+
+### **Phase 7: Deployment & CI/CD (Issues 017-020)** *(Phase 6から繰り下げ)*
+- **期間**: 21-22週間
+- **並列実行可能**: インフラ構築とCI/CDパイプライン
+- **最終フェーズ**: 本番デプロイと最適化
+
+#### Issues:
+- **017**: Azure App Service Configuration
+- **018**: GitHub Actions CI/CD Pipeline
+- **019**: Monitoring & Logging Infrastructure
+- **020**: Security & Performance Optimization
+
 ## 🔗 主要な依存関係
 
 ### **ブロッキング依存関係**:
 - DevContainer (001) → 全開発作業
 - データベース設計 (004) → 全サービス
+- **スキーマ拡張 (021) → Phase 4B/4C全体**
 - 認証システム (007) → 認可システム (008) → UI制御 (009)
+- **認証拡張 (023) → フロントエンド認証UI (029)**
 - サービス (011-012) → API仕様書 (013)
+- **バックエンドAPI (025-027) → 対応するフロントエンドUI (030-032)**
 
 ### **並列開発機会**:
 - フロントエンド (010) + バックエンドサービス (011-012)
+- **Tailwind統合 (028) は Phase 4B期間中に開始可能**
+- **バックエンドAPI (023-027) を並列開発**
+- **フロントエンドUI (030-032) を並列開発**
 - テスト (015-016) は Phase 4期間中に開始可能
 - ドキュメント (002, 013) は継続作業
 - CI/CD (018) は早期準備可能
+
+### **新機能の依存関係マップ**:
+```
+021 (スキーマ) → 022 (Seed) → 023-027 (Backend) → 029-034 (Frontend UI)
+                            ↘ 024 (権限) ↗
+                            
+028 (Tailwind) → 029-034 (全フロントエンドUI)
+
+035 (型定義) ← 021-027 (全バックエンド完了後)
+```
 
 ## 📊 開発リソース配分
 
 ### **推奨チーム構成**:
 - **DevOps/インフラ**: Issues 001, 003, 017-020
-- **バックエンド開発者**: Issues 004-005, 007-008, 011-012
-- **フロントエンド開発者**: Issues 006, 009-010
+- **データベース/バックエンド**: Issues 004-005, 007-008, 011-012, **021-027**
+- **フロントエンド開発者**: Issues 006, 009-010, **028-034**
 - **QAエンジニア**: Issues 014-016
-- **テックライター**: Issues 002, 013
+- **テックライター**: Issues 002, 013, **マルチテナント実装ガイド**
 
 ### **クリティカルスキル**:
-- CosmosDB設計経験 (Issue 004)
-- JWT/認証システム経験 (Issue 007-008)
-- React + TypeScript (Issue 009-010)
+- CosmosDB設計経験 (Issue 004, **021**)
+- **マルチテナント設計 (Issue 021-024)**
+- JWT/認証システム経験 (Issue 007-008, **023**)
+- **Redis/キャッシング (Issue 026-027)**
+- React + TypeScript (Issue 009-010, **028-034**)
+- **Tailwind CSS (Issue 028)**
 - Azure App Service (Issue 017)
+
+### **Phase 4B/4C タイムライン** *(合計 6-8週間)*:
+
+**Week 1-2: データ基盤構築**
+- Issue 021 (スキーマ拡張) - データベースチーム
+- Issue 028 (Tailwind統合) - フロントエンドチーム (並行開始)
+- Issue 022 (Seed再構成) - データベースチーム
+
+**Week 2-4: バックエンドAPI実装**
+- Issue 023 (認証拡張) - 認証チーム
+- Issue 024 (権限システム) - 認証チーム (並行)
+- Issue 025-027 (API実装) - バックエンドチーム (並行)
+
+**Week 3-6: フロントエンドUI実装**
+- Issue 029 (認証UI) - フロントエンドチーム (Week 3開始)
+- Issue 030-032 (管理UI) - フロントエンドチーム (並行、Week 4開始)
+- Issue 033-034 (UX向上) - フロントエンドチーム (Week 6)
+
+**Week 5-7: 統合・仕上げ**
+- Issue 035 (型定義更新) - データベース/フロントエンドチーム
+- 統合テスト・バグ修正
 
 ## ✅ 次のアクション
 
-1. **Issue 001から開始**: DevContainer環境構築
-2. **チームアサイン**: 各開発者のスキルに基づく担当Issue割り当て
-3. **マイルストーン設定**: 各フェーズ完了タイミングでのマイルストーン作成
-4. **定期レビュー**: 週次進捗確認とブロッカー解決
+1. **Phase 4B開始**: Issue 021（スキーマ拡張）から着手
+2. **並行開発準備**: フロントエンドチームはIssue 028（Tailwind統合）を並行開始
+3. **チームアサイン**: 各開発者のスキルに基づく担当Issue割り当て
+4. **マイルストーン設定**: Phase 4B/4C完了タイミングでのマイルストーン作成
+5. **定期レビュー**: 週次進捗確認とブロッカー解決
+
+## 🎯 Phase 4B/4C 完了基準
+
+### **Phase 4B完了条件**:
+- ✅ TenantUsers、Services、userTypeフィールドがCosmosDBに実装済み
+- ✅ マイグレーションスクリプトが動作し、既存データが移行可能
+- ✅ 認証サービスがuserType検証とテナント選択をサポート
+- ✅ 全バックエンドAPIエンドポイントが実装・テスト済み
+- ✅ Redisキャッシングが稼働
+
+### **Phase 4C完了条件**:
+- ✅ Tailwind CSSとデザインシステムが全ページに適用済み
+- ✅ テナント・ユーザー・サービス管理UIが完全に動作
+- ✅ 複数テナント所属とテナント切り替えが機能
+- ✅ メールドメイン検証が正常動作
+- ✅ ダッシュボードが統計データを表示
+- ✅ 共有型定義が全エンティティに対応
 
 ---
 
 **📁 全Issues参照**: [GitHub Issues](https://github.com/Takas0522/ws-demo-poly-integration/issues)  
 **🔄 開発手法**: Trunk-based Development  
 **⚡ Feature Flag**: 環境変数による機能制御  
-**🎯 目標**: 14週間で本格運用可能なSaaS管理アプリケーション完成
+**🎯 更新目標**: Phase 1-5完了後、6-8週間でマルチテナント完全対応システム完成（合計20-22週間）
