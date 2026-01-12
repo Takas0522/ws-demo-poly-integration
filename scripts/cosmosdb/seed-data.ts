@@ -44,6 +44,67 @@ const client = new CosmosClient({
 const database = client.database(config.databaseId);
 
 /**
+ * Seed data for system-internal tenant (V2)
+ */
+async function seedSystemInternalTenant() {
+  console.log('📋 Seeding System Internal Tenant...');
+  const container = database.container('Tenants');
+  
+  const tenantId = 'system-internal';
+  const tenant = {
+    id: tenantId,
+    tenantId: tenantId,
+    name: '管理会社',
+    status: 'active',
+    subscription: {
+      plan: 'enterprise',
+      startDate: new Date('2026-01-01').toISOString(),
+      endDate: new Date('2099-12-31').toISOString(),
+      maxUsers: 9999,
+    },
+    settings: {
+      timezone: 'Asia/Tokyo',
+      locale: 'ja-JP',
+      features: {
+        twoFactorAuth: true,
+        apiAccess: true,
+        advancedReporting: true,
+      },
+      allowedDomains: ['@company.com', '@company.co.jp'],
+    },
+    services: [
+      {
+        serviceId: 'service-file-management',
+        enabled: true,
+        enabledAt: new Date('2026-01-01').toISOString(),
+        disabledAt: null,
+      },
+      {
+        serviceId: 'service-external-sharing',
+        enabled: true,
+        enabledAt: new Date('2026-01-01').toISOString(),
+        disabledAt: null,
+      },
+      {
+        serviceId: 'service-ai-agent',
+        enabled: true,
+        enabledAt: new Date('2026-01-10').toISOString(),
+        disabledAt: null,
+      },
+    ],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    createdBy: 'system',
+    updatedBy: 'system',
+  };
+
+  await container.items.upsert(tenant);
+  console.log(`  ✅ Created tenant: ${tenant.name} (${tenant.id})`);
+  
+  return tenantId;
+}
+
+/**
  * Seed data for default tenant
  */
 async function seedTenants() {
@@ -70,7 +131,22 @@ async function seedTenants() {
         apiAccess: true,
         advancedReporting: true,
       },
+      allowedDomains: [],
     },
+    services: [
+      {
+        serviceId: 'service-file-management',
+        enabled: true,
+        enabledAt: new Date('2026-01-01').toISOString(),
+        disabledAt: null,
+      },
+      {
+        serviceId: 'service-external-sharing',
+        enabled: true,
+        enabledAt: new Date('2026-01-01').toISOString(),
+        disabledAt: null,
+      },
+    ],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     createdBy: 'system',
@@ -84,7 +160,7 @@ async function seedTenants() {
 }
 
 /**
- * Seed data for default admin user
+ * Seed data for default admin user with V2 schema
  */
 async function seedUsers(tenantId: string) {
   console.log('👤 Seeding Users...');
@@ -135,6 +211,8 @@ async function seedUsers(tenantId: string) {
       twoFactorEnabled: false,
       twoFactorSecret: null, // Should be encrypted TOTP secret when 2FA is enabled
     },
+    userType: 'external', // V2: external user for dev-tenant
+    primaryTenantId: tenantId, // V2: primary tenant
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     createdBy: 'system',
@@ -176,6 +254,8 @@ async function seedUsers(tenantId: string) {
       twoFactorEnabled: false,
       twoFactorSecret: null, // Should be encrypted TOTP secret when 2FA is enabled
     },
+    userType: 'external', // V2: external user
+    primaryTenantId: tenantId, // V2: primary tenant
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     createdBy: adminUserId,
@@ -187,6 +267,350 @@ async function seedUsers(tenantId: string) {
   console.log(`     Default password set (see documentation for credentials)`);
 
   return { adminUserId, regularUserId };
+}
+
+/**
+ * Seed data for internal users (V2)
+ */
+async function seedInternalUsers(systemTenantId: string) {
+  console.log('👤 Seeding Internal Users...');
+  const container = database.container('Users');
+  
+  // Internal admin user
+  const internalAdminId = `user-${uuidv4()}`;
+  const internalAdmin = {
+    id: internalAdminId,
+    tenantId: systemTenantId,
+    email: 'admin@company.com',
+    username: 'internal-admin',
+    firstName: 'Internal',
+    lastName: 'Admin',
+    passwordHash: await bcrypt.hash('InternalAdmin@123', 10),
+    status: 'active',
+    roles: ['global-admin', 'user'],
+    permissions: [
+      'system.*',
+      'users.*',
+      'services.*',
+      'settings.*',
+      'permissions.*',
+      'audit.*',
+    ],
+    profile: {
+      phoneNumber: '+81-90-1111-2222',
+      department: 'Management',
+      jobTitle: 'Global Administrator',
+      avatarUrl: null,
+    },
+    security: {
+      lastLoginAt: null,
+      lastPasswordChangeAt: new Date().toISOString(),
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      twoFactorEnabled: true,
+      twoFactorSecret: null,
+    },
+    userType: 'internal', // V2: internal user (can log in)
+    primaryTenantId: systemTenantId, // V2: system-internal
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    createdBy: 'system',
+    updatedBy: 'system',
+  };
+
+  await container.items.upsert(internalAdmin);
+  console.log(`  ✅ Created internal user: ${internalAdmin.username} (${internalAdmin.email})`);
+
+  // Multi-tenant support user
+  const multiTenantUserId = `user-${uuidv4()}`;
+  const multiTenantUser = {
+    id: multiTenantUserId,
+    tenantId: systemTenantId,
+    email: 'support@company.com',
+    username: 'support',
+    firstName: 'Multi',
+    lastName: 'Tenant',
+    passwordHash: await bcrypt.hash('Support@123', 10),
+    status: 'active',
+    roles: ['support', 'user'],
+    permissions: [
+      'users.read',
+      'services.read',
+      'settings.read',
+    ],
+    profile: {
+      phoneNumber: '+81-90-3333-4444',
+      department: 'Support',
+      jobTitle: 'Support Engineer',
+      avatarUrl: null,
+    },
+    security: {
+      lastLoginAt: null,
+      lastPasswordChangeAt: new Date().toISOString(),
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      twoFactorEnabled: false,
+      twoFactorSecret: null,
+    },
+    userType: 'internal', // V2: internal user
+    primaryTenantId: systemTenantId, // V2: system-internal
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    createdBy: internalAdminId,
+    updatedBy: internalAdminId,
+  };
+
+  await container.items.upsert(multiTenantUser);
+  console.log(`  ✅ Created multi-tenant user: ${multiTenantUser.username} (${multiTenantUser.email})`);
+
+  return { internalAdminId, multiTenantUserId };
+}
+
+/**
+ * Seed data for services (V2)
+ */
+async function seedServices() {
+  console.log('🔧 Seeding Services...');
+  const container = database.container('Services');
+  
+  const services = [
+    {
+      id: 'service-file-management',
+      tenantId: 'system-internal',
+      name: 'file-management',
+      displayName: {
+        ja: 'ファイル管理',
+        en: 'File Management',
+      },
+      description: {
+        ja: '安全なファイルストレージと管理機能を提供します',
+        en: 'Provides secure file storage and management capabilities',
+      },
+      category: 'storage',
+      icon: 'folder-icon',
+      status: 'active',
+      requiredPlan: ['basic', 'professional', 'enterprise'],
+      features: [
+        {
+          key: 'upload',
+          displayName: { ja: 'ファイルアップロード', en: 'File Upload' },
+          description: { ja: 'ファイルをアップロードできます', en: 'Upload files' },
+          enabled: true,
+        },
+        {
+          key: 'versioning',
+          displayName: { ja: 'バージョン管理', en: 'Versioning' },
+          description: { ja: 'ファイルのバージョンを管理', en: 'Manage file versions' },
+          enabled: true,
+        },
+      ],
+      pricing: [
+        { plan: 'basic', price: 1000, currency: 'JPY', billingCycle: 'monthly' },
+        { plan: 'professional', price: 2500, currency: 'JPY', billingCycle: 'monthly' },
+        { plan: 'enterprise', price: 5000, currency: 'JPY', billingCycle: 'monthly' },
+      ],
+      metadata: {
+        version: '1.0.0',
+        releaseDate: '2026-01-01T00:00:00Z',
+        deprecated: false,
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: 'system',
+      updatedBy: 'system',
+    },
+    {
+      id: 'service-external-sharing',
+      tenantId: 'system-internal',
+      name: 'external-sharing',
+      displayName: {
+        ja: '外部共有',
+        en: 'External Sharing',
+      },
+      description: {
+        ja: '外部ユーザーとのセキュアなファイル共有機能を提供します',
+        en: 'Provides secure file sharing capabilities with external users',
+      },
+      category: 'collaboration',
+      icon: 'share-icon',
+      status: 'active',
+      requiredPlan: ['professional', 'enterprise'],
+      features: [
+        {
+          key: 'public-links',
+          displayName: { ja: '公開リンク', en: 'Public Links' },
+          description: { ja: '公開リンクでファイルを共有', en: 'Share files via public links' },
+          enabled: true,
+        },
+        {
+          key: 'password-protection',
+          displayName: { ja: 'パスワード保護', en: 'Password Protection' },
+          description: { ja: '共有リンクをパスワードで保護', en: 'Protect shared links with passwords' },
+          enabled: true,
+        },
+      ],
+      pricing: [
+        { plan: 'professional', price: 1500, currency: 'JPY', billingCycle: 'monthly' },
+        { plan: 'enterprise', price: 3000, currency: 'JPY', billingCycle: 'monthly' },
+      ],
+      metadata: {
+        version: '1.0.0',
+        releaseDate: '2026-01-01T00:00:00Z',
+        deprecated: false,
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: 'system',
+      updatedBy: 'system',
+    },
+    {
+      id: 'service-ai-agent',
+      tenantId: 'system-internal',
+      name: 'ai-agent',
+      displayName: {
+        ja: 'AIエージェント',
+        en: 'AI Agent',
+      },
+      description: {
+        ja: 'インテリジェントなAIアシスタント機能を提供します',
+        en: 'Provides intelligent AI assistant capabilities',
+      },
+      category: 'ai',
+      icon: 'ai-icon',
+      status: 'beta',
+      requiredPlan: ['enterprise'],
+      features: [
+        {
+          key: 'chat-assistant',
+          displayName: { ja: 'チャットアシスタント', en: 'Chat Assistant' },
+          description: { ja: '自然言語でのチャットサポート', en: 'Natural language chat support' },
+          enabled: true,
+        },
+        {
+          key: 'document-analysis',
+          displayName: { ja: 'ドキュメント分析', en: 'Document Analysis' },
+          description: { ja: 'ドキュメントの自動分析と要約', en: 'Automatic document analysis and summarization' },
+          enabled: true,
+        },
+      ],
+      pricing: [
+        { plan: 'enterprise', price: 10000, currency: 'JPY', billingCycle: 'monthly' },
+      ],
+      metadata: {
+        version: '0.9.0',
+        releaseDate: '2026-01-10T00:00:00Z',
+        deprecated: false,
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: 'system',
+      updatedBy: 'system',
+    },
+  ];
+
+  for (const service of services) {
+    await container.items.upsert(service);
+    console.log(`  ✅ Created service: ${service.name} (${service.status})`);
+  }
+}
+
+/**
+ * Seed data for tenant users (V2) - Multi-tenant memberships
+ */
+async function seedTenantUsers(userIds: { [key: string]: string }, tenantIds: string[]) {
+  console.log('🔗 Seeding TenantUsers (Multi-tenant memberships)...');
+  const container = database.container('TenantUsers');
+  
+  const tenantUsers = [
+    // Internal admin in system-internal
+    {
+      id: `tenantuser-${uuidv4()}`,
+      userId: userIds.internalAdminId,
+      tenantId: tenantIds[0], // system-internal
+      roles: ['global-admin', 'user'],
+      permissions: ['system.*', 'users.*', 'services.*', 'settings.*', 'permissions.*', 'audit.*'],
+      status: 'active',
+      joinedAt: new Date('2026-01-01').toISOString(),
+      leftAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: 'system',
+      updatedBy: 'system',
+    },
+    // Multi-tenant user in system-internal
+    {
+      id: `tenantuser-${uuidv4()}`,
+      userId: userIds.multiTenantUserId,
+      tenantId: tenantIds[0], // system-internal
+      roles: ['support', 'user'],
+      permissions: ['users.read', 'services.read', 'settings.read'],
+      status: 'active',
+      joinedAt: new Date('2026-01-01').toISOString(),
+      leftAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: userIds.internalAdminId,
+      updatedBy: userIds.internalAdminId,
+    },
+    // Multi-tenant user in dev-tenant
+    {
+      id: `tenantuser-${uuidv4()}`,
+      userId: userIds.multiTenantUserId,
+      tenantId: tenantIds[1], // dev-tenant
+      roles: ['support', 'user'],
+      permissions: ['users.read', 'services.read'],
+      status: 'active',
+      joinedAt: new Date('2026-01-05').toISOString(),
+      leftAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: userIds.internalAdminId,
+      updatedBy: userIds.internalAdminId,
+    },
+    // Dev-tenant admin
+    {
+      id: `tenantuser-${uuidv4()}`,
+      userId: userIds.adminUserId,
+      tenantId: tenantIds[1], // dev-tenant
+      roles: ['admin', 'user'],
+      permissions: [
+        'users.create', 'users.read', 'users.update', 'users.delete',
+        'services.create', 'services.read', 'services.update', 'services.delete',
+        'settings.read', 'settings.update',
+        'permissions.read', 'permissions.update',
+        'audit.read',
+      ],
+      status: 'active',
+      joinedAt: new Date('2026-01-02').toISOString(),
+      leftAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: 'system',
+      updatedBy: 'system',
+    },
+    // Dev-tenant regular user
+    {
+      id: `tenantuser-${uuidv4()}`,
+      userId: userIds.regularUserId,
+      tenantId: tenantIds[1], // dev-tenant
+      roles: ['user'],
+      permissions: ['users.read', 'services.read', 'settings.read'],
+      status: 'active',
+      joinedAt: new Date('2026-01-02').toISOString(),
+      leftAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: userIds.adminUserId,
+      updatedBy: userIds.adminUserId,
+    },
+  ];
+
+  for (const tenantUser of tenantUsers) {
+    await container.items.upsert(tenantUser);
+  }
+  
+  console.log(`  ✅ Created ${tenantUsers.length} TenantUser records`);
+  console.log(`     Multi-tenant user (${userIds.multiTenantUserId}) is now in 2 tenants`);
 }
 
 /**
@@ -481,24 +905,50 @@ async function seedData() {
   console.log('');
 
   try {
-    // Seed in order due to dependencies
-    const tenantId = await seedTenants();
-    const { adminUserId } = await seedUsers(tenantId);
-    await seedPermissions(tenantId);
-    await seedAuditLogs(tenantId, adminUserId);
+    // V2: Seed in order due to dependencies
+    // 1. Create system-internal tenant first
+    const systemTenantId = await seedSystemInternalTenant();
+    
+    // 2. Create development tenant
+    const devTenantId = await seedTenants();
+    
+    // 3. Create services (goes into system-internal tenant)
+    await seedServices();
+    
+    // 4. Create internal users (for system-internal tenant)
+    const { internalAdminId, multiTenantUserId } = await seedInternalUsers(systemTenantId);
+    
+    // 5. Create external users (for dev-tenant)
+    const { adminUserId, regularUserId } = await seedUsers(devTenantId);
+    
+    // 6. Create TenantUsers for multi-tenant memberships
+    await seedTenantUsers(
+      { internalAdminId, multiTenantUserId, adminUserId, regularUserId },
+      [systemTenantId, devTenantId]
+    );
+    
+    // 7. Create permissions
+    await seedPermissions(devTenantId);
+    
+    // 8. Create audit logs
+    await seedAuditLogs(devTenantId, adminUserId);
 
     console.log('');
     console.log('🎉 Data seeding completed successfully!');
     console.log('');
     console.log('📊 Summary:');
-    console.log('  - Tenants: 1');
-    console.log('  - Users: 2 (admin, user)');
+    console.log('  - Tenants: 2 (system-internal, dev-tenant)');
+    console.log('  - Users: 4 (2 internal, 2 external)');
+    console.log('  - Services: 3 (file-management, external-sharing, ai-agent)');
+    console.log('  - TenantUsers: 5 (1 user in 2 tenants)');
     console.log('  - Permissions: 13');
     console.log('  - Audit Logs: 2');
     console.log('');
     console.log('🔐 Default Credentials:');
-    console.log('  Credentials are stored in seed-data.ts');
-    console.log('  See scripts/cosmosdb/README.md for access details');
+    console.log('  Internal Admin: admin@company.com / InternalAdmin@123');
+    console.log('  Multi-tenant Support: support@company.com / Support@123');
+    console.log('  Dev Tenant Admin: admin@example.com / Admin@123');
+    console.log('  Dev Tenant User: user@example.com / User@123');
     console.log('');
     console.log('⚠️  IMPORTANT: These are development-only credentials!');
     console.log('⚠️  Change all passwords before deploying to staging or production!');

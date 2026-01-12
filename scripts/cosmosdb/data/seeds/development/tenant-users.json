@@ -1,0 +1,124 @@
+[
+  {
+    "id": "tenantuser-001",
+    "userId": "admin-user-001",
+    "tenantId": "system-internal",
+    "roles": ["global-admin", "user"],
+    "permissions": [
+      "system.*",
+      "users.*",
+      "services.*",
+      "settings.*",
+      "permissions.*",
+      "audit.*"
+    ],
+    "status": "active",
+    "joinedAt": "2026-01-01T00:00:00Z",
+    "leftAt": null
+  },
+  {
+    "id": "tenantuser-002",
+    "userId": "internal-manager-001",
+    "tenantId": "system-internal",
+    "roles": ["manager", "user"],
+    "permissions": [
+      "users.read",
+      "users.update",
+      "services.read",
+      "settings.read",
+      "audit.read"
+    ],
+    "status": "active",
+    "joinedAt": "2026-01-01T00:00:00Z",
+    "leftAt": null
+  },
+  {
+    "id": "tenantuser-003",
+    "userId": "multi-tenant-user-001",
+    "tenantId": "system-internal",
+    "roles": ["support", "user"],
+    "permissions": [
+      "users.read",
+      "services.read",
+      "settings.read"
+    ],
+    "status": "active",
+    "joinedAt": "2026-01-01T00:00:00Z",
+    "leftAt": null
+  },
+  {
+    "id": "tenantuser-004",
+    "userId": "multi-tenant-user-001",
+    "tenantId": "dev-tenant",
+    "roles": ["support", "user"],
+    "permissions": [
+      "users.read",
+      "services.read"
+    ],
+    "status": "active",
+    "joinedAt": "2026-01-05T00:00:00Z",
+    "leftAt": null
+  },
+  {
+    "id": "tenantuser-005",
+    "userId": "multi-tenant-user-001",
+    "tenantId": "demo-tenant",
+    "roles": ["viewer"],
+    "permissions": [
+      "services.read"
+    ],
+    "status": "active",
+    "joinedAt": "2026-01-08T00:00:00Z",
+    "leftAt": null
+  },
+  {
+    "id": "tenantuser-006",
+    "userId": "regular-user-001",
+    "tenantId": "dev-tenant",
+    "roles": ["user"],
+    "permissions": [
+      "users.read",
+      "services.read",
+      "settings.read"
+    ],
+    "status": "active",
+    "joinedAt": "2026-01-02T00:00:00Z",
+    "leftAt": null
+  },
+  {
+    "id": "tenantuser-007",
+    "userId": "manager-user-001",
+    "tenantId": "dev-tenant",
+    "roles": ["manager", "user"],
+    "permissions": [
+      "users.create",
+      "users.read",
+      "users.update",
+      "services.read",
+      "services.update",
+      "settings.read"
+    ],
+    "status": "active",
+    "joinedAt": "2026-01-02T00:00:00Z",
+    "leftAt": null
+  },
+  {
+    "id": "tenantuser-008",
+    "userId": "demo-admin-001",
+    "tenantId": "demo-tenant",
+    "roles": ["admin", "user"],
+    "permissions": [
+      "users.create",
+      "users.read",
+      "users.update",
+      "users.delete",
+      "services.read",
+      "services.update",
+      "settings.read",
+      "settings.update"
+    ],
+    "status": "active",
+    "joinedAt": "2026-01-03T00:00:00Z",
+    "leftAt": null
+  }
+]
