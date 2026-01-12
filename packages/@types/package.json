@@ -15,6 +15,9 @@
     "prebuild": "npm run clean",
     "type-check": "tsc --noEmit",
     "watch": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "prepublishOnly": "npm run build",
     "generate:auth": "openapi-typescript ../../docs/api/auth-service/openapi.yaml -o src/generated/auth.types.ts",
     "generate:users": "openapi-typescript ../../docs/api/user-management-service/openapi.yaml -o src/generated/users.types.ts",
@@ -32,6 +35,9 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
     "openapi-typescript": "^6.7.3",
     "typescript": "^5.3.3"
   },
