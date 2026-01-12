@@ -48,7 +48,52 @@ else:
     print(f"Access denied: {result.reason}")
 ```
 
-### 2. FastAPI Route Protection
+### 2. Advanced Permission Checker with Global Priority
+
+```python
+from permissions import PermissionChecker, User
+import redis
+
+# Define user with global and tenant permissions
+user = User(
+    id="user-123",
+    permissions=[
+        {"name": "users.*", "scope": "global"},  # Global admin
+        {"name": "tenants.read", "scope": "global"}
+    ]
+)
+
+# Optional: Setup Redis for caching
+redis_client = redis.Redis(host='localhost', port=6379, db=0)
+
+# Function to fetch TenantUser from database
+async def get_tenant_user_from_db(user_id: str, tenant_id: str):
+    # Your database query here
+    return {
+        "user_id": user_id,
+        "tenant_id": tenant_id,
+        "permissions": ["posts.create", "posts.update"],
+        "roles": ["editor"]
+    }
+
+# Create permission checker
+checker = PermissionChecker(
+    user=user,
+    tenant_id="tenant-456",
+    redis_client=redis_client,
+    get_tenant_user_from_db=get_tenant_user_from_db
+)
+
+# Check permission (priority: global > tenant > deny)
+has_access = await checker.has_permission("users.create")
+print(f"Access granted: {has_access}")  # True (via global permission)
+
+# Invalidate cache when permissions change
+from permissions import invalidate_permission_cache
+await invalidate_permission_cache(redis_client, "user-123", "tenant-456")
+```
+
+### 3. FastAPI Route Protection
 
 ```python
 from fastapi import FastAPI, Depends
@@ -71,7 +116,7 @@ async def update_user(user_id: str, user: User):
     return {"message": "User updated"}
 ```
 
-### 3. Multiple Permission Checks
+### 4. Multiple Permission Checks
 
 ```python
 from permissions import require_any_permission, require_all_permissions
@@ -92,7 +137,7 @@ async def delete_user(
     return {"message": "User deleted"}
 ```
 
-### 4. Role-Based Protection
+### 5. Role-Based Protection
 
 ```python
 from permissions import require_role, require_any_role
@@ -320,10 +365,52 @@ set_default_cache(cache, ttl=300)
 # Now all permission checks will use Redis caching
 ```
 
+### Redis Configuration for PermissionChecker
+
+The advanced `PermissionChecker` includes built-in Redis caching for TenantUser data:
+
+```python
+import redis
+from permissions import PermissionChecker, User
+import os
+
+# Setup Redis client from environment variables
+redis_client = redis.Redis(
+    host=os.getenv('REDIS_HOST', 'localhost'),
+    port=int(os.getenv('REDIS_PORT', 6379)),
+    password=os.getenv('REDIS_PASSWORD', None),
+    db=0,
+    decode_responses=False
+)
+
+# PermissionChecker automatically caches TenantUser data for 5 minutes
+checker = PermissionChecker(
+    user=user,
+    tenant_id="tenant-456",
+    redis_client=redis_client,
+    get_tenant_user_from_db=get_tenant_user_from_db
+)
+
+# Cache is automatically used and maintained
+has_access = await checker.has_permission("users.create")
+```
+
+**Environment Variables for Redis:**
+- `REDIS_HOST`: Redis server hostname (default: localhost)
+- `REDIS_PORT`: Redis server port (default: 6379)
+- `REDIS_PASSWORD`: Redis password (optional)
+
+**Note:** Redis is optional. If not provided, the checker will fetch data directly from the database without caching.
+
 ### Cache Invalidation
 
 ```python
+from permissions import invalidate_permission_cache
+
 # Invalidate user cache when permissions change
+await invalidate_permission_cache(redis_client, "user-123", "tenant-456")
+
+# For CachedPermissionChecker
 cached_checker.invalidate_user_cache("user-123", "tenant-456")
 
 # Invalidate role cache when role permissions change
@@ -332,6 +419,79 @@ cached_checker.invalidate_role_cache("admin", "tenant-456")
 # Clear all cache (use sparingly)
 cached_checker.invalidate_all()
 ```
+
+**When to invalidate cache:**
+- When TenantUsers permissions are updated
+- When User.permissions are updated
+- When roles are modified
+
+## Permission Priority Logic
+
+The `PermissionChecker` implements a priority-based permission system:
+
+### Priority Order
+
+1. **Global Permissions** (highest priority)
+   - Defined in `Users.permissions` with `scope='global'`
+   - Apply across all tenants
+   - Typically used for system administrators
+
+2. **Tenant-Specific Permissions**
+   - Defined in `TenantUsers.permissions`
+   - Apply only within the specific tenant
+   - Typical use case for regular users
+
+3. **Default Deny** (lowest priority)
+   - If no permissions match, access is denied
+
+### Example: Permission Priority
+
+```python
+from permissions import PermissionChecker, User
+
+# User with both global and tenant permissions
+user = User(
+    id="user-123",
+    permissions=[
+        {"name": "users.create", "scope": "global"},  # Global permission
+        {"name": "posts.read", "scope": "tenant"}     # Tenant-scoped (not used by checker)
+    ]
+)
+
+async def get_tenant_user(user_id, tenant_id):
+    return {
+        "permissions": ["users.delete", "posts.update"]  # Tenant permissions
+    }
+
+checker = PermissionChecker(user, "tenant-456", get_tenant_user_from_db=get_tenant_user)
+
+# Priority demonstration
+await checker.has_permission("users.create")  # True (global permission)
+await checker.has_permission("posts.update")  # True (tenant permission)
+await checker.has_permission("users.delete")  # True (tenant permission)
+await checker.has_permission("admin.delete")  # False (no match)
+```
+
+### Global vs Tenant Permissions
+
+**Global Permissions:**
+```python
+user.permissions = [
+    {"name": "users.*", "scope": "global"},      # All user operations globally
+    {"name": "tenants.read", "scope": "global"}  # Read tenants globally
+]
+```
+
+**Tenant Permissions:**
+```python
+tenant_user = {
+    "permissions": ["posts.create", "posts.update", "comments.*"]
+}
+```
+
+**Use Cases:**
+- **Global**: System administrators, super users, cross-tenant operations
+- **Tenant**: Regular users, tenant-specific operations, isolated access
 
 ## FastAPI Integration
 
