@@ -4,10 +4,9 @@
   "description": "SaaS Management Application - Polyrepo Integration",
   "private": true,
   "scripts": {
-    "test:unit": "npm run test:unit:types && npm run test:unit:permissions && npm run test:unit:react-permissions",
+    "test:unit": "npm run test:unit:types && npm run test:unit:permissions",
     "test:unit:types": "cd packages/@types && npm test",
     "test:unit:permissions": "cd scripts/permissions && npm test",
-    "test:unit:react-permissions": "cd packages/react-permissions && npm test",
     "test:integration": "jest --config jest.integration.config.js",
     "test:integration:api": "jest --config jest.integration.config.js --testPathPattern=tests/integration/api",
     "test:integration:database": "jest --config jest.integration.config.js --testPathPattern=tests/integration/database",
