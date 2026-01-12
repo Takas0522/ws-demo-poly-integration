@@ -29,6 +29,7 @@ const config = {
   endpoint: process.env.COSMOSDB_ENDPOINT || 'https://localhost:8081',
   key: process.env.COSMOSDB_KEY || '',
   databaseId: process.env.COSMOSDB_DATABASE || 'saas-management-dev',
+  removeV2Fields: process.env.REMOVE_V2_FIELDS === 'true' || process.argv.includes('--remove-fields'),
 };
 
 // Validate configuration
@@ -107,7 +108,7 @@ async function deleteSystemInternalTenant(): Promise<void> {
 
 /**
  * Remove V2 fields from Users (optional)
- * Note: CosmosDB is schema-less, so leaving these fields won't cause issues
+ * Note: CosmosDB is schemaless, so leaving these fields won't cause issues
  */
 async function removeV2FieldsFromUsers(): Promise<number> {
   console.log('Removing V2 fields from Users (optional)...');
@@ -136,7 +137,7 @@ async function removeV2FieldsFromUsers(): Promise<number> {
 
 /**
  * Remove V2 fields from Tenants (optional)
- * Note: CosmosDB is schema-less, so leaving these fields won't cause issues
+ * Note: CosmosDB is schemaless, so leaving these fields won't cause issues
  */
 async function removeV2FieldsFromTenants(): Promise<number> {
   console.log('Removing V2 fields from Tenants (optional)...');
@@ -267,15 +268,23 @@ async function rollbackToV1(): Promise<void> {
     // Step 3: Delete system-internal tenant
     await deleteSystemInternalTenant();
     
-    // Step 4: Remove V2 fields from Users (optional)
-    console.log('');
-    console.log('Note: Removing V2 fields from Users and Tenants is optional.');
-    console.log('      CosmosDB is schema-less, so leaving them won\'t cause issues.');
-    console.log('      Skipping field removal to preserve data...');
-    console.log('');
-    // Uncomment below to remove V2 fields:
-    // const usersUpdated = await removeV2FieldsFromUsers();
-    // const tenantsUpdated = await removeV2FieldsFromTenants();
+    // Step 4: Remove V2 fields from Users and Tenants (optional)
+    let usersUpdated = 0;
+    let tenantsUpdated = 0;
+    
+    if (config.removeV2Fields) {
+      console.log('');
+      console.log('🔧 Removing V2 fields from Users and Tenants...');
+      usersUpdated = await removeV2FieldsFromUsers();
+      tenantsUpdated = await removeV2FieldsFromTenants();
+    } else {
+      console.log('');
+      console.log('Note: V2 fields in Users and Tenants will be preserved.');
+      console.log('      CosmosDB is schemaless, so these fields won\'t cause issues.');
+      console.log('      To remove them, run: ts-node rollback-to-v1.ts --remove-fields');
+      console.log('      Or set: REMOVE_V2_FIELDS=true');
+      console.log('');
+    }
     
     // Verify rollback
     const verified = await verifyRollback();
@@ -289,8 +298,8 @@ async function rollbackToV1(): Promise<void> {
     console.log('  - TenantUsers container: DELETED');
     console.log('  - Services container: DELETED');
     console.log('  - system-internal tenant: DELETED');
-    console.log('  - V2 fields in Users: PRESERVED (optional removal)');
-    console.log('  - V2 fields in Tenants: PRESERVED (optional removal)');
+    console.log(`  - V2 fields in Users: ${config.removeV2Fields ? `REMOVED (${usersUpdated} updated)` : 'PRESERVED'}`);
+    console.log(`  - V2 fields in Tenants: ${config.removeV2Fields ? `REMOVED (${tenantsUpdated} updated)` : 'PRESERVED'}`);
     console.log(`  - Verification: ${verified ? 'PASSED' : 'FAILED'}`);
     console.log('');
     console.log('💡 Next steps:');

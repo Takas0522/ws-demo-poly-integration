@@ -143,7 +143,12 @@ async function createSystemInternalTenant(): Promise<void> {
         apiAccess: true,
         advancedReporting: true
       },
-      allowedDomains: ['@company.com'] // TODO: Configure this for your organization
+      // Configure allowedDomains based on your organization's email domains
+      // Example: ['@company.com', '@company.co.jp']
+      // Can be set via environment variable: SYSTEM_INTERNAL_ALLOWED_DOMAINS
+      allowedDomains: process.env.SYSTEM_INTERNAL_ALLOWED_DOMAINS 
+        ? process.env.SYSTEM_INTERNAL_ALLOWED_DOMAINS.split(',').map(d => d.trim())
+        : ['@company.com']  // Default value
     },
     services: [],
     createdAt: new Date().toISOString(),
