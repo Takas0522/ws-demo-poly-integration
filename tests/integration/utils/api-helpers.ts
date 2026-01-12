@@ -9,6 +9,10 @@ import { testConfig } from '../setup';
 
 /**
  * Create an API client for a specific service
+ * 
+ * Note: validateStatus is set to return true for all status codes to allow
+ * tests to handle and assert on error responses without throwing exceptions.
+ * This enables testing of error scenarios (4xx, 5xx) without try-catch blocks.
  */
 export function createApiClient(baseURL: string): AxiosInstance {
   return axios.create({
@@ -17,7 +21,7 @@ export function createApiClient(baseURL: string): AxiosInstance {
     headers: {
       'Content-Type': 'application/json',
     },
-    validateStatus: () => true, // Don't throw on any status code
+    validateStatus: () => true, // Don't throw on any status code - allows error testing
   });
 }
 

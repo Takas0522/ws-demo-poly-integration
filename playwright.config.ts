@@ -80,10 +80,17 @@ export default defineConfig({
   ],
 
   // Run your local dev server before starting the tests
-  webServer: process.env.CI ? undefined : {
-    command: 'echo "Please start services manually before running E2E tests"',
-    url: process.env.FRONTEND_URL || 'http://localhost:3000',
-    reuseExistingServer: true,
-    timeout: 120 * 1000,
-  },
+  // Note: In this configuration, services should be started manually before running tests.
+  // The webServer option is disabled to allow flexible test execution without requiring
+  // automatic server startup. To enable automatic server startup, uncomment and configure
+  // the webServer section below with appropriate start commands.
+  webServer: undefined,
+  
+  // Uncomment and configure to automatically start services before tests:
+  // webServer: {
+  //   command: 'npm run start:all-services',
+  //   url: process.env.FRONTEND_URL || 'http://localhost:3000',
+  //   reuseExistingServer: !process.env.CI,
+  //   timeout: 120 * 1000,
+  // },
 });

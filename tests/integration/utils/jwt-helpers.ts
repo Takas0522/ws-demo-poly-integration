@@ -27,7 +27,7 @@ export interface TestJWTPayload {
  */
 export function generateTestToken(
   payload: Partial<TestJWTPayload>,
-  expiresIn: string = '2h'
+  expiresIn: string | number = '2h'
 ): string {
   const fullPayload: TestJWTPayload = {
     userId: payload.userId || 'test-user-id',
@@ -39,7 +39,7 @@ export function generateTestToken(
   };
   
   return jwt.sign(fullPayload, testConfig.jwtSecret, {
-    expiresIn: expiresIn as string,
+    expiresIn: expiresIn,
     issuer: process.env.JWT_ISSUER || 'saas-auth-service',
     audience: process.env.JWT_AUDIENCE || 'saas-app',
   } as jwt.SignOptions);

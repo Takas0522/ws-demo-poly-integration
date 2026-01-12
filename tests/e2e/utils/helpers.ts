@@ -31,18 +31,20 @@ export async function login(
 }
 
 /**
+ * Common logout button selectors for different languages and UI patterns
+ */
+const LOGOUT_SELECTORS = [
+  'button:has-text("Logout")',
+  'button:has-text("ログアウト")',
+  'a:has-text("Logout")',
+  'a:has-text("ログアウト")',
+];
+
+/**
  * Logout helper for E2E tests
  */
 export async function logout(page: Page): Promise<void> {
-  // Look for logout button/link
-  const logoutSelectors = [
-    'button:has-text("Logout")',
-    'button:has-text("ログアウト")',
-    'a:has-text("Logout")',
-    'a:has-text("ログアウト")',
-  ];
-  
-  for (const selector of logoutSelectors) {
+  for (const selector of LOGOUT_SELECTORS) {
     try {
       const element = await page.$(selector);
       if (element) {

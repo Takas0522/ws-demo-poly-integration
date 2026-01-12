@@ -176,15 +176,15 @@ export const testIsolation = {
    * Check if data belongs to test
    */
   isTestData(data: any): boolean {
-    if (typeof data === 'object' && data !== null) {
-      const result = (
-        (data.id && data.id.toString().startsWith(TEST_DATA_PREFIX)) ||
-        (data.name && data.name.toString().startsWith(TEST_DATA_PREFIX)) ||
-        (data.email && data.email.toString().includes(TEST_DATA_PREFIX))
-      );
-      return Boolean(result);
+    if (typeof data !== 'object' || data === null) {
+      return false;
     }
-    return false;
+    
+    return !!(
+      data.id?.startsWith?.(TEST_DATA_PREFIX) ||
+      data.name?.startsWith?.(TEST_DATA_PREFIX) ||
+      data.email?.includes?.(TEST_DATA_PREFIX)
+    );
   },
 };
 
