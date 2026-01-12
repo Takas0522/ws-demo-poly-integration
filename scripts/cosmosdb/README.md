@@ -4,10 +4,23 @@
 
 ## 📁 ファイル
 
+### スクリプト
 - **`init-database.ts`** - 適切な設定でデータベースとコンテナを作成
-- **`seed-data.ts`** - 初期開発データをデータベースに投入
+- **`seed-data.ts`** - 初期開発データをデータベースに投入（レガシー・ハードコード版）
+- **`seed-data-json.ts`** - JSONベースの環境別シードデータローダー（推奨）
+- **`cleanup-data.ts`** - データベースクリーンアップユーティリティ
+- **`validation.ts`** - シードデータ検証ユーティリティ
 - **`types.ts`** - すべてのデータベースモデルのTypeScript型定義
+
+### データファイル
+- **`data/seeds/`** - 環境別のJSONシードデータファイル
+  - **`development/`** - 開発環境用データ（複数のテナントとユーザー）
+  - **`staging/`** - ステージング環境用データ（最小限のデータセット）
+  - **`testing/`** - テスト環境用データ（テストケース用）
+
+### ドキュメント
 - **`README.md`** - このファイル
+- **`README.en.md`** - 英語版ドキュメント
 
 ## 🚀 クイックスタート
 
@@ -45,12 +58,14 @@ export COSMOSDB_DATABASE=saas-management
 初期化スクリプトを実行してデータベースとコンテナを作成します：
 
 ```bash
-# ts-nodeを使用
-npx ts-node scripts/cosmosdb/init-database.ts
+# ディレクトリに移動
+cd scripts/cosmosdb
 
-# または最初にコンパイル
-tsc scripts/cosmosdb/init-database.ts
-node scripts/cosmosdb/init-database.js
+# npmスクリプトを使用（推奨）
+npm run init
+
+# または直接ts-nodeを使用
+npx ts-node init-database.ts
 ```
 
 これにより以下が作成されます：
@@ -63,30 +78,111 @@ node scripts/cosmosdb/init-database.js
 
 ### 開発データのシード
 
-シードスクリプトを実行して初期データを投入します：
+#### 🎯 推奨：JSONベースのシードデータ（環境別）
+
+環境別のJSONファイルからシードデータをロードします（冪等性あり）：
 
 ```bash
-npx ts-node scripts/cosmosdb/seed-data.ts
+cd scripts/cosmosdb
+
+# 開発環境データをシード
+npm run seed:json:dev
+
+# ステージング環境データをシード
+npm run seed:json:staging
+
+# テスト環境データをシード
+npm run seed:json:testing
+
+# または環境を自動検出（NODE_ENVから）
+npm run seed:json
 ```
 
-これにより以下が作成されます：
-- 1つのデフォルトテナント（`dev-tenant`）
-- 2人のユーザー（管理者と一般ユーザー）
-- 13の権限定義
-- 2つのサンプル監査ログエントリ
+#### レガシー：ハードコードシードスクリプト
 
-**デフォルト認証情報:**
-- **管理者ユーザー**
-  - Email: `admin@example.com`
-  - Password: `Admin@123`
-  - ロール: admin, user
-  
-- **一般ユーザー**
-  - Email: `user@example.com`
-  - Password: `User@123`
-  - ロール: user
+元のハードコードスクリプトも利用可能です：
+
+```bash
+npm run seed
+# または
+npx ts-node seed-data.ts
+```
+
+#### 初期化とシードを一度に実行
+
+```bash
+npm run init:seed
+```
+
+### シードデータの構造
+
+各環境のシードデータは `data/seeds/{environment}/` に保存されます：
+
+```
+data/seeds/
+├── development/
+│   ├── tenants.json      # 開発テナント（複数）
+│   ├── users.json        # 開発ユーザー（管理者、マネージャー、ユーザー）
+│   └── permissions.json  # 全権限定義
+├── staging/
+│   ├── tenants.json      # ステージングテナント（最小限）
+│   ├── users.json        # ステージング管理者のみ
+│   └── permissions.json  # 全権限定義
+└── testing/
+    ├── tenants.json      # テストテナント（複数）
+    ├── users.json        # テストユーザー
+    └── permissions.json  # テスト用基本権限
+```
+
+**開発環境のデフォルト認証情報:**
+
+JSONファイルを確認：`data/seeds/development/users.json`
+
+- **管理者ユーザー** - `admin@example.com` / `Admin@123`
+- **一般ユーザー** - `user@example.com` / `User@123`  
+- **マネージャー** - `manager@example.com` / `Manager@123`
+- **デモ管理者** - `demo-admin@example.com` / `DemoAdmin@123`
 
 ⚠️ **重要:** 本番環境またはステージング環境にデプロイする前に、これらのパスワードを変更してください！
+
+### データのクリーンアップ
+
+データベースからデータを削除するクリーンアップユーティリティ：
+
+```bash
+cd scripts/cosmosdb
+
+# データベース統計を表示
+npm run cleanup:stats
+
+# すべてのテナントをリスト表示
+npm run cleanup:list
+
+# 特定のテナントのデータを削除
+npm run cleanup -- --tenant dev-tenant
+
+# 特定のコンテナをクリーンアップ
+npm run cleanup -- --container Users
+
+# すべてのデータを削除（確認プロンプトあり）
+npm run cleanup -- --all
+
+# すべてのデータを削除（確認スキップ - 注意！）
+npm run cleanup -- --all --confirm
+```
+
+⚠️ **警告:** クリーンアップ操作は破壊的で元に戻せません！
+
+### シードデータの検証
+
+シードデータは自動的に検証されます：
+
+- ✅ スキーマ検証（型、必須フィールド）
+- ✅ データ形式検証（メール、権限名、日付）
+- ✅ 関係整合性チェック（テナント参照、権限参照）
+- ✅ 重複チェック（テナントID、メールアドレス）
+
+検証エラーがある場合、シードは失敗します。警告は表示されますが、シードは続行されます。
 
 ## 📊 データベーススキーマ
 
@@ -210,6 +306,43 @@ while (queryIterator.hasMoreResults()) {
 ```
 
 ## 🛠️ メンテナンススクリプト
+
+### カスタムシードデータの作成
+
+独自のシードデータセットを作成するには：
+
+1. 新しい環境ディレクトリを作成：
+```bash
+mkdir -p scripts/cosmosdb/data/seeds/my-environment
+```
+
+2. JSONファイルを作成：
+```bash
+# テナント、ユーザー、権限用のJSONファイルを作成
+touch scripts/cosmosdb/data/seeds/my-environment/{tenants,users,permissions}.json
+```
+
+3. 既存のファイルを参考にデータを入力
+
+4. カスタム環境でシード：
+```bash
+cd scripts/cosmosdb
+npx ts-node seed-data-json.ts my-environment
+```
+
+### シードデータのバージョン管理
+
+シードデータファイルはGitで管理されており、環境ごとの履歴を追跡できます：
+
+```bash
+# 新しいシードデータセットを追加
+git add scripts/cosmosdb/data/seeds/
+git commit -m "Add new seed data for feature X"
+
+# ブランチ間でシードデータを切り替え
+git checkout feature-branch
+npm run seed:json:dev
+```
 
 ### データのバックアップ
 

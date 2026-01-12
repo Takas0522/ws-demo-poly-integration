@@ -1,0 +1,23 @@
+[
+  {
+    "id": "staging-tenant",
+    "tenantId": "staging-tenant",
+    "name": "Staging Tenant",
+    "status": "active",
+    "subscription": {
+      "plan": "enterprise",
+      "startDate": "2026-01-01T00:00:00.000Z",
+      "endDate": "2027-01-01T00:00:00.000Z",
+      "maxUsers": 50
+    },
+    "settings": {
+      "timezone": "Asia/Tokyo",
+      "locale": "ja-JP",
+      "features": {
+        "twoFactorAuth": true,
+        "apiAccess": true,
+        "advancedReporting": true
+      }
+    }
+  }
+]

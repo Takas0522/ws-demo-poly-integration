@@ -1,0 +1,44 @@
+[
+  {
+    "id": "dev-tenant",
+    "tenantId": "dev-tenant",
+    "name": "Development Tenant",
+    "status": "active",
+    "subscription": {
+      "plan": "enterprise",
+      "startDate": "2026-01-01T00:00:00.000Z",
+      "endDate": "2027-01-01T00:00:00.000Z",
+      "maxUsers": 100
+    },
+    "settings": {
+      "timezone": "Asia/Tokyo",
+      "locale": "ja-JP",
+      "features": {
+        "twoFactorAuth": true,
+        "apiAccess": true,
+        "advancedReporting": true
+      }
+    }
+  },
+  {
+    "id": "demo-tenant",
+    "tenantId": "demo-tenant",
+    "name": "Demo Tenant",
+    "status": "active",
+    "subscription": {
+      "plan": "professional",
+      "startDate": "2026-01-01T00:00:00.000Z",
+      "endDate": "2026-12-31T23:59:59.999Z",
+      "maxUsers": 50
+    },
+    "settings": {
+      "timezone": "America/New_York",
+      "locale": "en-US",
+      "features": {
+        "twoFactorAuth": true,
+        "apiAccess": true,
+        "advancedReporting": false
+      }
+    }
+  }
+]

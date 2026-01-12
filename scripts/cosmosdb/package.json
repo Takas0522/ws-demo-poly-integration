@@ -6,7 +6,14 @@
   "scripts": {
     "init": "ts-node init-database.ts",
     "seed": "ts-node seed-data.ts",
-    "init:seed": "npm run init && npm run seed",
+    "seed:json": "ts-node seed-data-json.ts",
+    "seed:json:dev": "ts-node seed-data-json.ts development",
+    "seed:json:staging": "ts-node seed-data-json.ts staging",
+    "seed:json:testing": "ts-node seed-data-json.ts testing",
+    "cleanup": "ts-node cleanup-data.ts",
+    "cleanup:stats": "ts-node cleanup-data.ts --stats",
+    "cleanup:list": "ts-node cleanup-data.ts --list",
+    "init:seed": "npm run init && npm run seed:json:dev",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

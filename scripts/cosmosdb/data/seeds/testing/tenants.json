@@ -1,0 +1,44 @@
+[
+  {
+    "id": "test-tenant-001",
+    "tenantId": "test-tenant-001",
+    "name": "Test Tenant 001",
+    "status": "active",
+    "subscription": {
+      "plan": "basic",
+      "startDate": "2026-01-01T00:00:00.000Z",
+      "endDate": "2026-06-30T23:59:59.999Z",
+      "maxUsers": 10
+    },
+    "settings": {
+      "timezone": "UTC",
+      "locale": "en-US",
+      "features": {
+        "twoFactorAuth": false,
+        "apiAccess": true,
+        "advancedReporting": false
+      }
+    }
+  },
+  {
+    "id": "test-tenant-002",
+    "tenantId": "test-tenant-002",
+    "name": "Test Tenant 002",
+    "status": "active",
+    "subscription": {
+      "plan": "professional",
+      "startDate": "2026-01-01T00:00:00.000Z",
+      "endDate": "2026-12-31T23:59:59.999Z",
+      "maxUsers": 25
+    },
+    "settings": {
+      "timezone": "Europe/London",
+      "locale": "en-GB",
+      "features": {
+        "twoFactorAuth": true,
+        "apiAccess": true,
+        "advancedReporting": true
+      }
+    }
+  }
+]

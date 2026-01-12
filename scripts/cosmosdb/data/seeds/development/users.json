@@ -1,0 +1,120 @@
+[
+  {
+    "id": "admin-user-001",
+    "tenantId": "dev-tenant",
+    "email": "admin@example.com",
+    "username": "admin",
+    "firstName": "Admin",
+    "lastName": "User",
+    "password": "Admin@123",
+    "status": "active",
+    "roles": ["admin", "user"],
+    "permissions": [
+      "users.create",
+      "users.read",
+      "users.update",
+      "users.delete",
+      "services.create",
+      "services.read",
+      "services.update",
+      "services.delete",
+      "settings.read",
+      "settings.update",
+      "permissions.read",
+      "permissions.update",
+      "audit.read"
+    ],
+    "profile": {
+      "phoneNumber": "+81-90-1234-5678",
+      "department": "IT",
+      "jobTitle": "System Administrator"
+    },
+    "security": {
+      "failedLoginAttempts": 0,
+      "twoFactorEnabled": false
+    }
+  },
+  {
+    "id": "regular-user-001",
+    "tenantId": "dev-tenant",
+    "email": "user@example.com",
+    "username": "user",
+    "firstName": "Regular",
+    "lastName": "User",
+    "password": "User@123",
+    "status": "active",
+    "roles": ["user"],
+    "permissions": [
+      "users.read",
+      "services.read",
+      "settings.read"
+    ],
+    "profile": {
+      "phoneNumber": "+81-90-8765-4321",
+      "department": "Sales",
+      "jobTitle": "Sales Representative"
+    },
+    "security": {
+      "failedLoginAttempts": 0,
+      "twoFactorEnabled": false
+    }
+  },
+  {
+    "id": "manager-user-001",
+    "tenantId": "dev-tenant",
+    "email": "manager@example.com",
+    "username": "manager",
+    "firstName": "Manager",
+    "lastName": "User",
+    "password": "Manager@123",
+    "status": "active",
+    "roles": ["manager", "user"],
+    "permissions": [
+      "users.create",
+      "users.read",
+      "users.update",
+      "services.read",
+      "services.update",
+      "settings.read"
+    ],
+    "profile": {
+      "phoneNumber": "+81-90-2468-1357",
+      "department": "Operations",
+      "jobTitle": "Operations Manager"
+    },
+    "security": {
+      "failedLoginAttempts": 0,
+      "twoFactorEnabled": true
+    }
+  },
+  {
+    "id": "demo-admin-001",
+    "tenantId": "demo-tenant",
+    "email": "demo-admin@example.com",
+    "username": "demo-admin",
+    "firstName": "Demo",
+    "lastName": "Admin",
+    "password": "DemoAdmin@123",
+    "status": "active",
+    "roles": ["admin", "user"],
+    "permissions": [
+      "users.create",
+      "users.read",
+      "users.update",
+      "users.delete",
+      "services.read",
+      "services.update",
+      "settings.read",
+      "settings.update"
+    ],
+    "profile": {
+      "phoneNumber": "+1-555-123-4567",
+      "department": "Demo",
+      "jobTitle": "Demo Administrator"
+    },
+    "security": {
+      "failedLoginAttempts": 0,
+      "twoFactorEnabled": false
+    }
+  }
+]

@@ -1,0 +1,37 @@
+[
+  {
+    "id": "staging-admin-001",
+    "tenantId": "staging-tenant",
+    "email": "staging-admin@example.com",
+    "username": "staging-admin",
+    "firstName": "Staging",
+    "lastName": "Admin",
+    "password": "ChangeMeOnFirstLogin!",
+    "status": "active",
+    "roles": ["admin", "user"],
+    "permissions": [
+      "users.create",
+      "users.read",
+      "users.update",
+      "users.delete",
+      "services.create",
+      "services.read",
+      "services.update",
+      "services.delete",
+      "settings.read",
+      "settings.update",
+      "permissions.read",
+      "permissions.update",
+      "audit.read"
+    ],
+    "profile": {
+      "phoneNumber": "+81-90-0000-0001",
+      "department": "IT",
+      "jobTitle": "System Administrator"
+    },
+    "security": {
+      "failedLoginAttempts": 0,
+      "twoFactorEnabled": true
+    }
+  }
+]
