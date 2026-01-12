@@ -15,6 +15,8 @@ services:
       - COSMOSDB_KEY=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw==
       - COSMOSDB_DATABASE=saas-management-dev
       - NODE_TLS_REJECT_UNAUTHORIZED=0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
 
   cosmosdb:
     image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
@@ -26,6 +28,7 @@ services:
       - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10
       - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true
       - AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=127.0.0.1
+      - AZURE_COSMOS_EMULATOR_ENABLE_MONGODB_ENDPOINT=false
     ports:
       - "8081:8081"
       - "10250:10250"
@@ -43,6 +46,22 @@ services:
       retries: 5
       start_period: 120s
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
 volumes:
   cosmosdb-data:
+    driver: local
+  redis-data:
     driver: local

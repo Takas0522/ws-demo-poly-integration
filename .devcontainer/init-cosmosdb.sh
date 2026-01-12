@@ -43,18 +43,24 @@ export NODE_TLS_REJECT_UNAUTHORIZED=0
 echo ""
 echo "🗄️  データベースとコンテナを作成中..."
 # TypeScriptコンパイルエラーを回避するため、環境変数を確実に設定
-if npx ts-node init-database.ts; then
+if npx ts-node init-database.ts 2>&1; then
   echo "✅ データベース初期化が完了しました"
+  
+  echo ""
+  echo "🌱 開発用データをシード中..."
+  if npx ts-node seed-data.ts 2>&1; then
+    echo "✅ データシードが完了しました"
+  else
+    echo "⚠️  データシードでエラーが発生しました"
+    echo "    手動でシードを実行してください: cd scripts/cosmosdb && npx ts-node seed-data.ts"
+  fi
 else
-  echo "⚠️  データベース初期化でエラーが発生しましたが、続行します"
-fi
-
-echo ""
-echo "🌱 開発用データをシード中..."
-if npx ts-node seed-data.ts; then
-  echo "✅ データシードが完了しました"
-else
-  echo "⚠️  データシードでエラーが発生しました"
+  echo "⚠️  データベース初期化でエラーが発生しました"
+  echo "    一部のコンテナが作成されている可能性があります"
+  echo "    手動で初期化を実行してください: cd scripts/cosmosdb && npx ts-node init-database.ts"
+  echo ""
+  echo "    または、CosmosDBエミュレータを再起動してから再度実行してください:"
+  echo "    docker-compose restart cosmosdb"
 fi
 
 echo ""

@@ -212,6 +212,54 @@ const containers: ContainerConfig[] = [
 ];
 
 /**
+ * Sleep utility function
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Create container with retry logic
+ */
+async function createContainerWithRetry(
+  database: any,
+  containerDef: ContainerDefinition,
+  throughput: number,
+  maxRetries: number = 10
+): Promise<void> {
+  let lastError: any;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await database.containers.createIfNotExists(containerDef, {
+        offerThroughput: throughput,
+      });
+      return; // Success
+    } catch (error: any) {
+      lastError = error;
+
+      // Check if it's a 503 (Service Unavailable) or throttling error
+      if (error?.code === 503 || error?.code === 429) {
+        const waitTime = Math.min(2000 * Math.pow(1.5, attempt - 1), 30000); // Exponential backoff, max 30s
+        console.log(
+          `  ⚠️  Attempt ${attempt}/${maxRetries} failed (${
+            error.code
+          }). Retrying in ${Math.round(waitTime)}ms...`
+        );
+        await sleep(waitTime);
+        continue;
+      }
+
+      // For other errors, throw immediately
+      throw error;
+    }
+  }
+
+  // If we get here, all retries failed
+  throw lastError;
+}
+
+/**
  * Main initialization function
  */
 async function initializeDatabase(): Promise<void> {
@@ -229,7 +277,10 @@ async function initializeDatabase(): Promise<void> {
     console.log(`✅ Database "${config.databaseId}" ready`);
     console.log("");
 
-    // Create containers
+    // Create containers one by one with delay to avoid overloading emulator
+    let successCount = 0;
+    let failureCount = 0;
+
     for (const containerConfig of containers) {
       const containerDef = containerConfig.definition;
       console.log(`Creating container: ${containerDef.id}...`);
@@ -244,29 +295,66 @@ async function initializeDatabase(): Promise<void> {
         );
       }
 
-      const { container } = await database.containers.createIfNotExists(
-        containerDef,
-        { offerThroughput: containerConfig.throughput }
-      );
-      console.log(`✅ Container "${containerDef.id}" ready`);
+      try {
+        await createContainerWithRetry(
+          database,
+          containerDef,
+          containerConfig.throughput
+        );
+        console.log(`✅ Container "${containerDef.id}" ready`);
+        successCount++;
+      } catch (error: any) {
+        console.error(
+          `❌ Failed to create container "${containerDef.id}": ${error.message}`
+        );
+        failureCount++;
+      }
       console.log("");
+
+      // Add a delay between container creations to avoid overwhelming the emulator
+      // Longer delay for the emulator to recover
+      await sleep(2000);
     }
 
-    console.log("🎉 Database initialization completed successfully!");
+    console.log("🎉 Database initialization completed!");
     console.log("");
     console.log("📊 Summary:");
     console.log(`  - Database: ${config.databaseId}`);
-    console.log(`  - Containers: ${containers.length}`);
+    console.log(`  - Containers Created: ${successCount}/${containers.length}`);
+    if (failureCount > 0) {
+      console.log(`  - Failed: ${failureCount}`);
+    }
     containers.forEach((c) => {
       console.log(
         `    • ${c.definition.id} (partition: ${c.definition.partitionKey?.paths[0]})`
       );
     });
     console.log("");
-    console.log("💡 Next steps:");
-    console.log("  1. Run seed-data.ts to populate initial data");
-    console.log("  2. Configure services to use the database");
-    console.log("  3. Test connection and queries");
+
+    if (failureCount > 0) {
+      console.log("⚠️  Some containers failed to create. You can:");
+      console.log("  1. Run this script again to retry");
+      console.log(
+        "  2. Manually create the missing containers in Azure Portal"
+      );
+      console.log("  3. Restart CosmosDB Emulator and try again");
+      console.log("");
+
+      // Exit with error code if more than half failed
+      if (failureCount > containers.length / 2) {
+        console.error(
+          "❌ Too many containers failed to create. Exiting with error."
+        );
+        process.exit(1);
+      } else {
+        console.log("✅ Core containers created successfully. Continuing...");
+      }
+    } else {
+      console.log("💡 Next steps:");
+      console.log("  1. Run seed-data.ts to populate initial data");
+      console.log("  2. Configure services to use the database");
+      console.log("  3. Test connection and queries");
+    }
   } catch (error) {
     console.error("❌ Error initializing database:", error);
     if (error instanceof Error) {

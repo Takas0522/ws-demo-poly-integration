@@ -3,7 +3,7 @@
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspaces/ws-demo-poly-integration",
-  
+
   // Configure VS Code settings
   "customizations": {
     "vscode": {
@@ -12,27 +12,27 @@
         "ms-azuretools.vscode-cosmosdb",
         "ms-azuretools.vscode-azurefunctions",
         "ms-azuretools.vscode-docker",
-        
+
         // TypeScript and JavaScript
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "ms-vscode.vscode-typescript-next",
-        
+
         // Python
         "ms-python.python",
         "ms-python.vscode-pylance",
-        
+
         // Git and GitHub
         "github.vscode-pull-request-github",
         "eamodio.gitlens",
-        
+
         // API Development
         "humao.rest-client",
         "42crunch.vscode-openapi",
-        
+
         // Testing
         "orta.vscode-jest",
-        
+
         // General productivity
         "streetsidesoftware.code-spell-checker",
         "editorconfig.editorconfig"
@@ -51,7 +51,7 @@
       }
     }
   },
-  
+
   // Features to install
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
@@ -70,25 +70,30 @@
       "version": "latest"
     }
   },
-  
+
   // Lifecycle scripts
-  "postCreateCommand": "bash .devcontainer/setup-env.sh && npm --version && python --version && az --version && bash .devcontainer/init-cosmosdb.sh",
-  
+  "postCreateCommand": "bash .devcontainer/setup-env.sh && npm --version && python --version && az --version && bash .devcontainer/init-cosmosdb.sh || echo '⚠️  PostCreateCommand completed with warnings. You may need to manually initialize CosmosDB.'",
+
   // Forward ports for services
   "forwardPorts": [
-    3000,  // Frontend
-    3001,  // Auth Service
-    3002,  // User Management Service
-    3003,  // Service Settings Service
-    8081,  // CosmosDB Emulator
+    3000, // Frontend
+    3001, // Auth Service
+    3002, // User Management Service
+    3003, // Service Settings Service
+    6379, // Redis
+    8081, // CosmosDB Emulator
     10250, // CosmosDB Emulator Gateway
     10251, // CosmosDB Emulator Data Plane
     10252, // CosmosDB Emulator Primary
     10253, // CosmosDB Emulator Secondary
-    10254  // CosmosDB Emulator Tertiary
+    10254 // CosmosDB Emulator Tertiary
   ],
-  
+
   "portsAttributes": {
+    "6379": {
+      "label": "Redis",
+      "onAutoForward": "notify"
+    },
     "8081": {
       "label": "CosmosDB Emulator",
       "onAutoForward": "notify"
@@ -107,7 +112,7 @@
       "label": "Service Settings Service"
     }
   },
-  
+
   // Keep container running
   "remoteUser": "node"
 }
