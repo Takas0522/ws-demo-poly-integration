@@ -8,34 +8,22 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        // Azure and Cosmos DB
         "ms-azuretools.vscode-cosmosdb",
         "ms-azuretools.vscode-azurefunctions",
         "ms-azuretools.vscode-docker",
-
-        // TypeScript and JavaScript
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "ms-vscode.vscode-typescript-next",
-
-        // Python
         "ms-python.python",
         "ms-python.vscode-pylance",
-
-        // Git and GitHub
         "github.vscode-pull-request-github",
         "eamodio.gitlens",
-
-        // API Development
         "humao.rest-client",
         "42crunch.vscode-openapi",
-
-        // Testing
         "orta.vscode-jest",
-
-        // General productivity
         "streetsidesoftware.code-spell-checker",
-        "editorconfig.editorconfig"
+        "editorconfig.editorconfig",
+        "GitHub.copilot-chat"
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "bash",
@@ -80,7 +68,6 @@
     3001, // Auth Service
     3002, // User Management Service
     3003, // Service Settings Service
-    6379, // Redis
     8081, // CosmosDB Emulator
     10250, // CosmosDB Emulator Gateway
     10251, // CosmosDB Emulator Data Plane
@@ -90,10 +77,6 @@
   ],
 
   "portsAttributes": {
-    "6379": {
-      "label": "Redis",
-      "onAutoForward": "notify"
-    },
     "8081": {
       "label": "CosmosDB Emulator",
       "onAutoForward": "notify"

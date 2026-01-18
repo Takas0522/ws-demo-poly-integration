@@ -1,0 +1,25 @@
+# Windows上の C:\Users\tohkawa\.wslconfig に配置してください
+# WSL2のリソース制限を設定
+
+[wsl2]
+# WSLに割り当てるメモリ（推奨: 物理メモリの50-75%）
+memory=8GB
+
+# WSLに割り当てるプロセッサ数
+processors=4
+
+# スワップサイズ
+swap=4GB
+
+# WSL起動時のlocalhostポートフォワーディングを有効化
+localhostForwarding=true
+
+# メモリの再利用を有効化（パフォーマンス向上）
+pageReporting=true
+
+# カーネルパラメータ（Docker in Docker用）
+kernelCommandLine = cgroup_no_v1=all systemd.unified_cgroup_hierarchy=1
+
+[experimental]
+# 自動メモリ回収を有効化
+autoMemoryReclaim=gradual

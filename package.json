@@ -4,6 +4,9 @@
   "description": "SaaS Management Application - Polyrepo Integration",
   "private": true,
   "scripts": {
+    "start": "./start-all-services.sh",
+    "stop": "./stop-all-services.sh",
+    "status": "./check-services.sh",
     "test:unit": "npm run test:unit:types && npm run test:unit:permissions",
     "test:unit:types": "cd packages/@types && npm test",
     "test:unit:permissions": "cd scripts/permissions && npm test",

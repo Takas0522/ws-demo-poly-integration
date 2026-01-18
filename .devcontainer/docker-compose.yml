@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   app:
     image: mcr.microsoft.com/devcontainers/typescript-node:20
@@ -7,28 +5,42 @@ services:
       - ../..:/workspaces:cached
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
-    network_mode: service:cosmosdb
     # Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
     user: node
+    # CosmosDBが起動してから起動
+    depends_on:
+      cosmosdb:
+        condition: service_healthy # ヘルスチェックが成功してから起動
     environment:
-      - COSMOSDB_ENDPOINT=https://localhost:8081
+      - COSMOSDB_ENDPOINT=https://cosmosdb:8081
       - COSMOSDB_KEY=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw==
       - COSMOSDB_DATABASE=saas-management-dev
       - NODE_TLS_REJECT_UNAUTHORIZED=0
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+    networks:
+      - devcontainer-network
 
   cosmosdb:
-    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:mongodb
     tty: true
-    restart: unless-stopped
-    mem_limit: 4g # 3g -> 4gに増加してリソース不足を回避
-    cpu_count: 2
+    stdin_open: true
+    restart: unless-stopped # 異常終了時のみ再起動
+    privileged: true # WSL2/DevContainer環境で必須
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 6G
+        reservations:
+          cpus: '2'
+          memory: 3G
     environment:
-      - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=5 # 10 -> 5に削減してメモリ使用量を削減
-      - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true
-      - AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=127.0.0.1
+      - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=1
+      - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=false
+      - AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=0.0.0.0
       - AZURE_COSMOS_EMULATOR_ENABLE_MONGODB_ENDPOINT=false
+      - AZURE_COSMOS_EMULATOR_KEY_VAULT_ENDPOINT=
+      - AZURE_COSMOS_EMULATOR_ENABLE_PREVIEW=true
+      - AZURE_COSMOS_EMULATOR_DISABLE_RATE_LIMITING=true
     ports:
       - "8081:8081"
       - "10250:10250"
@@ -37,32 +49,14 @@ services:
       - "10253:10253"
       - "10254:10254"
     volumes:
-      - cosmosdb-data:/tmp/cosmos/appdata
-    # Health check to ensure CosmosDB is ready
-    healthcheck:
-      test:
-        ["CMD", "curl", "-k", "https://localhost:8081/_explorer/emulator.pem"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 120s
+      - cosmosdb-data:/tmp/cosmos
+    networks:
+      - devcontainer-network
 
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    command: redis-server --appendonly yes
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
+networks:
+  devcontainer-network:
+    driver: bridge
 
 volumes:
   cosmosdb-data:
-    driver: local
-  redis-data:
     driver: local

@@ -165,7 +165,17 @@ ws-demo-poly-integration/
    - プロンプトが表示されたら「コンテナで再度開く」をクリック
    - DevContainer には、CosmosDB エミュレータと必要なすべてのツールが含まれています
 
-3. **各サービスの依存関係をインストール：**
+3. **Python 3.11 仮想環境を作成してアクティベート：**
+
+   ```bash
+   # プロジェクトルートで Python 3.11 の仮想環境を作成
+   python3.11 -m venv .venv311
+
+   # 仮想環境をアクティベート
+   source .venv311/bin/activate
+   ```
+
+4. **各サービスの依存関係をインストール：**
 
    ```bash
    # 共有型ライブラリ
@@ -177,7 +187,7 @@ ws-demo-poly-integration/
    cd ../../src/front
    npm install
 
-   # 認証サービス (Python/FastAPI)
+   # 認証サービス (Python/FastAPI) - 仮想環境がアクティブであることを確認
    cd ../auth-service
    pip install -r requirements.txt
 
@@ -190,7 +200,7 @@ ws-demo-poly-integration/
    pip install -r requirements.txt
    ```
 
-4. **環境変数を設定：**
+5. **環境変数を設定：**
 
    ```bash
    # ルートディレクトリで環境設定をコピー
@@ -205,10 +215,57 @@ ws-demo-poly-integration/
 
 ### ローカルで実行
 
-各サービスを別々のターミナルで起動：
+#### 方法 1: 全サービスを一括起動（推奨）
+
+全サービスを 1 つのコマンドで起動：
 
 ```bash
-# フロントエンド (デフォルト: http://localhost:5173)
+# プロジェクトルートで実行
+npm start
+# または
+./start-all-services.sh
+```
+
+サービスの稼働状況を確認：
+
+```bash
+npm run status
+# または
+./check-services.sh
+```
+
+全サービスを停止：
+
+```bash
+npm stop
+# または
+./stop-all-services.sh
+```
+
+**起動後の URL:**
+
+- Frontend: http://localhost:5173
+- Auth Service: http://localhost:3001 ([API Docs](http://localhost:3001/docs))
+- User Management: http://localhost:3002 ([API Docs](http://localhost:3002/docs))
+- Service Settings: http://localhost:3003 ([API Docs](http://localhost:3003/docs))
+
+**ログファイル:**
+各サービスのログは `logs/` ディレクトリに出力されます：
+
+- `logs/auth-service.log`
+- `logs/user-management-service.log`
+- `logs/service-setting-service.log`
+- `logs/frontend.log`
+
+#### 方法 2: 各サービスを個別に起動
+
+各サービスを別々のターミナルで起動する場合：
+
+```bash
+# Python仮想環境をアクティベート（Pythonサービスを起動する前に実行）
+source .venv311/bin/activate
+
+# フロントエンド (デフォルト: http://localhost:3000)
 cd src/front
 npm run dev
 
@@ -425,9 +482,24 @@ az cosmosdb list-connection-strings --resource-group dummy --name dummy 2>/dev/n
 git submodule update --init --recursive
 ```
 
-### 各サービスの起動
+### サービスの起動
 
-各サービスのディレクトリに移動して起動します：
+#### クイックスタート（全サービス一括起動）
+
+```bash
+# 全サービスを起動
+npm start
+
+# サービスの稼働確認
+npm run status
+
+# 全サービスを停止
+npm stop
+```
+
+#### 個別に起動する場合
+
+各サービスのディレクトリに移動して起動：
 
 ```bash
 # Frontend (React + TypeScript)
@@ -474,6 +546,31 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 3003
 - `8081` - CosmosDB Emulator
 
 ## � トラブルシューティング
+
+### Python 仮想環境の問題
+
+#### ModuleNotFoundError が発生する
+
+**症状**: Python サービスを起動すると `ModuleNotFoundError: No module named 'xxx'` エラーが発生
+
+**原因**: Python 3.13 では一部のパッケージ（pydantic-core など）がビルドに失敗します
+
+**解決策**:
+
+```bash
+# Python 3.11 の仮想環境を作成
+python3.11 -m venv .venv311
+
+# 仮想環境をアクティベート
+source .venv311/bin/activate
+
+# 各サービスの依存関係をインストール
+cd src/auth-service && pip install -r requirements.txt
+cd ../user-management-service && pip install -r requirements.txt
+cd ../service-setting-service && pip install -r requirements.txt
+```
+
+**注意**: Python サービスを起動する前に必ず `.venv311` 環境をアクティベートしてください。
 
 ### CosmosDB Emulator 関連の問題
 

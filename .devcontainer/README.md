@@ -68,12 +68,25 @@ Run the connectivity test script:
 .devcontainer/test-cosmosdb.sh
 ```
 
-### Features
-- 10 partitions configured
-- Data persistence enabled
-- Health checks configured
-- 3GB memory limit
-- 2 CPU cores allocated
+### Resource Configuration
+- **CPU**: 4 cores (2 cores reserved, 4 cores max)
+- **Memory**: 6GB max, 3GB reserved
+- **Partitions**: 1 (optimized for development)
+- **Data Persistence**: Disabled (faster startup)
+- **Health Check**: 45s interval, 30 retries, 600s startup period
+- **Restart Policy**: unless-stopped (auto-restart on failure)
+
+### Stability Improvements (2026-01-16)
+The following settings have been optimized to prevent restart loops in WSL2/DevContainer environments:
+- Increased memory limit to 6GB (from 4GB)
+- Increased CPU limit to 4 cores (from 2 cores)
+- Added CPU/memory reservations
+- Enabled privileged mode for WSL2 compatibility
+- Reduced partition count to 1 (from 2)
+- Extended startup period to 10 minutes
+- Added proper volume mounting for data persistence
+- Improved health check with longer intervals
+- Changed restart policy to "unless-stopped"
 
 ## 🔌 Port Forwarding
 
@@ -149,6 +162,49 @@ Add more features in the `features` section:
 ```
 
 ## 🐛 Troubleshooting
+
+### CosmosDB Emulator Restart Loop Issues
+
+If the CosmosDB Emulator keeps restarting (ExitCode 255), try the following:
+
+**1. Run the troubleshooting script:**
+```bash
+bash .devcontainer/troubleshoot-cosmosdb.sh
+```
+
+**2. Common causes and solutions:**
+
+- **Insufficient resources**: The emulator requires at least 3GB RAM and 2 CPU cores
+  - Solution: Increase Docker Desktop resources (Settings → Resources)
+  - Current config: 6GB RAM limit, 4 CPU cores
+  
+- **Missing privileged mode**: WSL2 environments may require privileged mode
+  - Solution: Already enabled in docker-compose.yml
+  
+- **Startup timeout**: First startup can take 5-10 minutes
+  - Solution: Wait longer, health check has 10-minute startup period
+  - Check logs: `docker logs -f <container-id>`
+  
+- **Port conflicts**: Port 8081 may be in use
+  - Solution: Check `netstat -tulpn | grep 8081`
+  
+- **Volume corruption**: Data volume may be corrupted
+  - Solution: Clean restart with:
+    ```bash
+    docker-compose -f .devcontainer/docker-compose.yml down cosmosdb
+    docker volume rm ws-demo-poly-integration_devcontainer-cosmosdb-data
+    docker-compose -f .devcontainer/docker-compose.yml up -d cosmosdb
+    ```
+
+**3. View real-time logs:**
+```bash
+docker logs -f $(docker ps -a | grep cosmosdb | awk '{print $1}' | head -n 1)
+```
+
+**4. Manual restart:**
+```bash
+docker-compose -f .devcontainer/docker-compose.yml restart cosmosdb
+```
 
 ### Container won't start
 1. Ensure Docker Desktop is running

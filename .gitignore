@@ -29,6 +29,15 @@ __pycache__/
 .Python
 pip-log.txt
 pip-delete-this-directory.txt
+
+# Python virtual environments
+venv/
+.venv/
+.venv*/
+env/
+ENV/
+env.bak/
+venv.bak/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
@@ -47,6 +56,10 @@ coverage/
 # Logs
 logs/
 *.log
+
+# Service management
+.service-pids
+
 # Build outputs
 dist/
 build/
