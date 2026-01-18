@@ -1,101 +1,29 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
-  "name": "SaaS Management Application",
-  "dockerComposeFile": "docker-compose.yml",
-  "service": "app",
-  "workspaceFolder": "/workspaces/ws-demo-poly-integration",
+	"name": "Ws-Demo-Poly-Integration",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"image": "mcr.microsoft.com/devcontainers/python:2-3-bookworm",
+	"features": {
+		"ghcr.io/devcontainers/features/azure-cli:1": {},
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {},
+		"ghcr.io/devcontainers/features/github-cli:1": {},
+		"ghcr.io/stu-bell/devcontainer-features/node:0": {},
+		"ghcr.io/schlich/devcontainer-features/playwright:0": {}
+	}
 
-  // Configure VS Code settings
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "ms-azuretools.vscode-cosmosdb",
-        "ms-azuretools.vscode-azurefunctions",
-        "ms-azuretools.vscode-docker",
-        "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode",
-        "ms-vscode.vscode-typescript-next",
-        "ms-python.python",
-        "ms-python.vscode-pylance",
-        "github.vscode-pull-request-github",
-        "eamodio.gitlens",
-        "humao.rest-client",
-        "42crunch.vscode-openapi",
-        "orta.vscode-jest",
-        "streetsidesoftware.code-spell-checker",
-        "editorconfig.editorconfig",
-        "GitHub.copilot-chat"
-      ],
-      "settings": {
-        "terminal.integrated.defaultProfile.linux": "bash",
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.codeActionsOnSave": {
-          "source.fixAll.eslint": "explicit"
-        },
-        "files.eol": "\n",
-        "python.linting.enabled": true,
-        "python.linting.pylintEnabled": true,
-        "python.formatting.provider": "black"
-      }
-    }
-  },
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	// "features": {},
 
-  // Features to install
-  "features": {
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "20"
-    },
-    "ghcr.io/devcontainers/features/python:1": {
-      "version": "3.11"
-    },
-    "ghcr.io/devcontainers/features/azure-cli:1": {
-      "version": "latest"
-    },
-    "ghcr.io/devcontainers/features/git:1": {
-      "version": "latest"
-    },
-    "ghcr.io/devcontainers/features/github-cli:1": {
-      "version": "latest"
-    }
-  },
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
 
-  // Lifecycle scripts
-  "postCreateCommand": "bash .devcontainer/setup-env.sh && npm --version && python --version && az --version && bash .devcontainer/init-cosmosdb.sh || echo '⚠️  PostCreateCommand completed with warnings. You may need to manually initialize CosmosDB.'",
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "pip3 install --user -r requirements.txt",
 
-  // Forward ports for services
-  "forwardPorts": [
-    3000, // Frontend
-    3001, // Auth Service
-    3002, // User Management Service
-    3003, // Service Settings Service
-    8081, // CosmosDB Emulator
-    10250, // CosmosDB Emulator Gateway
-    10251, // CosmosDB Emulator Data Plane
-    10252, // CosmosDB Emulator Primary
-    10253, // CosmosDB Emulator Secondary
-    10254 // CosmosDB Emulator Tertiary
-  ],
+	// Configure tool-specific properties.
+	// "customizations": {},
 
-  "portsAttributes": {
-    "8081": {
-      "label": "CosmosDB Emulator",
-      "onAutoForward": "notify"
-    },
-    "3000": {
-      "label": "Frontend",
-      "onAutoForward": "openPreview"
-    },
-    "3001": {
-      "label": "Auth Service"
-    },
-    "3002": {
-      "label": "User Management Service"
-    },
-    "3003": {
-      "label": "Service Settings Service"
-    }
-  },
-
-  // Keep container running
-  "remoteUser": "node"
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	// "remoteUser": "root"
 }
