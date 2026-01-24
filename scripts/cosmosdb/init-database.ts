@@ -18,6 +18,7 @@ import {
   CosmosClient,
   IndexingPolicy,
   ContainerDefinition,
+  PartitionKeyKind,
 } from "@azure/cosmos";
 
 // Configuration from environment variables
@@ -34,15 +35,32 @@ if (!config.key) {
   console.error("");
   console.error("For CosmosDB Emulator, use:");
   console.error(
-    '  export COSMOSDB_KEY="C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="'
+    '  export COSMOSDB_KEY="C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="',
   );
   process.exit(1);
+}
+
+// For CosmosDB Emulator, disable TLS certificate validation
+if (
+  config.endpoint.includes("localhost") ||
+  config.endpoint.includes("cosmosdb")
+) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 }
 
 // Initialize Cosmos Client
 const client = new CosmosClient({
   endpoint: config.endpoint,
   key: config.key,
+  connectionPolicy: {
+    enableEndpointDiscovery: false,
+    requestTimeout: 120000, // 120 seconds for DevContainer environments
+    retryOptions: {
+      maxRetryAttemptCount: 5,
+      fixedRetryIntervalInMilliseconds: 500,
+      maxWaitTimeInSeconds: 60,
+    },
+  },
 });
 
 /**
@@ -162,7 +180,7 @@ const containers: ContainerConfig[] = [
   {
     definition: {
       id: "Tenants",
-      partitionKey: { paths: ["/tenantId"] },
+      partitionKey: { paths: ["/tenantId"], kind: PartitionKeyKind.Hash },
       indexingPolicy: tenantsIndexingPolicy,
     },
     throughput: 400,
@@ -170,7 +188,7 @@ const containers: ContainerConfig[] = [
   {
     definition: {
       id: "Users",
-      partitionKey: { paths: ["/tenantId"] },
+      partitionKey: { paths: ["/tenantId"], kind: PartitionKeyKind.Hash },
       indexingPolicy: usersIndexingPolicy,
     },
     throughput: 400,
@@ -178,7 +196,7 @@ const containers: ContainerConfig[] = [
   {
     definition: {
       id: "Permissions",
-      partitionKey: { paths: ["/tenantId"] },
+      partitionKey: { paths: ["/tenantId"], kind: PartitionKeyKind.Hash },
       indexingPolicy: permissionsIndexingPolicy,
     },
     throughput: 400,
@@ -186,7 +204,7 @@ const containers: ContainerConfig[] = [
   {
     definition: {
       id: "AuditLogs",
-      partitionKey: { paths: ["/tenantId"] },
+      partitionKey: { paths: ["/tenantId"], kind: PartitionKeyKind.Hash },
       indexingPolicy: auditLogsIndexingPolicy,
       defaultTtl: 7776000, // 90 days in seconds
     },
@@ -196,7 +214,7 @@ const containers: ContainerConfig[] = [
   {
     definition: {
       id: "TenantUsers",
-      partitionKey: { paths: ["/userId"] },
+      partitionKey: { paths: ["/userId"], kind: PartitionKeyKind.Hash },
       indexingPolicy: tenantUsersIndexingPolicy,
     },
     throughput: 400,
@@ -204,7 +222,7 @@ const containers: ContainerConfig[] = [
   {
     definition: {
       id: "Services",
-      partitionKey: { paths: ["/tenantId"] },
+      partitionKey: { paths: ["/tenantId"], kind: PartitionKeyKind.Hash },
       indexingPolicy: servicesIndexingPolicy,
     },
     throughput: 400,
@@ -225,7 +243,7 @@ async function createContainerWithRetry(
   database: any,
   containerDef: ContainerDefinition,
   throughput: number,
-  maxRetries: number = 10
+  maxRetries: number = 10,
 ): Promise<void> {
   let lastError: any;
 
@@ -244,7 +262,7 @@ async function createContainerWithRetry(
         console.log(
           `  ⚠️  Attempt ${attempt}/${maxRetries} failed (${
             error.code
-          }). Retrying in ${Math.round(waitTime)}ms...`
+          }). Retrying in ${Math.round(waitTime)}ms...`,
         );
         await sleep(waitTime);
         continue;
@@ -291,7 +309,7 @@ async function initializeDatabase(): Promise<void> {
         console.log(
           `  - TTL: ${containerDef.defaultTtl} seconds (${
             containerDef.defaultTtl / 86400
-          } days)`
+          } days)`,
         );
       }
 
@@ -299,13 +317,13 @@ async function initializeDatabase(): Promise<void> {
         await createContainerWithRetry(
           database,
           containerDef,
-          containerConfig.throughput
+          containerConfig.throughput,
         );
         console.log(`✅ Container "${containerDef.id}" ready`);
         successCount++;
       } catch (error: any) {
         console.error(
-          `❌ Failed to create container "${containerDef.id}": ${error.message}`
+          `❌ Failed to create container "${containerDef.id}": ${error.message}`,
         );
         failureCount++;
       }
@@ -326,7 +344,7 @@ async function initializeDatabase(): Promise<void> {
     }
     containers.forEach((c) => {
       console.log(
-        `    • ${c.definition.id} (partition: ${c.definition.partitionKey?.paths[0]})`
+        `    • ${c.definition.id} (partition: ${c.definition.partitionKey?.paths[0]})`,
       );
     });
     console.log("");
@@ -335,7 +353,7 @@ async function initializeDatabase(): Promise<void> {
       console.log("⚠️  Some containers failed to create. You can:");
       console.log("  1. Run this script again to retry");
       console.log(
-        "  2. Manually create the missing containers in Azure Portal"
+        "  2. Manually create the missing containers in Azure Portal",
       );
       console.log("  3. Restart CosmosDB Emulator and try again");
       console.log("");
@@ -343,7 +361,7 @@ async function initializeDatabase(): Promise<void> {
       // Exit with error code if more than half failed
       if (failureCount > containers.length / 2) {
         console.error(
-          "❌ Too many containers failed to create. Exiting with error."
+          "❌ Too many containers failed to create. Exiting with error.",
         );
         process.exit(1);
       } else {
@@ -366,25 +384,53 @@ async function initializeDatabase(): Promise<void> {
 }
 
 /**
- * Verify connection before initialization
+ * Verify connection before initialization with retry logic
  */
-async function verifyConnection(): Promise<boolean> {
-  try {
-    console.log("🔍 Verifying connection to CosmosDB...");
-    await client.getDatabaseAccount();
-    console.log("✅ Connection verified");
-    console.log("");
-    return true;
-  } catch (error) {
-    console.error("❌ Connection failed:", error);
-    console.error("");
-    console.error("Please check:");
-    console.error("  - COSMOSDB_ENDPOINT is correct");
-    console.error("  - COSMOSDB_KEY is valid");
-    console.error("  - CosmosDB service is running (for emulator)");
-    console.error("  - Network connectivity");
-    return false;
+async function verifyConnection(
+  maxRetries: number = 30,
+  retryIntervalMs: number = 5000,
+): Promise<boolean> {
+  console.log("🔍 Verifying connection to CosmosDB...");
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await client.getDatabaseAccount();
+      console.log("✅ Connection verified");
+      console.log("");
+      return true;
+    } catch (error: any) {
+      const isServiceUnavailable =
+        error?.code === 500 ||
+        error?.code === 503 ||
+        error?.body?.code === "InternalServerError" ||
+        error?.body?.code === "ServiceUnavailable" ||
+        error?.message?.includes("Service is currently unavailable") ||
+        error?.message?.includes("pgcosmos extension is still starting");
+
+      if (isServiceUnavailable && attempt < maxRetries) {
+        console.log(
+          `⏳ CosmosDB Emulator is still starting... (attempt ${attempt}/${maxRetries})`,
+        );
+        console.log(
+          `   Waiting ${retryIntervalMs / 1000} seconds before retry...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, retryIntervalMs));
+        continue;
+      }
+
+      console.error("❌ Connection failed:", error);
+      console.error("");
+      console.error("Please check:");
+      console.error("  - COSMOSDB_ENDPOINT is correct");
+      console.error("  - COSMOSDB_KEY is valid");
+      console.error("  - CosmosDB service is running (for emulator)");
+      console.error("  - Network connectivity");
+      return false;
+    }
   }
+
+  console.error("❌ Connection failed after all retries");
+  return false;
 }
 
 /**

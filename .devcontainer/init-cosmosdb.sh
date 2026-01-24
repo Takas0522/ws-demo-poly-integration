@@ -43,13 +43,27 @@ print_error() {
 cd /workspace
 
 # Check if CosmosDB connection details are set
-if [ -z "$COSMOSDB_ENDPOINT" ] || [ -z "$COSMOSDB_KEY" ]; then
-    print_error "CosmosDB connection details not set in environment variables"
-    print_warning "Please ensure COSMOSDB_ENDPOINT and COSMOSDB_KEY are configured"
+if [ -z "$COSMOSDB_KEY" ]; then
+    print_error "COSMOSDB_KEY not set in environment variables"
     exit 1
 fi
 
-print_success "Environment variables loaded"
+# Get CosmosDB container IP address for Docker-in-Docker environment
+echo "🔍 Detecting CosmosDB container IP address..."
+COSMOSDB_IP=$(docker inspect cosmosdb-emulator --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' 2>/dev/null)
+
+if [ -z "$COSMOSDB_IP" ]; then
+    print_error "Could not find CosmosDB container IP address"
+    print_warning "Make sure the cosmosdb-emulator container is running"
+    exit 1
+fi
+
+# Override COSMOSDB_ENDPOINT to use the container IP for Docker-in-Docker environment
+export COSMOSDB_ENDPOINT="http://${COSMOSDB_IP}:8081"
+export COSMOSDB_DATABASE="${COSMOSDB_DATABASE:-saas-management-dev}"
+
+print_success "Environment variables configured"
+echo "  - Container IP: $COSMOSDB_IP"
 echo "  - Endpoint: $COSMOSDB_ENDPOINT"
 echo "  - Database: $COSMOSDB_DATABASE"
 echo ""
@@ -61,11 +75,12 @@ WAIT_TIME=0
 SLEEP_INTERVAL=10
 
 while [ $WAIT_TIME -lt $MAX_WAIT ]; do
-    if curl -k -s -o /dev/null -w "%{http_code}" "https://localhost:8081/_explorer/emulator.pem" | grep -q "200\|302"; then
-        print_success "CosmosDB Emulator is ready!"
+    # Check if the CosmosDB API endpoint responds using the container IP
+    if curl -s --max-time 2 "http://${COSMOSDB_IP}:8081/" 2>/dev/null | grep -qE '(ServiceUnavailable|code)'; then
+        print_success "CosmosDB Emulator is responding!"
         break
     fi
-    
+
     echo "  Waiting... ($WAIT_TIME/$MAX_WAIT seconds)"
     sleep $SLEEP_INTERVAL
     WAIT_TIME=$((WAIT_TIME + SLEEP_INTERVAL))
@@ -77,6 +92,12 @@ if [ $WAIT_TIME -ge $MAX_WAIT ]; then
     print_warning "  cd /workspace/scripts/cosmosdb && npm install && npm run init"
     exit 1
 fi
+
+# Wait additional time for pgcosmos extension to fully start (for NoSQL operations)
+echo ""
+echo "⏳ Waiting for pgcosmos extension to be ready (additional 30 seconds)..."
+sleep 30
+print_success "CosmosDB Emulator should be ready for NoSQL operations!"
 
 echo ""
 echo "📦 Installing CosmosDB script dependencies..."

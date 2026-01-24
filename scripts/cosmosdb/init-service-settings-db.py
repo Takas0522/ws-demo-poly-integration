@@ -15,7 +15,7 @@ from azure.cosmos import CosmosClient, PartitionKey
 from azure.cosmos.exceptions import CosmosHttpResponseError
 
 # CosmosDB Emulator設定
-ENDPOINT = "https://localhost:8081"
+ENDPOINT = "http://localhost:8081"
 KEY = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
 DATABASE_NAME = "settingsdb"
 CONTAINER_NAME = "configurations"

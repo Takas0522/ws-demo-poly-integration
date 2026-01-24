@@ -2,28 +2,131 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
 	"name": "Ws-Demo-Poly-Integration",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/python:2-3-bookworm",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "app",
+	"workspaceFolder": "/workspace",
+
 	"features": {
 		"ghcr.io/devcontainers/features/azure-cli:1": {},
 		"ghcr.io/devcontainers/features/docker-in-docker:2": {},
 		"ghcr.io/devcontainers/features/github-cli:1": {},
-		"ghcr.io/stu-bell/devcontainer-features/node:0": {},
+		"ghcr.io/devcontainers/features/node:1": {
+			"version": "20"
+		},
 		"ghcr.io/schlich/devcontainer-features/playwright:0": {}
-	}
+	},
 
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
+	// Forward ports for all services
+	"forwardPorts": [
+		3000,  // Frontend (React/Vite)
+		3001,  // Auth Service (FastAPI)
+		3002,  // User Management Service (FastAPI)
+		3003,  // Service Settings Service (FastAPI)
+		8081,  // CosmosDB Emulator
+		1234   // CosmosDB Data Explorer
+	],
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+	// Port labels for clarity
+	"portsAttributes": {
+		"3000": {
+			"label": "Frontend",
+			"onAutoForward": "notify"
+		},
+		"3001": {
+			"label": "Auth Service",
+			"onAutoForward": "silent"
+		},
+		"3002": {
+			"label": "User Management",
+			"onAutoForward": "silent"
+		},
+		"3003": {
+			"label": "Service Settings",
+			"onAutoForward": "silent"
+		},
+		"8081": {
+			"label": "CosmosDB Emulator",
+			"onAutoForward": "silent"
+		},
+		"1234": {
+			"label": "CosmosDB Data Explorer",
+			"onAutoForward": "silent"
+		}
+	},
 
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "pip3 install --user -r requirements.txt",
+	// Run commands after container is created
+	// CosmosDB is started by docker-compose, we just need to wait and initialize
+	"postCreateCommand": "bash -c 'bash .devcontainer/setup-env.sh && export COSMOSDB_ENDPOINT=http://localhost:8081 && bash .devcontainer/init-cosmosdb.sh || echo \"CosmosDB initialization failed - you can retry manually\"'",
 
-	// Configure tool-specific properties.
-	// "customizations": {},
+	// VS Code customizations
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+				"ms-python.black-formatter",
+				"charliermarsh.ruff",
+				"dbaeumer.vscode-eslint",
+				"esbenp.prettier-vscode",
+				"dsznajder.es7-react-js-snippets",
+				"ms-azuretools.vscode-cosmosdb",
+				"ms-azuretools.vscode-docker",
+				"ms-playwright.playwright",
+				"editorconfig.editorconfig",
+				"streetsidesoftware.code-spell-checker",
+				"gruntfuggly.todo-tree",
+				"eamodio.gitlens",
+				"GitHub.copilot",
+				"GitHub.copilot-chat"
+			],
+			"settings": {
+				// Python settings
+				"python.defaultInterpreterPath": "/usr/local/bin/python",
+				"python.linting.enabled": true,
+				"python.linting.pylintEnabled": false,
+				"python.linting.flake8Enabled": false,
+				"python.formatting.provider": "none",
+				"[python]": {
+					"editor.defaultFormatter": "ms-python.black-formatter",
+					"editor.formatOnSave": true,
+					"editor.codeActionsOnSave": {
+						"source.organizeImports": "explicit"
+					}
+				},
 
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+				// JavaScript/TypeScript settings
+				"[javascript]": {
+					"editor.defaultFormatter": "esbenp.prettier-vscode",
+					"editor.formatOnSave": true
+				},
+				"[typescript]": {
+					"editor.defaultFormatter": "esbenp.prettier-vscode",
+					"editor.formatOnSave": true
+				},
+				"[javascriptreact]": {
+					"editor.defaultFormatter": "esbenp.prettier-vscode",
+					"editor.formatOnSave": true
+				},
+				"[typescriptreact]": {
+					"editor.defaultFormatter": "esbenp.prettier-vscode",
+					"editor.formatOnSave": true
+				},
+				"[json]": {
+					"editor.defaultFormatter": "esbenp.prettier-vscode",
+					"editor.formatOnSave": true
+				},
+
+				// Editor settings
+				"editor.tabSize": 4,
+				"editor.insertSpaces": true,
+				"files.eol": "\n",
+				"files.trimTrailingWhitespace": true,
+				"files.insertFinalNewline": true
+			}
+		}
+	},
+
+	"containerUser": "vscode",
+	"remoteUser": "vscode",
+	"updateRemoteUserUID": true
 }
