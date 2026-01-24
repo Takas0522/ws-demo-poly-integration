@@ -1,0 +1,128 @@
+{
+  "name": "WS Demo Poly Integration",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "devcontainer",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+
+  // VS Code settings
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "python.formatting.provider": "black",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.organizeImports": "explicit"
+        },
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.black-formatter",
+          "editor.tabSize": 4
+        },
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.tabSize": 2
+        },
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.tabSize": 2
+        },
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.tabSize": 2
+        }
+      },
+      "extensions": [
+        // Python
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        // JavaScript/TypeScript
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        // Azure
+        "ms-azuretools.vscode-azurefunctions",
+        "ms-azuretools.vscode-cosmosdb",
+        // Git
+        "eamodio.gitlens",
+        // Docker
+        "ms-azuretools.vscode-docker",
+        // Others
+        "editorconfig.editorconfig",
+        "ms-vscode.vscode-json-languageservice"
+      ]
+    }
+  },
+
+  // Features to add to the dev container
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "installOhMyZsh": true,
+      "configureZshAsDefaultShell": false,
+      "username": "vscode",
+      "userUid": "1000",
+      "userGid": "1000",
+      "upgradePackages": true
+    },
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest",
+      "ppa": false
+    }
+  },
+
+  // Port forwarding
+  "forwardPorts": [
+    3000,  // Frontend
+    8001,  // Auth Service
+    8002,  // User Management Service
+    8003,  // Service Setting Service
+    8004,  // Mock Services
+    8081,  // Cosmos DB Emulator
+    10251, // Cosmos DB Emulator
+    10252, // Cosmos DB Emulator
+    10253, // Cosmos DB Emulator
+    10254  // Cosmos DB Emulator
+  ],
+
+  "portsAttributes": {
+    "3000": {
+      "label": "Frontend (Next.js)",
+      "onAutoForward": "notify"
+    },
+    "8001": {
+      "label": "Auth Service",
+      "onAutoForward": "silent"
+    },
+    "8002": {
+      "label": "User Management Service",
+      "onAutoForward": "silent"
+    },
+    "8003": {
+      "label": "Service Setting Service",
+      "onAutoForward": "silent"
+    },
+    "8004": {
+      "label": "Mock Services",
+      "onAutoForward": "silent"
+    },
+    "8081": {
+      "label": "Cosmos DB Emulator",
+      "onAutoForward": "silent"
+    }
+  },
+
+  // Lifecycle scripts
+  "postCreateCommand": "bash .devcontainer/setup-env.sh",
+
+  // Container user
+  "remoteUser": "vscode",
+
+  // Mount points
+  "mounts": [
+    "source=${localWorkspaceFolder}/.git,target=/workspace/.git,type=bind,consistency=cached"
+  ]
+}
