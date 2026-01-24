@@ -118,3 +118,4 @@ graph LR
 | データベース | Azure Cosmos DB |
 | インフラ | Bicep (Azure IaC) |
 | 認証方式 | JWT (JSON Web Token) |
+| 開発環境 | DevContainer + Cosmos DB Emulator |

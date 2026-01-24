@@ -74,23 +74,110 @@ graph TB
 
 | 環境 | 用途 | 特徴 |
 |------|------|------|
-| 開発 (dev) | 開発・テスト | 機能検証、統合テスト |
-| 本番 (prod) | 本番運用 | 実ユーザー向け |
+| 開発 (dev) | 開発・テスト | DevContainer + Cosmos DB Emulator |
+| 本番 (prod) | 本番運用 | Azure App Service + Cosmos DB |
 
 ```mermaid
 graph LR
-    subgraph "開発環境"
-        DevApp[App Services<br/>dev]
-        DevDB[(Cosmos DB<br/>dev)]
+    subgraph "ローカル開発環境"
+        DevContainer[DevContainer<br/>VS Code]
+        Emulator[(Cosmos DB<br/>Emulator)]
     end
     
-    subgraph "本番環境"
+    subgraph "本番環境 (Azure)"
         ProdApp[App Services<br/>prod]
         ProdDB[(Cosmos DB<br/>prod)]
     end
     
-    Git[GitHub] -->|main branch| DevApp
-    DevApp -->|承認後デプロイ| ProdApp
+    Developer[開発者] --> DevContainer
+    DevContainer --> Emulator
+    
+    Git[GitHub] -->|main branch| ProdApp
+    ProdApp --> ProdDB
+```
+
+## ローカル開発環境 (DevContainer)
+
+### 概要
+
+ローカル開発環境は [DevContainer](https://containers.dev/) を使用して構築します。これにより、開発者全員が同一の環境で開発できます。
+
+### DevContainer構成
+
+```
+.devcontainer/
+├── devcontainer.json      # DevContainer設定
+├── docker-compose.yml     # サービス構成
+├── Dockerfile             # 開発用コンテナ
+└── scripts/
+    └── post-create.sh     # 初期化スクリプト
+```
+
+### 含まれるサービス
+
+| サービス | ポート | 説明 |
+|---------|-------|------|
+| Frontend (Next.js) | 3000 | BFFサービス |
+| Auth Service | 8001 | 認証認可サービス |
+| Tenant Service | 8002 | テナント管理サービス |
+| Service Setting | 8003 | サービス設定サービス |
+| Mock Services | 8004 | モックサービス群 |
+| Cosmos DB Emulator | 8081 | データベース |
+
+### Cosmos DB Emulator
+
+ローカル開発ではAzure Cosmos DB Emulatorを使用します。
+
+```yaml
+# docker-compose.yml (抜粋)
+cosmosdb:
+  image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+  ports:
+    - "8081:8081"
+    - "10251:10251"
+    - "10252:10252"
+    - "10253:10253"
+    - "10254:10254"
+  environment:
+    - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10
+    - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true
+```
+
+**接続設定**:
+
+| 設定 | 値 |
+|------|-----|
+| Endpoint | `https://localhost:8081` |
+| Account Key | エミュレータ固定キー（公開済み） |
+| SSL | 自己署名証明書（開発時は検証スキップ） |
+
+### 開発環境の起動
+
+```bash
+# VS Codeで開く
+code .
+
+# DevContainerで再オープン
+# Ctrl+Shift+P → "Dev Containers: Reopen in Container"
+
+# または CLI から
+devcontainer up --workspace-folder .
+```
+
+### 環境変数
+
+DevContainer内では以下の環境変数が設定されます：
+
+```env
+# Cosmos DB Emulator
+COSMOS_ENDPOINT=https://cosmosdb:8081
+COSMOS_KEY=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+
+# サービス間認証スキップ
+SKIP_SERVICE_AUTH=true
+
+# 開発モード
+ENVIRONMENT=development
 ```
 
 ## サービス間通信
