@@ -2,7 +2,8 @@
 # 開発環境の検証スクリプト
 # DevContainerとCosmos DBエミュレータの動作を確認します
 
-set -e
+# Note: We don't use 'set -e' here because we want to continue testing
+# even if some checks fail, and report all results at the end
 
 echo "=========================================="
 echo "  開発環境検証スクリプト"
@@ -231,7 +232,7 @@ if [ -f ".gitmodules" ]; then
     test_passed ".gitmodules ファイルが存在します"
     
     # サブモジュールの数を確認
-    SUBMODULE_COUNT=$(grep -c "\[submodule" .gitmodules || echo "0")
+    SUBMODULE_COUNT=$(grep -c "\[submodule" .gitmodules 2>/dev/null || echo "0")
     echo "  サブモジュール数: $SUBMODULE_COUNT"
     
     # 各サブモジュールの状態を確認
