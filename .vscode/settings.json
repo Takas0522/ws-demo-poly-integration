@@ -1,7 +1,0 @@
-{
-  "jest.autoRun": "off",
-  "jest.disabledWorkspaceFolders": [],
-  "jest.jestCommandLine": "npm run test:integration --",
-  "jest.rootPath": ".",
-  "jest.coverageFormatter": "DefaultFormatter"
-}

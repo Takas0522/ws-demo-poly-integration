@@ -1,7 +1,0 @@
-fastapi>=0.109.0
-pydantic>=2.5.0
-pydantic-settings>=2.1.0
-python-multipart>=0.0.6
-
-# Optional dependencies
-redis>=5.0.0  # For Redis caching support
