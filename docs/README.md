@@ -69,8 +69,7 @@ ws-demo-poly-integration/        # 統合リポジトリ (repo0)
 ├── docs/                        # ドキュメント
 │   ├── README.md               # 本ファイル
 │   ├── architecture/           # アーキテクチャ設計
-│   ├── services/               # サービス別仕様
-│   └── OPEN_QUESTIONS.md       # 未確定事項
+│   └── services/               # サービス別仕様
 └── src/
     ├── front/                   # repo1: フロントエンド
     ├── user-management-service/ # repo2: テナント管理
@@ -109,7 +108,6 @@ graph LR
   - [認証認可サービス](./services/auth/spec.md)
   - [利用サービス設定サービス](./services/service-setting/spec.md)
   - [モックサービス](./services/mock-services/spec.md)
-- [未確定事項](./OPEN_QUESTIONS.md)
 
 ## 技術スタック
 

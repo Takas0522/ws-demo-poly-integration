@@ -67,3 +67,87 @@ graph TB
 - Azure ネイティブの IaC
 - ARM テンプレートより簡潔な記述
 - VS Code による強力なツーリング支援
+
+## 環境構成
+
+本システムは以下の2環境で構成します。
+
+| 環境 | 用途 | 特徴 |
+|------|------|------|
+| 開発 (dev) | 開発・テスト | 機能検証、統合テスト |
+| 本番 (prod) | 本番運用 | 実ユーザー向け |
+
+```mermaid
+graph LR
+    subgraph "開発環境"
+        DevApp[App Services<br/>dev]
+        DevDB[(Cosmos DB<br/>dev)]
+    end
+    
+    subgraph "本番環境"
+        ProdApp[App Services<br/>prod]
+        ProdDB[(Cosmos DB<br/>prod)]
+    end
+    
+    Git[GitHub] -->|main branch| DevApp
+    DevApp -->|承認後デプロイ| ProdApp
+```
+
+## サービス間通信
+
+### 認証方式
+
+| 通信種別 | 認証方式 | 備考 |
+|---------|---------|------|
+| クライアント → Frontend | JWT (HttpOnly Cookie) | ユーザー認証 |
+| Frontend → Backend | JWT (Bearer Token) | リクエスト転送 |
+| Backend → Backend | Azure Managed Identity | サービス間通信 |
+| ローカル開発時 | 認証なし | 開発効率優先 |
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant F as Frontend
+    participant A as Auth Service
+    participant S as Other Services
+    
+    Note over C,F: JWT認証
+    C->>F: Request + JWT Cookie
+    
+    Note over F,A: Bearer Token
+    F->>A: Request + Bearer Token
+    
+    Note over A,S: Managed Identity
+    A->>S: Request + MI Token
+```
+
+### Managed Identity設定
+
+- 各App Serviceにシステム割り当てマネージドIDを有効化
+- 呼び出し先サービスのApp ServiceでIDに対するロール割り当て
+- ローカル開発時は環境変数 `SKIP_SERVICE_AUTH=true` で認証スキップ
+
+## 初期データ投入
+
+### デプロイスクリプト方式
+
+システム稼働に必要な初期データは、デプロイスクリプトで投入します。
+
+```bash
+# デプロイ時に実行
+./scripts/seed-data.sh --env prod
+```
+
+### シードデータ内容
+
+| データ | 説明 |
+|-------|------|
+| 特権テナント | システム管理用テナント（編集・削除不可） |
+| 初期管理者ユーザー | 全体管理者ロールを持つ初期ユーザー |
+| コアサービス定義 | 必須サービス（認証、テナント管理、サービス設定） |
+| モックサービス定義 | 開発・テスト用サービス |
+
+### 初期管理者の初期パスワード
+
+- 環境変数 `INITIAL_ADMIN_PASSWORD` で指定
+- 初回ログイン時にパスワード変更を強制
