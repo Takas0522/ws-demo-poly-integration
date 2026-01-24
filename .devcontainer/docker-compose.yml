@@ -11,7 +11,7 @@ services:
     network_mode: service:cosmosdb
     environment:
       # Cosmos DB Emulator settings
-      COSMOSDB_ENDPOINT: https://cosmosdb:8081
+      COSMOSDB_ENDPOINT: https://localhost:8081
       COSMOSDB_KEY: C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
       COSMOSDB_DATABASE: saas-management-dev
       
@@ -21,7 +21,7 @@ services:
       SKIP_SERVICE_AUTH: "true"
       
       # JWT settings (development only)
-      JWT_SECRET_KEY: dev-secret-key-change-in-production
+      JWT_SECRET_KEY: dev-secret-key-change-in-production-please
       JWT_ALGORITHM: HS256
       JWT_EXPIRATION_HOURS: 24
       

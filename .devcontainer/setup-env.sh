@@ -46,7 +46,8 @@ echo "3. Cosmos DB Emulator の起動確認..."
 MAX_WAIT=60
 WAIT_COUNT=0
 while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
-    if curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8081/_explorer/emulator.pem | grep -q "200\|302"; then
+    HTTP_STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8081/_explorer/emulator.pem)
+    if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "302" ]; then
         echo -e "${GREEN}✓${NC} Cosmos DB Emulator が起動しました"
         break
     fi
