@@ -12,6 +12,8 @@ services:
     container_name: ws-demo-cosmosdb
     tty: true
     restart: unless-stopped
+    # Memory and CPU limits are required for Cosmos DB Emulator to function properly
+    # The emulator needs at least 3GB RAM and 2 CPU cores to avoid 503 errors
     mem_limit: 4g
     cpu_count: 2
     ports:

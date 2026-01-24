@@ -232,7 +232,7 @@ if [ -f ".gitmodules" ]; then
     test_passed ".gitmodules ファイルが存在します"
     
     # サブモジュールの数を確認
-    SUBMODULE_COUNT=$(grep -c "\[submodule" .gitmodules 2>/dev/null || echo "0")
+    SUBMODULE_COUNT=$(grep -c '\[submodule' .gitmodules 2>/dev/null || echo "0")
     echo "  サブモジュール数: $SUBMODULE_COUNT"
     
     # 各サブモジュールの状態を確認
