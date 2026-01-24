@@ -1,0 +1,146 @@
+version: '3.8'
+
+# Docker Compose設定 - 統合開発環境
+# すべてのサービスとCosmosDBエミュレータを起動します
+
+services:
+  # =========================================================================
+  # Cosmos DB Emulator
+  # =========================================================================
+  cosmosdb:
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+    container_name: ws-demo-cosmosdb
+    tty: true
+    restart: unless-stopped
+    # Memory and CPU limits are required for Cosmos DB Emulator to function properly
+    # The emulator needs at least 3GB RAM and 2 CPU cores to avoid 503 errors
+    mem_limit: 4g
+    cpu_count: 2
+    ports:
+      - "8081:8081"       # Emulator endpoint
+      - "10251:10251"     # Data Explorer
+      - "10252:10252"     # Data endpoint
+      - "10253:10253"     # Data endpoint
+      - "10254:10254"     # Data endpoint
+    environment:
+      - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=5
+      - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true
+      - AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=127.0.0.1
+    volumes:
+      - cosmosdb-data:/tmp/cosmos
+    networks:
+      - dev-network
+    healthcheck:
+      test: ["CMD", "curl", "-k", "https://localhost:8081/_explorer/emulator.pem"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  # =========================================================================
+  # Frontend Service (Port 3000)
+  # =========================================================================
+  # frontend:
+  #   build:
+  #     context: ./src/front
+  #   container_name: ws-demo-frontend
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=development
+  #     - VITE_AUTH_SERVICE_URL=http://localhost:8001
+  #     - VITE_USER_MANAGEMENT_SERVICE_URL=http://localhost:8002
+  #     - VITE_SERVICE_SETTING_SERVICE_URL=http://localhost:8003
+  #   volumes:
+  #     - ./src/front:/app
+  #     - /app/node_modules
+  #   networks:
+  #     - dev-network
+  #   depends_on:
+  #     - auth-service
+  #   command: npm run dev
+
+  # =========================================================================
+  # Auth Service (Port 8001)
+  # =========================================================================
+  # auth-service:
+  #   build:
+  #     context: ./src/auth-service
+  #   container_name: ws-demo-auth-service
+  #   ports:
+  #     - "8001:8001"
+  #   environment:
+  #     - COSMOSDB_ENDPOINT=https://cosmosdb:8081
+  #     - COSMOSDB_KEY=${COSMOSDB_KEY}
+  #     - COSMOSDB_DATABASE=${COSMOSDB_DATABASE}
+  #     - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+  #     - LOG_LEVEL=DEBUG
+  #   volumes:
+  #     - ./src/auth-service:/app
+  #   networks:
+  #     - dev-network
+  #   depends_on:
+  #     cosmosdb:
+  #       condition: service_healthy
+  #   command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+
+  # =========================================================================
+  # User Management Service (Port 8002)
+  # =========================================================================
+  # user-management-service:
+  #   build:
+  #     context: ./src/user-management-service
+  #   container_name: ws-demo-user-management
+  #   ports:
+  #     - "8002:8002"
+  #   environment:
+  #     - COSMOSDB_ENDPOINT=https://cosmosdb:8081
+  #     - COSMOSDB_KEY=${COSMOSDB_KEY}
+  #     - COSMOSDB_DATABASE=${COSMOSDB_DATABASE}
+  #     - LOG_LEVEL=DEBUG
+  #   volumes:
+  #     - ./src/user-management-service:/app
+  #   networks:
+  #     - dev-network
+  #   depends_on:
+  #     cosmosdb:
+  #       condition: service_healthy
+  #   command: uvicorn main:app --host 0.0.0.0 --port 8002 --reload
+
+  # =========================================================================
+  # Service Setting Service (Port 8003)
+  # =========================================================================
+  # service-setting-service:
+  #   build:
+  #     context: ./src/service-setting-service
+  #   container_name: ws-demo-service-setting
+  #   ports:
+  #     - "8003:8003"
+  #   environment:
+  #     - COSMOSDB_ENDPOINT=https://cosmosdb:8081
+  #     - COSMOSDB_KEY=${COSMOSDB_KEY}
+  #     - COSMOSDB_DATABASE=${COSMOSDB_DATABASE}
+  #     - LOG_LEVEL=DEBUG
+  #   volumes:
+  #     - ./src/service-setting-service:/app
+  #   networks:
+  #     - dev-network
+  #   depends_on:
+  #     cosmosdb:
+  #       condition: service_healthy
+  #   command: uvicorn main:app --host 0.0.0.0 --port 8003 --reload
+
+# =========================================================================
+# Networks
+# =========================================================================
+networks:
+  dev-network:
+    name: dev-network
+    driver: bridge
+
+# =========================================================================
+# Volumes
+# =========================================================================
+volumes:
+  cosmosdb-data:
+    name: ws-demo-cosmosdb-data
