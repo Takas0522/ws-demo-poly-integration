@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    network_mode: service:cosmosdb
+    environment:
+      # Cosmos DB Emulator settings
+      COSMOSDB_ENDPOINT: https://cosmosdb:8081
+      COSMOSDB_KEY: C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+      COSMOSDB_DATABASE: saas-management-dev
+      
+      # Development mode settings
+      ENVIRONMENT: development
+      NODE_ENV: development
+      SKIP_SERVICE_AUTH: "true"
+      
+      # JWT settings (development only)
+      JWT_SECRET_KEY: dev-secret-key-change-in-production
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRATION_HOURS: 24
+      
+      # Logging
+      LOG_LEVEL: DEBUG
+
+  cosmosdb:
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+    container_name: ws-demo-cosmosdb
+    ports:
+      - "8081:8081"
+      - "10251:10251"
+      - "10252:10252"
+      - "10253:10253"
+      - "10254:10254"
+    environment:
+      AZURE_COSMOS_EMULATOR_PARTITION_COUNT: 10
+      AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: "true"
+      AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE: 127.0.0.1
+    volumes:
+      - cosmosdb-data:/data/db
+    mem_limit: 3g
+    cpus: 2.0
+
+volumes:
+  cosmosdb-data:
+    driver: local
