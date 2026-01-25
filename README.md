@@ -55,10 +55,11 @@ DevContainer起動後、以下のコマンドで環境を確認：
 ```bash
 # ツールのバージョン確認
 node --version      # Node.js 20.x
-python3 --version   # Python 3.11
+python3 --version   # Python 3.11+
 az --version        # Azure CLI
 
 # Cosmos DBエミュレータの確認
+# DevContainerはcosmosdbサービスとネットワークを共有しているため、localhostでアクセス可能
 curl -k https://localhost:8081/_explorer/emulator.pem
 ```
 
@@ -116,7 +117,7 @@ npm run dev
 # 認証サービス
 cd src/auth-service
 pip install -r requirements.txt
-python main.py
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 ```
 
 ### Docker Composeでの起動
