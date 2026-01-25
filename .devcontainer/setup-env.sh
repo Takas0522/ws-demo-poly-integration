@@ -50,7 +50,7 @@ echo "3. Cosmos DB Emulator の起動確認..."
 MAX_WAIT=60
 WAIT_COUNT=0
 while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
-    HTTP_STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8081/_explorer/emulator.pem)
+    HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://cosmosdb:8081/)
     if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "302" ]; then
         echo -e "${GREEN}✓${NC} Cosmos DB Emulator が起動しました"
         break
@@ -66,7 +66,7 @@ while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
     if [ $WAIT_COUNT -ge $MAX_WAIT ]; then
         echo -e "${YELLOW}⚠${NC} Cosmos DB Emulator の起動に時間がかかっています"
         echo "初回起動の場合、5-10分かかることがあります"
-        echo "手動で確認する場合: curl -k https://localhost:8081/_explorer/emulator.pem"
+        echo "手動で確認する場合: curl http://cosmosdb:8081/"
     fi
 done
 
@@ -89,6 +89,6 @@ echo "=========================================="
 echo ""
 echo "次のステップ:"
 echo "1. 環境変数を確認: cat .env"
-echo "2. Cosmos DB接続確認: curl -k https://localhost:8081/_explorer/emulator.pem"
+echo "2. Cosmos DB接続確認: curl http://cosmosdb:8081/"
 echo "3. セットアップ検証: bash scripts/verify-setup.sh"
 echo ""

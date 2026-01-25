@@ -25,10 +25,10 @@
 	// "features": {},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [8081, 1234]
+	"forwardPorts": [8081, 1234],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "npm install -g corepack && corepack enable"
+	"postCreateCommand": "bash .devcontainer/setup-env.sh"
 
 	// Configure tool-specific properties.１
 	// "customizations": {},
