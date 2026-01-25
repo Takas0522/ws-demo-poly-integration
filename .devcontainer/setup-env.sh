@@ -18,8 +18,12 @@ NC='\033[0m' # No Color
 echo "1. 環境ファイルのセットアップ..."
 if [ ! -f .env ]; then
     if [ -f .env.development ]; then
-        echo -e "${GREEN}✓${NC} .env.development から .env を作成しました"
-        cp .env.development .env
+        if cp .env.development .env 2>/dev/null; then
+            echo -e "${GREEN}✓${NC} .env.development から .env を作成しました"
+        else
+            echo -e "${YELLOW}⚠${NC} .env の作成に失敗しました（権限エラー）"
+            echo "  手動で実行してください: sudo cp .env.development .env && sudo chown \$(whoami) .env"
+        fi
     else
         echo -e "${YELLOW}⚠${NC} .env.development が見つかりません。.env.template を参照してください"
     fi
