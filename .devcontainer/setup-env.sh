@@ -70,9 +70,28 @@ while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
     fi
 done
 
-# 4. 環境の確認
+# 4. Cosmos DB の初期化
 echo ""
-echo "4. 開発環境の確認..."
+echo "4. Cosmos DB の初期化..."
+if [ -f /workspace/src/auth-service/scripts/init_cosmosdb.sh ]; then
+    # スクリプトに実行権限を付与
+    chmod +x /workspace/src/auth-service/scripts/init_cosmosdb.sh
+    
+    # 初期化スクリプトを実行
+    if bash /workspace/src/auth-service/scripts/init_cosmosdb.sh; then
+        echo -e "${GREEN}✓${NC} Cosmos DB の初期化が完了しました"
+    else
+        echo -e "${YELLOW}⚠${NC} Cosmos DB の初期化に失敗しました"
+        echo "手動で初期化する場合: bash /workspace/src/auth-service/scripts/init_cosmosdb.sh"
+    fi
+else
+    echo -e "${YELLOW}⚠${NC} Cosmos DB 初期化スクリプトが見つかりません"
+    echo "パス: /workspace/src/auth-service/scripts/init_cosmosdb.sh"
+fi
+
+# 5. 環境の確認
+echo ""
+echo "5. 開発環境の確認..."
 echo "  Node.js: $(node --version)"
 echo "  npm: $(npm --version)"
 echo "  Python: $(python3 --version)"
@@ -90,5 +109,6 @@ echo ""
 echo "次のステップ:"
 echo "1. 環境変数を確認: cat .env"
 echo "2. Cosmos DB接続確認: curl http://cosmosdb:8081/"
-echo "3. セットアップ検証: bash scripts/verify-setup.sh"
+echo "3. Auth Service起動: cd /workspace/src/auth-service && uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"
+echo "4. 管理者でログイン: admin@saas-platform.local / Admin@123"
 echo ""
