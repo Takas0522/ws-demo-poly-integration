@@ -28,6 +28,7 @@ services:
     environment:
       AZURE_COSMOS_EMULATOR_PARTITION_COUNT: 6
       AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: "true"
+      AZURE_COSMOS_EMULATOR_ENABLE_POSTGRESQL_ENDPOINT: "false"
     volumes:
       # Forwards the local Docker socket to the container.
       - /var/run/docker.sock:/var/run/docker-host.sock
