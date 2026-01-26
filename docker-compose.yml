@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # Cosmos DB Emulator
+  cosmosdb:
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
+    container_name: ws-demo-cosmosdb
+    mem_limit: 3g
+    cpu_count: 2
+    environment:
+      AZURE_COSMOS_EMULATOR_PARTITION_COUNT: 6
+      AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: "true"
+      AZURE_COSMOS_EMULATOR_ENABLE_POSTGRESQL_ENDPOINT: "false"
+    ports:
+      - "8081:8081"
+      - "1234:1234"
+    networks:
+      - ws-demo-network
+
+  # Mock Services
+  mock-services:
+    build:
+      context: ./src/mock-services
+      dockerfile: Dockerfile
+    container_name: ws-demo-mock-services
+    ports:
+      - "8004:8004"
+    environment:
+      - ENVIRONMENT=development
+    networks:
+      - ws-demo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  ws-demo-network:
+    driver: bridge
