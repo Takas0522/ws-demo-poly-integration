@@ -15,8 +15,10 @@ services:
       - ..:/workspace:cached
 
     # Overrides default command so things don't shut down after the process ends.
-    command: sleep infinity 
-    network_mode: service:cosmosdb
+    command: sleep infinity
+    
+    # Share network namespace with cosmosdb so localhost:8081 works
+    network_mode: "service:cosmosdb"
 
     # Uncomment the next line to use a non-root user for all processes.
     # user: vscode
@@ -32,10 +34,16 @@ services:
     volumes:
       # Forwards the local Docker socket to the container.
       - /var/run/docker.sock:/var/run/docker-host.sock
-    # DNS configuration for external connectivity (GitHub Copilot API)
+    # DNS configuration for external connectivity
     dns:
       - 8.8.8.8
       - 8.8.4.4
     ports:
       - "8081:8081"
       - "1234:1234"
+    networks:
+      - devcontainer-network
+
+networks:
+  devcontainer-network:
+    driver: bridge
