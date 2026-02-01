@@ -65,6 +65,8 @@ graph TB
   "isActive": true,
   "createdAt": "2026-01-01T00:00:00Z",
   "updatedAt": "2026-01-15T10:30:00Z",
+  "createdBy": "user_admin_001",
+  "updatedBy": "user_admin_001",
   "_ts": 1706178600
 }
 ```
@@ -77,11 +79,13 @@ graph TB
 | type | string | ✅ | エンティティタイプ識別子（"user"） |
 | username | string | ✅ | ログインID（メールアドレス形式推奨） |
 | email | string | ✅ | メールアドレス |
-| passwordHash | string | ✅ | bcryptハッシュ化パスワード |
+| passwordHash | string | ✅ | bcryptハッシュ化パスワード（cost factor: 12） |
 | displayName | string | ✅ | 表示名 |
 | isActive | boolean | ✅ | アクティブ状態 |
 | createdAt | string | ✅ | 作成日時（ISO 8601） |
 | updatedAt | string | ✅ | 更新日時（ISO 8601） |
+| createdBy | string | - | 作成者ユーザーID（監査用） |
+| updatedBy | string | - | 更新者ユーザーID（監査用） |
 | _ts | number | - | Cosmos DB自動タイムスタンプ |
 
 #### 2.1.3 インデックス
@@ -1114,3 +1118,4 @@ async def backup_before_migration(container_name: str):
 |----------|------|---------|----------|
 | 1.0.0 | 2026-02-01 | 初版作成 | - |
 | 1.1.0 | 2026-02-01 | データモデルバージョニング戦略の詳細化（移行戦略、互換性保証、ロールバック手順）（アーキテクチャレビュー対応） | [アーキテクチャレビュー001](../review/architecture-review-001.md) |
+| 1.2.0 | 2026-02-01 | Userエンティティに監査フィールド（createdBy, updatedBy）を追加、パスワードハッシュのcost factor明記 | [03-認証認可サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/03-認証認可サービス-コアAPI.md) |

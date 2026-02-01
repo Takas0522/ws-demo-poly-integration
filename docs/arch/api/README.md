@@ -500,7 +500,8 @@ Content-Type: application/json
     "id": "user_550e8400",
     "username": "admin@example.com",
     "displayName": "管理者太郎",
-    "tenantId": "tenant_123"
+    "tenantId": "tenant_123",
+    "isActive": true
   }
 }
 ```
@@ -509,11 +510,39 @@ Content-Type: application/json
 ```json
 {
   "error": {
-    "code": "INVALID_CREDENTIALS",
-    "message": "Invalid username or password"
+    "code": "AUTH_001_INVALID_CREDENTIALS",
+    "message": "ユーザー名またはパスワードが不正です",
+    "timestamp": "2026-02-01T10:00:00Z",
+    "requestId": "req_abc123"
   }
 }
 ```
+
+**エラーレスポンス** (403 Forbidden - アカウント無効):
+```json
+{
+  "error": {
+    "code": "AUTH_002_ACCOUNT_DISABLED",
+    "message": "アカウントが無効化されています",
+    "timestamp": "2026-02-01T10:00:00Z",
+    "requestId": "req_abc123"
+  }
+}
+```
+
+**ビジネスロジック**:
+1. ユーザー名でユーザーを検索
+   - **クエリ方法**: `SELECT * FROM c WHERE c.username = @username`
+   - **パーティションキー**: クロスパーティションクエリ（`allow_cross_partition=True`）
+   - **パフォーマンス**: インデックス使用、最大100ms以内
+2. パスワード検証（共通ライブラリの`verify_password`使用、bcrypt.verify）
+3. `is_active` チェック（falseの場合は403エラー）
+4. JWT生成（共通ライブラリの`create_access_token`使用、ロール情報は空配列）
+5. ログイン成功時、監査ログ記録（Application Insights）
+
+**パフォーマンス要件**:
+- 応答時間: < 500ms（P95）
+- スループット: 100 req/秒
 
 #### 3.2.2 POST /auth/verify
 JWT検証
@@ -527,24 +556,39 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 **レスポンス** (200 OK):
 ```json
 {
-  "valid": true,
-  "payload": {
-    "userId": "user_550e8400",
-    "tenantId": "tenant_123",
-    "roles": [
-      {
-        "serviceId": "tenant-management",
-        "roleName": "管理者"
-      },
-      {
-        "serviceId": "auth-service",
-        "roleName": "全体管理者"
-      }
-    ],
-    "exp": 1706183400
+  "sub": "user_550e8400",
+  "username": "admin@example.com",
+  "tenant_id": "tenant_123",
+  "roles": [],
+  "exp": 1738412400,
+  "iat": 1738408800,
+  "jti": "jwt_456e7890"
+}
+```
+
+**エラーレスポンス** (401 Unauthorized):
+```json
+{
+  "error": {
+    "code": "AUTH_003_TOKEN_EXPIRED",
+    "message": "トークンの有効期限が切れています",
+    "timestamp": "2026-02-01T10:00:00Z",
+    "requestId": "req_abc123"
   }
 }
 ```
+
+**ビジネスロジック**:
+1. Authorization ヘッダーからトークン抽出
+2. 共通ライブラリ `decode_access_token` で検証
+3. ペイロードを返却
+
+**用途**:
+- 他マイクロサービスからの JWT検証リクエスト
+- BFF からの検証リクエスト
+
+**パフォーマンス要件**:
+- 応答時間: < 50ms（P95）
 
 #### 3.2.3 POST /auth/logout
 ログアウト（トークン無効化）
@@ -1533,3 +1577,4 @@ FastAPIの自動生成機能を使用：
 |----------|------|---------|----------|
 | 1.0.0 | 2026-02-01 | 初版作成 | - |
 | 1.1.0 | 2026-02-01 | APIバージョニング戦略の詳細化（破壊的変更の定義、複数バージョン同時サポート、廃止プロセス）（アーキテクチャレビュー対応） | [アーキテクチャレビュー001](../review/architecture-review-001.md) |
+| 1.2.0 | 2026-02-01 | 認証認可サービスAPIの詳細を更新（ログインエラーコード、JWT検証レスポンス、ビジネスロジック、パフォーマンス要件を追加） | [03-認証認可サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/03-認証認可サービス-コアAPI.md) |

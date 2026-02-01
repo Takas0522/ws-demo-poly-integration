@@ -323,11 +323,16 @@ def validate_password(password: str) -> bool:
     return True
 ```
 
-**パスワードポリシー**:
-- 最小長: 12文字
+**パスワードポリシー（Phase 1）**:
+- **最小長: 12文字**（NIST/OWASP推奨に準拠）
 - 大文字、小文字、数字、特殊文字を各1文字以上含む
-- 過去3世代のパスワードは再利用不可（Phase 2）
-- 90日ごとの変更推奨（Phase 2）
+- 共通ライブラリの `validate_password_strength` を使用して検証
+- パスワードはbcrypt（cost factor: 12）でハッシュ化
+
+**Phase 2での強化予定**:
+- 過去3世代のパスワードは再利用不可
+- 90日ごとの変更推奨
+- パスワードリセット機能
 
 #### 2.2.2 パスワードハッシュ化
 ```python
@@ -362,17 +367,42 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 def create_access_token(data: dict) -> str:
-    """アクセストークン生成"""
+    """アクセストークン生成（共通ライブラリ使用）
+    
+    Args:
+        data: トークンに含めるデータ
+              - 必須: user_id (sub), tenant_id, username
+              - オプショナル: roles (Phase 1では空配列)
+    
+    Returns:
+        str: 署名済みJWTトークン
+    """
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({
+        "sub": data.get("user_id"),  # JWT標準クレーム
         "exp": expire,
         "iat": datetime.utcnow(),
-        "jti": str(uuid.uuid4())  # JWT ID
+        "jti": f"jwt_{uuid.uuid4()}"
     })
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 ```
+
+**JWT秘密鍵管理（Phase 1）**:
+- 環境変数名: `JWT_SECRET_KEY`
+- 最小長: 64文字以上（512ビット）
+- 形式: ランダムな英数字文字列
+- 生成方法: `openssl rand -base64 64`
+
+**ローテーション方針**:
+- Phase 1: 手動ローテーション（緊急時のみ）
+- Phase 2: Azure Key Vault統合、自動ローテーション（90日ごと）
+
+**セキュリティガイドライン**:
+- 秘密鍵は `.env` ファイルに保存し、`.gitignore` に追加
+- 本番環境は Azure App Service の環境変数で管理
+- 秘密鍵変更時は全JWTが無効化されることを通知
 
 #### 2.3.2 JWT検証
 ```python
@@ -1468,3 +1498,4 @@ alerts:
 | 1.0.0 | 2026-02-01 | 初版作成 | - |
 | 1.1.0 | 2026-02-01 | STRIDE脅威分析の追加、攻撃シナリオと対策の体系化（アーキテクチャレビュー対応） | [アーキテクチャレビュー001](../review/architecture-review-001.md) |
 | 1.2.0 | 2026-02-01 | テナント分離のセキュリティ機構を強化、BaseRepositoryによる3層のセキュリティチェックを追加、セキュリティ違反検知とアラート機能を追加 | [02-共通ライブラリ実装](../../管理アプリ/Phase1-MVP開発/Specs/02-共通ライブラリ実装.md) |
+| 1.3.0 | 2026-02-01 | パスワードポリシーを12文字に明確化（NIST/OWASP推奨）、JWT秘密鍵管理の詳細（最小64文字、ローテーション方針）、bcrypt cost factor 12を明記 | [03-認証認可サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/03-認証認可サービス-コアAPI.md) |
