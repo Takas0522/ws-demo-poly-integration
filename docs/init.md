@@ -128,3 +128,8 @@ Next.jsで提供する単一のWebAPIのエンドポイントを介して各サ�
 /src/tenant-management-service:repo2
 /src/service-setting-service:repo4
 
+# 注意事項
+
+- このアプリケーションはサンプルとして構築されるため過度な仕様の構築は不要です。
+  - Redisなどを利用したキャッシュ戦略は不要です。必要最小限の構成の構築でOKです
+- Azureなども最小限のコストで構築できるように考慮する必要があります。
