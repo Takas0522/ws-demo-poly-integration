@@ -641,57 +641,257 @@ async def decrement_user_count(self, tenant_id: str) -> None:
 ## 5. サービス設定サービス
 
 ### 5.1 概要
-各テナントが利用可能なサービスを管理し、サービス間のロール情報を統合するハブサービス。
+各テナントが利用可能なサービスを管理し、サービスカタログの一元管理とテナントへのサービス割り当て機能を提供します。本サービスは、Phase 2でロール情報統合機能が追加される予定です。
 
 ### 5.2 責務
-- **サービス割り当て**: テナントへのサービス利用権限付与
-- **サービスカタログ**: 全サービスの一覧管理
-- **ロール情報統合**: 各サービスのロールAPIを集約
-- **利用状況管理**: テナント毎のサービス利用状況追跡
+- **サービスカタログ管理**: システムが提供する全サービス（管理対象サービス4種類）の一覧を保持
+- **サービス割り当て管理**: テナントごとに利用可能なサービスを管理（明示的な割り当てが必要）
+- **サービス利用状況の可視化**: テナントがどのサービスを利用しているか確認
+- **ロール情報統合** (Phase 2): 各サービスのロールAPIを集約
+
+**Phase 1の実装範囲**:
+- サービス一覧取得（GET /api/v1/services）
+- サービス詳細取得（GET /api/v1/services/{serviceId}）
+- テナント利用サービス一覧取得（GET /api/v1/tenants/{tenantId}/services）
+- サービス割り当て（POST /api/v1/tenants/{tenantId}/services）
+- サービス割り当て解除（DELETE /api/v1/tenants/{tenantId}/services/{serviceId}）
+
+**Phase 2以降**:
+- ロール情報統合機能（タスク08）
+- サービス利用統計・使用量管理
 
 ### 5.3 ディレクトリ構造
 ```
 src/service-setting-service/
 ├── app/
-│   ├── main.py
-│   ├── api/
-│   │   ├── service_assignments.py  # サービス割り当てAPI
-│   │   └── service_catalog.py      # サービスカタログAPI
-│   ├── models/
-│   │   ├── service.py
-│   │   └── assignment.py
-│   ├── services/
+│   ├── main.py                      # FastAPIアプリケーションエントリポイント
+│   ├── config.py                    # 設定管理
+│   ├── dependencies.py              # 依存注入
+│   ├── api/                         # APIエンドポイント
+│   │   ├── __init__.py
+│   │   ├── services.py              # サービスカタログAPI
+│   │   └── assignments.py           # サービス割り当てAPI
+│   ├── models/                      # Pydanticモデル
+│   │   ├── __init__.py
+│   │   ├── service.py               # Serviceモデル
+│   │   └── assignment.py            # ServiceAssignmentモデル
+│   ├── schemas/                     # リクエスト/レスポンススキーマ
+│   │   ├── __init__.py
+│   │   ├── service.py               # Service関連スキーマ
+│   │   └── assignment.py            # ServiceAssignment関連スキーマ
+│   ├── services/                    # ビジネスロジック
+│   │   ├── __init__.py
+│   │   ├── service_catalog_service.py
 │   │   ├── assignment_service.py
-│   │   └── role_aggregator.py      # ロール統合ロジック
-│   ├── repositories/
-│   │   └── service_repository.py
-│   └── config.py
-├── tests/
-└── requirements.txt
+│   │   └── role_aggregator.py       # ロール統合ロジック（Phase 2）
+│   ├── repositories/                # データアクセス層
+│   │   ├── __init__.py
+│   │   ├── service_repository.py
+│   │   └── assignment_repository.py
+│   └── utils/                       # ユーティリティ
+│       ├── __init__.py
+│       └── initialization.py        # システム初期化
+├── tests/                           # テストコード
+│   ├── __init__.py
+│   ├── conftest.py                  # pytestフィクスチャ
+│   ├── test_api_services.py
+│   ├── test_api_assignments.py
+│   ├── test_service_catalog_service.py
+│   ├── test_assignment_service.py
+│   ├── test_service_repository.py
+│   └── test_assignment_repository.py
+├── pytest.ini                       # pytest設定
+├── requirements.txt                 # 依存パッケージ
+├── requirements-dev.txt             # 開発用依存パッケージ
+└── README.md                       # サービスドキュメント
 ```
 
 ### 5.4 主要機能
 
-#### 5.4.1 サービス割り当て
+#### 5.4.1 サービス一覧取得
+システムが提供する全サービスの一覧を取得します。
+
 ```python
-# app/api/service_assignments.py
+# app/api/services.py
+@router.get("/services", response_model=ServiceListResponse)
+@require_role("service-setting", ["閲覧者", "全体管理者"])
+async def list_services(
+    is_active: bool = True,
+    current_user: User = Depends(get_current_user),
+    service: ServiceCatalogService = Depends()
+):
+    """サービス一覧取得（service-setting: 閲覧者以上）"""
+    services = await service.list_services(is_active=is_active)
+    return ServiceListResponse(data=services)
+```
+
+**処理フロー**:
+1. JWTから現在のユーザー情報を取得
+2. ロール認可チェック（service-setting: 閲覧者以上）
+3. Cosmos DBから`_system`パーティションのServiceエンティティを取得
+4. `is_active`フィルタを適用
+5. サービス一覧を返却
+
+#### 5.4.2 サービス割り当て
+テナントに新規サービスを割り当てます。
+
+```python
+# app/api/assignments.py
 @router.post("/tenants/{tenant_id}/services", response_model=AssignmentResponse)
+@require_role("service-setting", ["全体管理者"])
 async def assign_service(
     tenant_id: str,
     assignment: ServiceAssignmentRequest,
     current_user: User = Depends(get_current_user),
     service: AssignmentService = Depends()
 ):
-    """テナントにサービスを割り当て（全体管理者のみ）"""
-    if not current_user.has_role("全体管理者", "service-setting"):
-        raise HTTPException(status_code=403, detail="Only global admin can assign services")
+    """テナントにサービスを割り当て（全体管理者のみ）
     
-    result = await service.assign_service(tenant_id, assignment.service_id)
+    Args:
+        tenant_id: テナントID
+        assignment: サービス割り当てリクエスト
+            - service_id: サービスID（"file-service"等）
+            - config: サービス固有設定（オプショナル、最大10KB）
+    
+    Returns:
+        AssignmentResponse: 作成されたServiceAssignment
+    
+    Raises:
+        404: テナントまたはサービスが存在しない
+        409: 同一サービスが既に割り当て済み
+        422: サービスが非アクティブ
+        503: テナント管理サービス接続エラー
+    """
+    result = await service.assign_service(
+        tenant_id=tenant_id,
+        service_id=assignment.service_id,
+        config=assignment.config,
+        assigned_by=current_user.id,
+        jwt_token=get_jwt_from_request()
+    )
     return result
 ```
 
-#### 5.4.2 ロール情報統合
-各サービスから動的にロール情報を取得：
+**処理フロー**:
+1. ロール認可チェック（service-setting: 全体管理者のみ）
+2. **テナント存在確認**（テナント管理サービスAPIで検証）
+   - エンドポイント: `GET /api/v1/tenants/{tenant_id}`
+   - タイムアウト: 1秒
+   - エラーハンドリング: 404の場合はテナント不在エラー、その他は503エラー
+3. サービス存在確認（Cosmos DB、`_system`パーティションで検証）
+4. サービスがアクティブか確認（`is_active=true`）
+5. 重複チェック（同一テナント・同一サービスのServiceAssignmentが存在しないか）
+6. **ID長制限検証**（`assignment_{tenantId}_{serviceId}`が255文字以内）
+7. ServiceAssignmentエンティティ作成
+   - `id`: `assignment_{tenantId}_{serviceId}` 形式（決定的ID）
+   - `status`: "active"
+   - `config`: リクエストボディのconfig（オプショナル、最大10KB、最大5階層、制御文字禁止）
+8. Cosmos DBに保存
+9. 監査ログ記録（Application Insights）
+10. 作成されたServiceAssignmentを返却
+
+#### 5.4.3 テナント利用サービス一覧取得
+特定テナントが利用中のサービス一覧を取得します。
+
+```python
+# app/api/assignments.py
+@router.get("/tenants/{tenant_id}/services", response_model=TenantServicesResponse)
+@require_role("service-setting", ["閲覧者", "全体管理者"])
+async def list_tenant_services(
+    tenant_id: str,
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    service: AssignmentService = Depends()
+):
+    """テナント利用サービス一覧取得（service-setting: 閲覧者以上）
+    
+    Args:
+        tenant_id: テナントID
+        status: ステータスフィルタ（"active"/"suspended"）
+    
+    Returns:
+        TenantServicesResponse: テナントが利用中のサービス一覧
+    
+    Security:
+        - 特権テナント以外は自テナントのみアクセス可能
+    """
+    # テナント分離チェック
+    if current_user.tenant_id != "tenant_privileged":
+        if current_user.tenant_id != tenant_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Cross-tenant access denied"
+            )
+    
+    services = await service.list_tenant_services(
+        tenant_id=tenant_id,
+        status=status
+    )
+    return TenantServicesResponse(data=services)
+```
+
+**処理フロー**:
+1. ロール認可チェック（service-setting: 閲覧者以上）
+2. テナント分離チェック（特権テナント以外は自テナントのみアクセス可能）
+3. Cosmos DBから指定テナントのServiceAssignmentを取得（パーティションキー: `tenantId`）
+4. `status`フィルタを適用（指定された場合）
+5. **各ServiceAssignmentに対応するServiceの詳細情報を並列取得**（`asyncio.gather`使用）
+   - 並列取得: 最大10件同時
+   - タイムアウト: 各Service取得に200msのタイムアウト
+   - エラーハンドリング: 個別Service取得失敗時もエラーを伝搬せず、警告ログを記録し他のServiceは返却
+6. サービス一覧を返却
+
+#### 5.4.4 サービス割り当て解除
+テナントからサービスを削除し、利用を停止します。
+
+```python
+# app/api/assignments.py
+@router.delete("/tenants/{tenant_id}/services/{service_id}")
+@require_role("service-setting", ["全体管理者"])
+async def unassign_service(
+    tenant_id: str,
+    service_id: str,
+    current_user: User = Depends(get_current_user),
+    service: AssignmentService = Depends()
+):
+    """サービス割り当て解除（全体管理者のみ）
+    
+    Args:
+        tenant_id: テナントID
+        service_id: サービスID
+    
+    Returns:
+        204 No Content
+    
+    Raises:
+        404: ServiceAssignmentが存在しない
+    
+    Phase 2での改善:
+        - 論理削除への変更（監査要件の強化）
+        - カスケード削除（関連RoleAssignmentの自動削除）
+    """
+    await service.remove_service_assignment(
+        tenant_id=tenant_id,
+        service_id=service_id,
+        deleted_by=current_user.id
+    )
+    return Response(status_code=204)
+```
+
+**処理フロー**:
+1. ロール認可チェック（service-setting: 全体管理者のみ）
+2. ServiceAssignment存在確認（`assignment_{tenantId}_{serviceId}`）
+3. 存在しない場合は404エラー
+4. Cosmos DBから物理削除（Phase 1）
+5. 監査ログ記録（Application Insights、`deleted_by`に現在のユーザーID）
+6. 204 No Contentを返却
+
+**Phase 2での改善予定**:
+- 論理削除への変更（`status=deleted`、`deleted_at`、`deleted_by`を記録）
+- カスケード削除の実装（タスク08で実装される`GET /api/v1/services/{serviceId}/roles`を活用）
+
+#### 5.4.5 ロール情報統合（Phase 2）
+各サービスから動的にロール情報を取得します（タスク08で実装予定）：
 
 ```python
 # app/services/role_aggregator.py
@@ -736,38 +936,246 @@ class RoleAggregator:
 
 ### 5.5 データモデル
 
-#### 5.5.1 Service
+#### 5.5.1 Service エンティティ
+
 ```python
 class Service(BaseModel):
-    id: str  # "file-service", "messaging-service" など
-    name: str
-    description: str
-    role_endpoint: str  # ロール情報取得エンドポイント
-    is_active: bool = True
+    id: str                          # サービスID（"file-service"等）
+    tenant_id: str = "_system"       # パーティションキー（システム共通）
+    type: str = "service"            # Cosmos DB識別子
+    name: str                        # サービス名（"ファイル管理サービス"等）
+    description: str                 # サービス説明
+    version: str = "1.0.0"           # バージョン
+    base_url: Optional[str]          # サービスのベースURL
+    role_endpoint: Optional[str] = "/api/v1/roles"    # ロール情報取得エンドポイント
+    health_endpoint: Optional[str] = "/health"        # ヘルスチェックエンドポイント
+    is_active: bool = True           # アクティブ状態
+    metadata: Optional[dict] = None  # 追加メタデータ（アイコン、カテゴリ等）
+    created_at: datetime             # 作成日時
+    updated_at: datetime             # 更新日時
 ```
 
-#### 5.5.2 ServiceAssignment
+**パーティション設計**:
+- `tenant_id = "_system"`（全Serviceエンティティ共通）
+- 理由: 全サービス一覧取得時、単一パーティションからの取得でRU消費を最小化（1 RU）
+
+**システム初期化**:
+システム初期化時に、以下の管理対象サービス（4種類）がカタログに自動登録されます：
+- `file-service`: ファイル管理サービス
+- `messaging-service`: メッセージングサービス
+- `api-service`: API利用サービス
+- `backup-service`: バックアップサービス
+
+コアサービス（認証認可、テナント管理、サービス設定）は、全テナントが暗黙的に利用可能なため、ServiceAssignmentは作成されません。
+
+#### 5.5.2 ServiceAssignment エンティティ
+
 ```python
 class ServiceAssignment(BaseModel):
-    id: str
-    tenant_id: str  # パーティションキー
-    service_id: str
-    assigned_at: datetime
-    assigned_by: str  # ユーザーID
+    id: str                          # assignment_{tenantId}_{serviceId}
+    tenant_id: str                   # パーティションキー
+    type: str = "service_assignment" # Cosmos DB識別子
+    service_id: str                  # サービスID
+    status: str = "active"           # ステータス（active/suspended）
+    config: Optional[dict] = None    # サービス固有設定（オプショナル、最大10KB）
+    assigned_at: datetime            # 割り当て日時
+    assigned_by: str                 # 割り当て実行者ユーザーID
 ```
 
-### 5.6 ロール定義
-- **全体管理者**: サービス割り当て
-- **閲覧者**: 利用状況の参照
+**ID設計**:
+- 決定的ID: `assignment_{tenant_id}_{service_id}`
+- **設計根拠**:
+  - 重複防止: Cosmos DBの主キー制約により、同一IDの重複挿入が自動的に409エラーになる
+  - クエリ効率: IDから直接対象を特定可能
+  - 監査追跡: IDを見るだけで、どのテナント・サービスの割り当てか即座に判別可能
+  - べき等性: 同じリクエストを複数回実行しても、409エラーで失敗するため、副作用がない
 
-### 5.7 技術スタック
+**config検証ルール**:
+- オプショナル（省略可能）
+- JSONオブジェクト形式（`dict`型）
+- **最大サイズ**: 10KB（10,240バイト）
+- **最大ネストレベル**: 5階層まで
+- **禁止文字**: 制御文字（`\x00-\x1F`、`\x7F`）は値に含めることを禁止
+- **JSON Schema基本構造検証**: キーは文字列のみ、値はプリミティブ型またはオブジェクト/配列のみ
+- サービス固有の検証ルールは各サービスの責任（Phase 1では検証しない）
+- Phase 2以降: サービスごとのJSON Schemaによる検証機能を追加予定
+
+### 5.6 ロール定義
+
+#### 5.6.1 サービス設定サービスのロール
+
+| ロール名 | 権限 | 説明 |
+|---------|------|------|
+| 全体管理者 | サービス割り当て・削除 | システム全体の管理者。全テナントのサービス利用状況を管理可能 |
+| 閲覧者 | サービス一覧・利用状況の参照 | 自テナントのサービス利用状況を参照できるが、変更は不可 |
+
+**ロール階層**:
+- 全体管理者 > 閲覧者
+
+### 5.7 ビジネスロジック
+
+#### 5.7.1 サービス割り当て処理
+
+```python
+import httpx
+
+async def assign_service(
+    self, 
+    tenant_id: str, 
+    service_id: str, 
+    config: Optional[dict],
+    assigned_by: str,
+    jwt_token: str
+) -> ServiceAssignment:
+    """サービス割り当て"""
+    # 1. ID長制限検証
+    if len(tenant_id) > 100 or len(service_id) > 100:
+        raise HTTPException(
+            status_code=400,
+            detail="tenant_id and service_id must be 100 characters or less"
+        )
+    
+    assignment_id = f"assignment_{tenant_id}_{service_id}"
+    if len(assignment_id) > 255:
+        raise HTTPException(
+            status_code=400,
+            detail="Combined assignment ID must be 255 characters or less"
+        )
+    
+    # 2. テナント存在確認（テナント管理サービスAPI）
+    try:
+        async with httpx.AsyncClient(timeout=1.0) as client:
+            response = await client.get(
+                f"{self.tenant_service_base_url}/api/v1/tenants/{tenant_id}",
+                headers={"Authorization": f"Bearer {jwt_token}"}
+            )
+            if response.status_code == 404:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Tenant not found"
+                )
+            elif response.status_code != 200:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Tenant service unavailable"
+                )
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=504,
+            detail="Tenant service timeout"
+        )
+    
+    # 3. サービス存在確認
+    service = await self.service_repository.get(service_id, partition_key="_system")
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+    
+    # 4. サービスアクティブ確認
+    if not service.is_active:
+        raise HTTPException(
+            status_code=422,
+            detail="Cannot assign inactive service"
+        )
+    
+    # 5. 重複チェック（決定的ID）
+    existing = await self.assignment_repository.get(assignment_id, tenant_id)
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="Service is already assigned to this tenant"
+        )
+    
+    # 6. ServiceAssignment作成
+    assignment = ServiceAssignment(
+        id=assignment_id,
+        tenant_id=tenant_id,
+        service_id=service_id,
+        status="active",
+        config=config or {},
+        assigned_at=datetime.utcnow(),
+        assigned_by=assigned_by
+    )
+    
+    await self.assignment_repository.create(assignment)
+    
+    # 7. 監査ログ記録
+    await log_audit(
+        action="service.assign",
+        target_type="service_assignment",
+        target_id=assignment_id,
+        performed_by=assigned_by,
+        changes={"service_id": service_id, "tenant_id": tenant_id}
+    )
+    
+    return assignment
+```
+
+#### 5.7.2 並列Service情報取得
+
+```python
+import asyncio
+
+async def get_service_safe(service_id: str) -> Optional[Service]:
+    """タイムアウト付きService取得"""
+    try:
+        # 200msのタイムアウトを設定
+        return await asyncio.wait_for(
+            service_repository.get(service_id, "_system"),
+            timeout=0.2
+        )
+    except asyncio.TimeoutError:
+        logger.warning(f"Timeout fetching service {service_id}")
+        return None
+    except Exception as e:
+        logger.warning(f"Failed to fetch service {service_id}: {e}")
+        return None
+
+async def list_tenant_services(tenant_id: str, status: Optional[str]):
+    """テナント利用サービス一覧取得（並列Service情報取得）"""
+    # ServiceAssignment取得
+    assignments = await assignment_repository.query(
+        "SELECT * FROM c WHERE c.tenantId = @tenant_id AND c.type = 'service_assignment'",
+        [{"name": "@tenant_id", "value": tenant_id}],
+        partition_key=tenant_id
+    )
+    
+    # statusフィルタ適用
+    if status:
+        assignments = [a for a in assignments if a.status == status]
+    
+    # 並列でService情報を取得
+    services = await asyncio.gather(
+        *[get_service_safe(a.service_id) for a in assignments],
+        return_exceptions=False
+    )
+    
+    # Noneを除外してレスポンスに含める
+    valid_services = [s for s in services if s is not None]
+    
+    return valid_services
+```
+
+### 5.8 技術スタック
 - **フレームワーク**: FastAPI 0.100+
 - **言語**: Python 3.11+
+- **バリデーション**: Pydantic v2
 - **HTTPクライアント**: httpx (async)
 - **非同期DB**: Azure Cosmos DB SDK (async)
 
-### 5.8 外部依存
-- 全ての管理対象サービス: ロール情報取得API
+### 5.9 外部依存
+- **テナント管理サービス**: テナント存在確認（`GET /api/v1/tenants/{tenantId}`）
+- **認証認可サービス**: JWT検証
+- **各種管理対象サービス**: ロール情報取得API（Phase 2で使用）
+
+### 5.10 パフォーマンス要件
+
+| API | 目標応答時間 (P95) | 最大応答時間 (P99) |
+|-----|-------------------|-------------------|
+| GET /api/v1/services | < 200ms | < 500ms |
+| GET /api/v1/services/{serviceId} | < 100ms | < 300ms |
+| GET /api/v1/tenants/{tenantId}/services | < 300ms | < 600ms |
+| POST /api/v1/tenants/{tenantId}/services | < 300ms | < 700ms |
+| DELETE /api/v1/tenants/{tenantId}/services/{serviceId} | < 200ms | < 500ms |
 
 ## 6. 管理対象サービス（モックサービス）
 

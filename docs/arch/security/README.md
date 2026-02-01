@@ -1031,7 +1031,133 @@ class UserCreateRequest(BaseModel):
         return bleach.clean(v, tags=[], strip=True)
 ```
 
-#### 4.3.2 SQLインジェクション対策
+#### 4.3.2 サービス設定のconfig検証（タスク07）
+
+サービス割り当て時に指定される`config`フィールドは、以下のセキュリティルールに従います：
+
+```python
+import re
+import json
+from pydantic import BaseModel, Field, field_validator
+from typing import Dict, Any, Optional
+
+class ServiceAssignmentCreate(BaseModel):
+    service_id: str = Field(
+        ..., 
+        pattern="^[a-z0-9-]+$",
+        max_length=100,
+        description="サービスID（最大100文字）"
+    )
+    config: Optional[Dict[str, Any]] = Field(None, max_length=10240)
+    
+    @field_validator('config')
+    def validate_config(cls, v):
+        """config検証（セキュリティ重視）"""
+        if v is None:
+            return v
+        
+        # 1. サイズ検証（DoS攻撃対策）
+        json_str = json.dumps(v)
+        if len(json_str.encode('utf-8')) > 10240:
+            raise ValueError('config must be less than 10KB')
+        
+        # 2. ネストレベル検証（パフォーマンス攻撃対策）
+        def check_depth(obj, current_depth=1, max_depth=5):
+            if current_depth > max_depth:
+                raise ValueError(f'config nesting level must be {max_depth} or less')
+            if isinstance(obj, dict):
+                for value in obj.values():
+                    check_depth(value, current_depth + 1, max_depth)
+            elif isinstance(obj, list):
+                for item in obj:
+                    check_depth(item, current_depth + 1, max_depth)
+        
+        check_depth(v)
+        
+        # 3. 制御文字・特殊文字検証（インジェクション攻撃対策）
+        control_char_pattern = re.compile(r'[\x00-\x1F\x7F]')
+        def check_control_chars(obj):
+            if isinstance(obj, str):
+                if control_char_pattern.search(obj):
+                    raise ValueError('config values must not contain control characters')
+            elif isinstance(obj, dict):
+                for key, value in obj.items():
+                    if not isinstance(key, str):
+                        raise ValueError('config keys must be strings')
+                    check_control_chars(value)
+            elif isinstance(obj, list):
+                for item in obj:
+                    check_control_chars(item)
+            elif not isinstance(obj, (str, int, float, bool, type(None))):
+                raise ValueError('config values must be primitive types, objects, or arrays')
+        
+        check_control_chars(v)
+        
+        return v
+```
+
+**セキュリティルール**:
+- **最大サイズ**: 10KB（10,240バイト）
+  - 理由: 大量データによるDoS攻撃を防止
+- **最大ネストレベル**: 5階層まで
+  - 理由: 深いネスト構造によるパフォーマンス攻撃を防止
+- **禁止文字**: 制御文字（`\x00-\x1F`、`\x7F`）は値に含めることを禁止
+  - 理由: ログインジェクション、コマンドインジェクション攻撃を防止
+- **JSON Schema基本構造検証**: キーは文字列のみ、値はプリミティブ型またはオブジェクト/配列のみ
+  - 理由: 予期しないデータ型による脆弱性を防止
+
+**Phase 2での拡張**:
+- サービスごとのJSON Schemaによる詳細な検証機能を追加予定
+
+#### 4.3.3 サービス間通信のセキュリティ（タスク07）
+
+サービス設定サービスは、サービス割り当て時にテナント管理サービスAPIを呼び出してテナントの存在を確認します：
+
+```python
+import httpx
+from fastapi import HTTPException
+
+async def assign_service(
+    tenant_id: str,
+    service_id: str,
+    jwt_token: str
+):
+    """サービス割り当て（テナント存在確認付き）"""
+    # テナント存在確認（テナント管理サービスAPI）
+    try:
+        async with httpx.AsyncClient(timeout=1.0) as client:
+            response = await client.get(
+                f"{tenant_service_base_url}/api/v1/tenants/{tenant_id}",
+                headers={"Authorization": f"Bearer {jwt_token}"}
+            )
+            if response.status_code == 404:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Tenant not found"
+                )
+            elif response.status_code != 200:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Tenant service unavailable"
+                )
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=504,
+            detail="Tenant service timeout"
+        )
+    
+    # サービス割り当て処理
+    # ...
+```
+
+**セキュリティ考慮事項**:
+- **タイムアウト設定**: 1秒（サービス間通信の適切な制限）
+- **エラーハンドリング**: 
+  - 404: テナント不在エラーを返却
+  - その他: サービス利用不可エラーを返却
+- **JWT転送**: 呼び出し元のJWTをそのまま転送し、テナント管理サービスでも認証・認可チェックを実施
+
+#### 4.3.4 SQLインジェクション対策
 Cosmos DBのパラメータ化クエリを使用：
 
 ```python

@@ -904,10 +904,26 @@ Phase 1では、異なるテナントが同じドメインを登録可能です�
 
 テナントへのサービス割り当て：
 
+#### 4.2.1 スキーマ
+
+```python
+class ServiceAssignment(BaseModel):
+    id: str                          # assignment_{tenantId}_{serviceId}
+    tenant_id: str                   # パーティションキー
+    type: str = "service_assignment" # Cosmos DB識別子
+    service_id: str                  # サービスID
+    status: str = "active"           # ステータス（active/suspended）
+    config: Optional[dict] = None    # サービス固有設定（オプショナル、最大10KB）
+    assigned_at: datetime            # 割り当て日時
+    assigned_by: str                 # 割り当て実行者ユーザーID
+```
+
+#### 4.2.2 Cosmos DB格納例
+
 ```json
 {
-  "id": "assignment_tenant123_file",
-  "tenantId": "tenant_123",
+  "id": "assignment_tenant_acme_file-service",
+  "tenantId": "tenant_acme",
   "type": "service_assignment",
   "serviceId": "file-service",
   "status": "active",
@@ -915,40 +931,151 @@ Phase 1では、異なるテナントが同じドメインを登録可能です�
     "maxStorage": "100GB",
     "maxFileSize": "10MB"
   },
-  "assignedBy": "user_admin_001",
   "assignedAt": "2026-01-10T09:00:00Z",
-  "activatedAt": "2026-01-10T09:05:00Z",
-  "expiresAt": null
+  "assignedBy": "user_admin_001",
+  "_ts": 1704700800
 }
 ```
 
-#### 4.2.1 フィールド説明
+#### 4.2.3 フィールド説明
+
 | フィールド | 型 | 必須 | 説明 |
 |----------|---|-----|------|
-| id | string | ✅ | ユニークID |
+| id | string | ✅ | ユニークID（`assignment_{tenant_id}_{service_id}`） |
 | tenantId | string | ✅ | パーティションキー |
 | type | string | ✅ | "service_assignment" |
 | serviceId | string | ✅ | サービスID |
 | status | string | ✅ | active/suspended/expired |
-| config | object | - | サービス固有設定 |
+| config | object | - | サービス固有設定（最大10KB、最大5階層、制御文字禁止） |
 | assignedBy | string | ✅ | 割り当て実行者 |
 | assignedAt | string | ✅ | 割り当て日時 |
-| activatedAt | string | - | 有効化日時 |
-| expiresAt | string | - | 有効期限（nullで無期限） |
 
-#### 4.2.2 クエリ例
+#### 4.2.4 ID設計
+
+決定的ID：`assignment_{tenant_id}_{service_id}`
+
+**設計根拠**:
+- **重複防止**: Cosmos DBの主キー制約により、同一IDの重複挿入が自動的に409エラーになり、アプリケーションレベルでの重複チェックが不要
+- **クエリ効率**: IDから直接対象を特定可能（`GET`操作でパーティションキーとIDのみで取得可能、追加クエリ不要）
+- **監査追跡**: ログやエラーメッセージでIDを見るだけで、どのテナント・サービスの割り当てか即座に判別可能
+- **べき等性**: 同じリクエストを複数回実行しても、409エラーで失敗するため、副作用がない
+
+#### 4.2.5 config検証ルール
+
+- `config`フィールドはオプショナル（省略可能）
+- 指定する場合はJSONオブジェクト形式（`dict`型）
+- 最大サイズ: 10KB（10,240バイト）
+- **最大ネストレベル**: 5階層まで（深い階層は可読性とパフォーマンスに悪影響）
+- **禁止文字**: 特殊文字（制御文字`\x00-\x1F`、`\x7F`）は値に含めることを禁止
+- **JSON Schema基本構造検証**: キーは文字列のみ、値はプリミティブ型（string/number/boolean/null）またはオブジェクト/配列のみ
+- サービス固有の検証ルールは**各サービスの責任**（Phase 1ではサービス設定サービスでは検証しない）
+- Phase 2以降の拡張: サービスごとのJSON Schemaによる検証機能を追加予定
+
+**バリデーション実装例**:
+```python
+import re
+import json
+from pydantic import BaseModel, Field, field_validator
+
+class ServiceAssignmentCreate(BaseModel):
+    service_id: str = Field(
+        ..., 
+        pattern="^[a-z0-9-]+$",
+        max_length=100,
+        description="サービスID（最大100文字）"
+    )
+    config: Optional[Dict[str, Any]] = Field(None, max_length=10240)
+    
+    @field_validator('config')
+    def validate_config(cls, v):
+        if v is None:
+            return v
+        
+        # サイズ検証
+        json_str = json.dumps(v)
+        if len(json_str.encode('utf-8')) > 10240:
+            raise ValueError('config must be less than 10KB')
+        
+        # ネストレベル検証
+        def check_depth(obj, current_depth=1, max_depth=5):
+            if current_depth > max_depth:
+                raise ValueError(f'config nesting level must be {max_depth} or less')
+            if isinstance(obj, dict):
+                for value in obj.values():
+                    check_depth(value, current_depth + 1, max_depth)
+            elif isinstance(obj, list):
+                for item in obj:
+                    check_depth(item, current_depth + 1, max_depth)
+        
+        check_depth(v)
+        
+        # 制御文字・特殊文字検証
+        control_char_pattern = re.compile(r'[\x00-\x1F\x7F]')
+        def check_control_chars(obj):
+            if isinstance(obj, str):
+                if control_char_pattern.search(obj):
+                    raise ValueError('config values must not contain control characters')
+            elif isinstance(obj, dict):
+                for key, value in obj.items():
+                    if not isinstance(key, str):
+                        raise ValueError('config keys must be strings')
+                    check_control_chars(value)
+            elif isinstance(obj, list):
+                for item in obj:
+                    check_control_chars(item)
+            elif not isinstance(obj, (str, int, float, bool, type(None))):
+                raise ValueError('config values must be primitive types, objects, or arrays')
+        
+        check_control_chars(v)
+        
+        return v
+```
+
+#### 4.2.6 インデックス設計
+
+```json
+{
+  "indexingPolicy": {
+    "indexingMode": "consistent",
+    "automatic": true,
+    "includedPaths": [
+      {"path": "/serviceId/?"},
+      {"path": "/status/?"},
+      {"path": "/assignedAt/?"}
+    ],
+    "excludedPaths": [
+      {"path": "/config/*"}
+    ]
+  }
+}
+```
+
+**インデックス設計の理由**:
+- `/serviceId/?`: 特定サービスを利用しているテナントの検索に使用
+- `/status/?`: ステータスフィルタ（active/suspended）に使用
+- `/assignedAt/?`: 割り当て日時でソート
+- `/config/*`: サービス固有設定は検索対象外のため除外（RU削減）
+
+#### 4.2.7 クエリ例
+
 ```sql
 -- テナントの利用可能サービス一覧
 SELECT * FROM c 
-WHERE c.tenantId = "tenant_123" 
-  AND c.type = "service_assignment" 
-  AND c.status = "active"
+WHERE c.tenantId = @tenant_id
+  AND c.type = 'service_assignment'
+ORDER BY c.assignedAt DESC
 
--- 特定サービスを利用しているテナント数（クロスパーティションクエリ）
+-- アクティブなサービス割り当てのみ
+SELECT * FROM c 
+WHERE c.tenantId = @tenant_id
+  AND c.type = 'service_assignment'
+  AND c.status = 'active'
+
+-- 特定サービスを利用しているテナント数（クロスパーティションクエリ、管理用）
 SELECT COUNT(1) as count FROM c 
-WHERE c.type = "service_assignment" 
-  AND c.serviceId = "file-service" 
-  AND c.status = "active"
+WHERE c.type = 'service_assignment' 
+  AND c.serviceId = @service_id
+  AND c.status = 'active'
 ```
 
 ### 4.3 ServiceUsage エンティティ
