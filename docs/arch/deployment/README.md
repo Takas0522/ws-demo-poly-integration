@@ -1,7 +1,7 @@
 # デプロイメント設計
 
 ## ドキュメント情報
-- バージョン: 1.0.0
+- バージョン: 1.3.0
 - 最終更新日: 2026-02-01
 - 関連: [システムアーキテクチャ概要](../overview.md)
 
@@ -49,11 +49,65 @@ graph TB
 
 ### 1.2 環境構成
 
-| 環境 | 用途 | Azure リソースグループ |
-|-----|------|-------------------|
-| Development | ローカル開発 | DevContainer |
-| Staging | 検証・テスト | rg-management-app-staging |
-| Production | 本番運用 | rg-management-app-production |
+| 環境 | 用途 | 実行環境 |
+|-----|------|---------|
+| Development | ローカル開発 | DevContainer + Cosmos DB Emulator |
+| Staging | 検証・テスト | Azure (rg-management-app-staging) |
+| Production | 本番運用 | Azure (rg-management-app-production) |
+
+#### 1.2.1 開発環境（Development）
+
+開発環境はDevContainer内で実行され、以下の構成となります：
+
+**ローカルサービス**:
+- Cosmos DB Emulator: コンテナ内で実行、Azure Cosmos DBと同等のAPI提供
+- 各サービス: localhost上でFastAPI/Next.jsをローカル実行
+
+**Cosmos DB Emulatorのセットアップ**:
+1. DevContainerの起動により、Cosmos DB Emulatorが自動的に起動します
+2. 接続文字列: `AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==`
+3. エミュレータの管理画面: `https://localhost:8081/_explorer/index.html`
+4. 詳細な設定は`.devcontainer/devcontainer.json`を参照してください
+
+**トラブルシューティング**:
+- Emulatorが起動しない場合: DevContainerを再起動してください
+- 接続エラーの場合: 証明書の信頼設定を確認してください
+
+**環境変数設定**:
+- 各サービスのルートディレクトリに`.env.example`が配置されています:
+  - `src/auth-service/.env.example`
+  - `src/front/.env.example`
+  - `src/tenant-management-service/.env.example`
+  - `src/service-setting-service/.env.example`
+  - モックサービス: `src/{service-name}/.env.example`
+- これらをコピーして`.env`ファイルを作成し、必要に応じて値を変更してください
+- Cosmos DB Emulatorの接続文字列はデフォルトのまま使用可能です
+
+**ディレクトリ構造**:
+```
+src/
+├── auth-service/
+│   ├── .env.example       # テンプレート（Git管理対象）
+│   ├── .env               # 実際の設定（Git除外）
+│   └── app/
+├── front/
+│   ├── .env.example
+│   ├── .env
+│   └── ...
+├── tenant-management-service/
+│   ├── .env.example
+│   ├── .env
+│   └── app/
+└── service-setting-service/
+    ├── .env.example
+    ├── .env
+    └── app/
+```
+
+**利点**:
+- クラウドコストをかけずに開発可能
+- オフライン環境でも開発継続可能
+- 各開発者が独立した環境を保持
 
 ## 2. Azureリソース構成
 
@@ -290,11 +344,6 @@ resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' = {
         isZoneRedundant: false
       }
     ]
-    capabilities: [
-      {
-        name: 'EnableServerless'  // サーバーレスモード
-      }
-    ]
     backupPolicy: {
       type: 'Continuous'
       continuousModeProperties: {
@@ -310,6 +359,11 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2023-04-15
   properties: {
     resource: {
       id: databaseName
+    }
+    options: {
+      autoscaleSettings: {
+        maxThroughput: 4000  // 自動スケール: 最小400RU/s（10%）〜最大4000RU/s
+      }
     }
   }
 }
@@ -336,11 +390,7 @@ resource containerResources 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/
         ]
       }
     }
-    options: {
-      autoscaleSettings: {
-        maxThroughput: 4000
-      }
-    }
+    // 自動スケール設定はデータベースレベルで共有
   }
 }]
 
@@ -1165,7 +1215,150 @@ Application Insightsのダッシュボードで以下を監視：
 | SERVICE_SETTING_URL | サービス設定URL | ✅ |
 | JWT_SECRET_KEY | JWT検証用秘密鍵 | ✅ |
 
-### 6.2 GitHub Secrets設定
+### 6.2 環境変数テンプレート（.env.example）
+
+各サービスのルートディレクトリに`.env.example`ファイルを配置し、必要な環境変数をドキュメント化します。
+
+#### 6.2.1 認証サービス (.env.example)
+```bash
+# Environment
+ENVIRONMENT=development
+LOG_LEVEL=DEBUG
+
+# Database
+COSMOS_DB_CONNECTION_STRING=AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+
+# ⚠️ セキュリティ警告 ⚠️
+# 以下のシークレットは本番環境で必ず変更してください！
+# デフォルト値のまま使用すると、認証が突破される重大なセキュリティリスクとなります。
+
+# JWT Configuration
+JWT_SECRET_KEY=your-secret-key-change-in-production  # 🔒 本番環境では強力なランダム文字列に変更必須
+JWT_ALGORITHM=HS256
+JWT_EXPIRE_MINUTES=60
+
+# Service Integration
+SERVICE_SHARED_SECRET=shared-secret-between-services  # 🔒 本番環境で変更必須
+
+# Monitoring (オプション)
+APPINSIGHTS_INSTRUMENTATIONKEY=
+```
+
+#### 6.2.2 Frontend (.env.example)
+```bash
+# Environment
+ENVIRONMENT=development
+LOG_LEVEL=DEBUG
+
+# Backend Service URLs
+AUTH_SERVICE_URL=http://localhost:8001
+TENANT_SERVICE_URL=http://localhost:8002
+SERVICE_SETTING_URL=http://localhost:8003
+
+# ⚠️ セキュリティ警告 ⚠️
+# JWT_SECRET_KEYは本番環境で必ず変更してください！
+# デフォルト値のまま使用すると、トークン検証が無効化される重大なリスクとなります。
+
+# JWT Configuration
+JWT_SECRET_KEY=your-secret-key-change-in-production  # 🔒 本番環境で変更必須（認証サービスと同じ値）
+
+# Monitoring (オプション)
+NEXT_PUBLIC_APPINSIGHTS_INSTRUMENTATIONKEY=
+```
+
+#### 6.2.3 テナント管理サービス (.env.example)
+```bash
+# Environment
+ENVIRONMENT=development
+LOG_LEVEL=DEBUG
+
+# Database
+COSMOS_DB_CONNECTION_STRING=AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+
+# ⚠️ セキュリティ警告 ⚠️
+# SERVICE_SHARED_SECRETは本番環境で必ず変更してください！
+
+# Service Integration
+SERVICE_SHARED_SECRET=shared-secret-between-services  # 🔒 本番環境で変更必須
+
+# Monitoring (オプション)
+APPINSIGHTS_INSTRUMENTATIONKEY=
+```
+
+#### 6.2.4 サービス設定サービス (.env.example)
+```bash
+# Environment
+ENVIRONMENT=development
+LOG_LEVEL=DEBUG
+
+# Database
+COSMOS_DB_CONNECTION_STRING=AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+
+# ⚠️ セキュリティ警告 ⚠️
+# SERVICE_SHARED_SECRETは本番環境で必ず変更してください！
+
+# Service Integration
+SERVICE_SHARED_SECRET=shared-secret-between-services  # 🔒 本番環境で変更必須
+
+# Monitoring (オプション)
+APPINSIGHTS_INSTRUMENTATIONKEY=
+```
+
+#### 6.2.5 モックサービス共通 (.env.example)
+```bash
+# 以下の4つのモックサービスで共通の環境変数テンプレート
+# - file-service (ファイルサービスモック)
+# - messaging-service (メッセージングサービスモック)
+# - api-service (APIサービスモック)
+# - backup-service (バックアップサービスモック)
+
+# Environment
+ENVIRONMENT=development
+LOG_LEVEL=DEBUG
+
+# Database
+COSMOS_DB_CONNECTION_STRING=AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+
+# Service Integration
+SERVICE_SHARED_SECRET=shared-secret-between-services
+
+# Monitoring (オプション)
+APPINSIGHTS_INSTRUMENTATIONKEY=
+```
+
+#### 6.2.6 本番環境でのシークレット生成方法
+
+**強力なシークレット生成（推奨）**:
+```bash
+# 64文字のランダム文字列生成
+openssl rand -base64 48
+
+# または、Pythonで生成
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+**最小要件**:
+- JWT_SECRET_KEY: 32文字以上のランダム文字列
+- SERVICE_SHARED_SECRET: 32文字以上のランダム文字列
+- 英数字と記号を含む複雑な文字列を使用
+
+**セキュリティベストプラクティス**:
+- 開発環境と本番環境で異なるシークレットを使用
+- シークレットはGitにコミットしない（`.env`はGitignoreに含める）
+- 定期的なローテーション（推奨: 90日ごと）
+- GitHub SecretsやAzure Key Vaultで安全に管理
+
+#### 6.2.7 開発環境での使用方法
+```bash
+# 各サービスディレクトリで実行
+cd src/auth-service
+cp .env.example .env
+# .envファイルを編集して、必要に応じて値を変更
+
+# Cosmos DB Emulatorの接続文字列はデフォルトのまま使用可能
+```
+
+### 6.3 GitHub Secrets設定
 
 ```bash
 # GitHub Secretsに追加
@@ -1373,3 +1566,5 @@ options: {
 |----------|------|---------|----------|
 | 1.0.0 | 2026-02-01 | 初版作成 | - |
 | 1.1.0 | 2026-02-01 | 監視アラート閾値の詳細定義、カスタムダッシュボード仕様追加（アーキテクチャレビュー対応） | [アーキテクチャレビュー001](../review/architecture-review-001.md) |
+| 1.2.0 | 2026-02-01 | Cosmos DB課金モデルの修正（Serverless→自動スケール400-4000RU/s）、開発環境（Cosmos DB Emulator）の詳細追加、環境変数テンプレート(.env.example)の仕様追加 | [01-インフラ基盤構築](../../管理アプリ/Phase1-MVP開発/Specs/01-インフラ基盤構築.md) |
+| 1.3.0 | 2026-02-01 | レビュー指摘事項対応: 全7サービスの環境変数テンプレート追加、Cosmos DB autoscale最小値明示、Emulator起動手順追加、セキュリティ警告強化、ファイル配置場所明示 | [01-インフラ基盤構築レビュー001](../../管理アプリ/Phase1-MVP開発/review/01-インフラ基盤構築-review-001.md) |

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "2306325665648849090"
+    }
+  },
+  "parameters": {
+    "name": {
+      "type": "string",
+      "metadata": {
+        "description": "App Service Plan名"
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "リージョン"
+      }
+    },
+    "sku": {
+      "type": "object",
+      "metadata": {
+        "description": "SKU設定"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "metadata": {
+        "description": "タグ"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2022-03-01",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": "[parameters('sku')]",
+      "kind": "linux",
+      "properties": {
+        "reserved": true
+      }
+    }
+  ],
+  "outputs": {
+    "id": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Web/serverfarms', parameters('name'))]"
+    },
+    "name": {
+      "type": "string",
+      "value": "[parameters('name')]"
+    }
+  }
+}

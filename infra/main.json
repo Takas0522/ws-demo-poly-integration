@@ -1,0 +1,2221 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "languageVersion": "2.0",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "6486367347740520781"
+    }
+  },
+  "parameters": {
+    "environment": {
+      "type": "string",
+      "metadata": {
+        "description": "環境名 (dev, staging, production)"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "japaneast",
+      "metadata": {
+        "description": "リージョン"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {
+        "Environment": "[parameters('environment')]",
+        "Project": "ManagementApp",
+        "ManagedBy": "Bicep"
+      },
+      "metadata": {
+        "description": "共通タグ"
+      }
+    },
+    "jwtSecretKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "JWT Secret Key（本番環境では必ず変更）"
+      }
+    },
+    "serviceSharedSecret": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Service Shared Secret（本番環境では必ず変更）"
+      }
+    },
+    "cosmosDbAllowedIpRanges": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Cosmos DB許可IPアドレス範囲（CIDR形式）"
+      }
+    }
+  },
+  "resources": {
+    "rg": {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2021-04-01",
+      "name": "[format('rg-management-app-{0}', parameters('environment'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]"
+    },
+    "appServicePlan": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "appServicePlan",
+      "resourceGroup": "[format('rg-management-app-{0}', parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('plan-management-app-{0}', parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "sku": {
+            "value": {
+              "name": "B1",
+              "tier": "Basic",
+              "capacity": 1
+            }
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "2306325665648849090"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service Plan名"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "リージョン"
+              }
+            },
+            "sku": {
+              "type": "object",
+              "metadata": {
+                "description": "SKU設定"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "タグ"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/serverfarms",
+              "apiVersion": "2022-03-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": "[parameters('sku')]",
+              "kind": "linux",
+              "properties": {
+                "reserved": true
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/serverfarms', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "rg"
+      ]
+    },
+    "appInsights": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "appInsights",
+      "resourceGroup": "[format('rg-management-app-{0}', parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('appi-management-app-{0}', parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "9667974987614377662"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Application Insights名"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "リージョン"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "タグ"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2022-10-01",
+              "name": "[format('{0}-workspace', parameters('name'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 30
+              }
+            },
+            {
+              "type": "Microsoft.Insights/components",
+              "apiVersion": "2020-02-02",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "web",
+              "properties": {
+                "Application_Type": "web",
+                "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', format('{0}-workspace', parameters('name')))]",
+                "IngestionMode": "LogAnalytics",
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', format('{0}-workspace', parameters('name')))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Insights/components', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "instrumentationKey": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/components', parameters('name')), '2020-02-02').InstrumentationKey]"
+            },
+            "connectionString": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/components', parameters('name')), '2020-02-02').ConnectionString]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "rg"
+      ]
+    },
+    "cosmosDb": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "cosmosDb",
+      "resourceGroup": "[format('rg-management-app-{0}', parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('cosmos-management-app-{0}', parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "databaseName": {
+            "value": "management-app"
+          },
+          "containers": {
+            "value": [
+              {
+                "name": "auth",
+                "partitionKey": "/tenantId"
+              },
+              {
+                "name": "tenant",
+                "partitionKey": "/tenantId"
+              },
+              {
+                "name": "service-setting",
+                "partitionKey": "/tenantId"
+              },
+              {
+                "name": "file-service",
+                "partitionKey": "/tenantId"
+              },
+              {
+                "name": "messaging-service",
+                "partitionKey": "/tenantId"
+              },
+              {
+                "name": "api-service",
+                "partitionKey": "/tenantId"
+              },
+              {
+                "name": "backup-service",
+                "partitionKey": "/tenantId"
+              }
+            ]
+          },
+          "allowedIpRanges": {
+            "value": "[parameters('cosmosDbAllowedIpRanges')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "9257592480123102917"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Cosmos DBアカウント名"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "リージョン"
+              }
+            },
+            "databaseName": {
+              "type": "string",
+              "metadata": {
+                "description": "データベース名"
+              }
+            },
+            "containers": {
+              "type": "array",
+              "metadata": {
+                "description": "コンテナ定義"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "タグ"
+              }
+            },
+            "allowedIpRanges": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "許可するIPアドレス範囲（CIDR形式、空の場合はAzureサービスのみ許可）"
+              }
+            }
+          },
+          "resources": {
+            "cosmosAccount": {
+              "type": "Microsoft.DocumentDB/databaseAccounts",
+              "apiVersion": "2023-04-15",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "GlobalDocumentDB",
+              "properties": {
+                "copy": [
+                  {
+                    "name": "ipRules",
+                    "count": "[length(parameters('allowedIpRanges'))]",
+                    "input": {
+                      "ipAddressOrRange": "[parameters('allowedIpRanges')[copyIndex('ipRules')]]"
+                    }
+                  }
+                ],
+                "databaseAccountOfferType": "Standard",
+                "consistencyPolicy": {
+                  "defaultConsistencyLevel": "Session"
+                },
+                "locations": [
+                  {
+                    "locationName": "[parameters('location')]",
+                    "failoverPriority": 0,
+                    "isZoneRedundant": false
+                  }
+                ],
+                "backupPolicy": {
+                  "type": "Continuous",
+                  "continuousModeProperties": {
+                    "tier": "Continuous30Days"
+                  }
+                },
+                "publicNetworkAccess": "Enabled",
+                "isVirtualNetworkFilterEnabled": false,
+                "networkAclBypass": "AzureServices",
+                "networkAclBypassResourceIds": [],
+                "disableLocalAuth": false
+              }
+            },
+            "database": {
+              "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
+              "apiVersion": "2023-04-15",
+              "name": "[format('{0}/{1}', parameters('name'), parameters('databaseName'))]",
+              "properties": {
+                "resource": {
+                  "id": "[parameters('databaseName')]"
+                },
+                "options": {
+                  "autoscaleSettings": {
+                    "maxThroughput": 4000
+                  }
+                }
+              },
+              "dependsOn": [
+                "cosmosAccount"
+              ]
+            },
+            "containerResources": {
+              "copy": {
+                "name": "containerResources",
+                "count": "[length(parameters('containers'))]"
+              },
+              "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+              "apiVersion": "2023-04-15",
+              "name": "[format('{0}/{1}/{2}', parameters('name'), parameters('databaseName'), parameters('containers')[copyIndex()].name)]",
+              "properties": {
+                "resource": {
+                  "id": "[parameters('containers')[copyIndex()].name]",
+                  "partitionKey": {
+                    "paths": [
+                      "[parameters('containers')[copyIndex()].partitionKey]"
+                    ],
+                    "kind": "Hash"
+                  },
+                  "indexingPolicy": {
+                    "indexingMode": "consistent",
+                    "automatic": true,
+                    "includedPaths": [
+                      {
+                        "path": "/*"
+                      }
+                    ]
+                  }
+                }
+              },
+              "dependsOn": [
+                "database"
+              ]
+            }
+          },
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "connectionString": {
+              "type": "securestring",
+              "value": "[listConnectionStrings('cosmosAccount', '2023-04-15').connectionStrings[0].connectionString]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "rg"
+      ]
+    },
+    "frontendApp": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "frontendApp",
+      "resourceGroup": "[format('rg-management-app-{0}', parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('app-frontend-{0}', parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "planId": {
+            "value": "[reference('appServicePlan').outputs.id.value]"
+          },
+          "runtime": {
+            "value": "node"
+          },
+          "runtimeVersion": {
+            "value": "20-lts"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "environmentVariables": {
+            "value": []
+          },
+          "allowedOrigins": {
+            "value": []
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "5273591829785134672"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service名"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "リージョン"
+              }
+            },
+            "planId": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service PlanのID"
+              }
+            },
+            "runtime": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイム (node, python)"
+              }
+            },
+            "runtimeVersion": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイムバージョン"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "タグ"
+              }
+            },
+            "environmentVariables": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "追加の環境変数（Key Vault参照を含む）"
+              }
+            },
+            "allowedOrigins": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "CORS許可オリジン（空の場合はCORSは無効）"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites/slots",
+              "apiVersion": "2022-03-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'staging')]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2022-03-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "defaultHostName": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01').defaultHostName]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]"
+            },
+            "stagingPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites/slots', parameters('name'), 'staging'), '2022-03-01', 'full').identity.principalId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "appServicePlan",
+        "rg"
+      ]
+    },
+    "authServiceApp": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "authServiceApp",
+      "resourceGroup": "[format('rg-management-app-{0}', parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('app-auth-{0}', parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "planId": {
+            "value": "[reference('appServicePlan').outputs.id.value]"
+          },
+          "runtime": {
+            "value": "python"
+          },
+          "runtimeVersion": {
+            "value": "3.11"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "environmentVariables": {
+            "value": []
+          },
+          "allowedOrigins": {
+            "value": [
+              "[format('https://{0}', reference('frontendApp').outputs.defaultHostName.value)]"
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "5273591829785134672"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service名"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "リージョン"
+              }
+            },
+            "planId": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service PlanのID"
+              }
+            },
+            "runtime": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイム (node, python)"
+              }
+            },
+            "runtimeVersion": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイムバージョン"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "タグ"
+              }
+            },
+            "environmentVariables": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "追加の環境変数（Key Vault参照を含む）"
+              }
+            },
+            "allowedOrigins": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "CORS許可オリジン（空の場合はCORSは無効）"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites/slots",
+              "apiVersion": "2022-03-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'staging')]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2022-03-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "defaultHostName": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01').defaultHostName]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]"
+            },
+            "stagingPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites/slots', parameters('name'), 'staging'), '2022-03-01', 'full').identity.principalId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "appServicePlan",
+        "frontendApp",
+        "rg"
+      ]
+    },
+    "tenantServiceApp": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "tenantServiceApp",
+      "resourceGroup": "[format('rg-management-app-{0}', parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('app-tenant-{0}', parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "planId": {
+            "value": "[reference('appServicePlan').outputs.id.value]"
+          },
+          "runtime": {
+            "value": "python"
+          },
+          "runtimeVersion": {
+            "value": "3.11"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "environmentVariables": {
+            "value": []
+          },
+          "allowedOrigins": {
+            "value": [
+              "[format('https://{0}', reference('frontendApp').outputs.defaultHostName.value)]"
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "5273591829785134672"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service名"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "リージョン"
+              }
+            },
+            "planId": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service PlanのID"
+              }
+            },
+            "runtime": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイム (node, python)"
+              }
+            },
+            "runtimeVersion": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイムバージョン"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "タグ"
+              }
+            },
+            "environmentVariables": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "追加の環境変数（Key Vault参照を含む）"
+              }
+            },
+            "allowedOrigins": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "CORS許可オリジン（空の場合はCORSは無効）"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites/slots",
+              "apiVersion": "2022-03-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'staging')]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2022-03-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "defaultHostName": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01').defaultHostName]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]"
+            },
+            "stagingPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites/slots', parameters('name'), 'staging'), '2022-03-01', 'full').identity.principalId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "appServicePlan",
+        "frontendApp",
+        "rg"
+      ]
+    },
+    "serviceSettingApp": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "serviceSettingApp",
+      "resourceGroup": "[format('rg-management-app-{0}', parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('app-service-setting-{0}', parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "planId": {
+            "value": "[reference('appServicePlan').outputs.id.value]"
+          },
+          "runtime": {
+            "value": "python"
+          },
+          "runtimeVersion": {
+            "value": "3.11"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "environmentVariables": {
+            "value": []
+          },
+          "allowedOrigins": {
+            "value": [
+              "[format('https://{0}', reference('frontendApp').outputs.defaultHostName.value)]"
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "5273591829785134672"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service名"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "リージョン"
+              }
+            },
+            "planId": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service PlanのID"
+              }
+            },
+            "runtime": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイム (node, python)"
+              }
+            },
+            "runtimeVersion": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイムバージョン"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "タグ"
+              }
+            },
+            "environmentVariables": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "追加の環境変数（Key Vault参照を含む）"
+              }
+            },
+            "allowedOrigins": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "CORS許可オリジン（空の場合はCORSは無効）"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites/slots",
+              "apiVersion": "2022-03-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'staging')]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2022-03-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "defaultHostName": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01').defaultHostName]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]"
+            },
+            "stagingPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites/slots', parameters('name'), 'staging'), '2022-03-01', 'full').identity.principalId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "appServicePlan",
+        "frontendApp",
+        "rg"
+      ]
+    },
+    "fileServiceApp": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "fileServiceApp",
+      "resourceGroup": "[format('rg-management-app-{0}', parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('app-file-service-{0}', parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "planId": {
+            "value": "[reference('appServicePlan').outputs.id.value]"
+          },
+          "runtime": {
+            "value": "python"
+          },
+          "runtimeVersion": {
+            "value": "3.11"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "environmentVariables": {
+            "value": []
+          },
+          "allowedOrigins": {
+            "value": [
+              "[format('https://{0}', reference('frontendApp').outputs.defaultHostName.value)]"
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "5273591829785134672"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service名"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "リージョン"
+              }
+            },
+            "planId": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service PlanのID"
+              }
+            },
+            "runtime": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイム (node, python)"
+              }
+            },
+            "runtimeVersion": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイムバージョン"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "タグ"
+              }
+            },
+            "environmentVariables": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "追加の環境変数（Key Vault参照を含む）"
+              }
+            },
+            "allowedOrigins": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "CORS許可オリジン（空の場合はCORSは無効）"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites/slots",
+              "apiVersion": "2022-03-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'staging')]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2022-03-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "defaultHostName": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01').defaultHostName]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]"
+            },
+            "stagingPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites/slots', parameters('name'), 'staging'), '2022-03-01', 'full').identity.principalId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "appServicePlan",
+        "frontendApp",
+        "rg"
+      ]
+    },
+    "messagingServiceApp": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "messagingServiceApp",
+      "resourceGroup": "[format('rg-management-app-{0}', parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('app-messaging-service-{0}', parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "planId": {
+            "value": "[reference('appServicePlan').outputs.id.value]"
+          },
+          "runtime": {
+            "value": "python"
+          },
+          "runtimeVersion": {
+            "value": "3.11"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "environmentVariables": {
+            "value": []
+          },
+          "allowedOrigins": {
+            "value": [
+              "[format('https://{0}', reference('frontendApp').outputs.defaultHostName.value)]"
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "5273591829785134672"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service名"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "リージョン"
+              }
+            },
+            "planId": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service PlanのID"
+              }
+            },
+            "runtime": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイム (node, python)"
+              }
+            },
+            "runtimeVersion": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイムバージョン"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "タグ"
+              }
+            },
+            "environmentVariables": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "追加の環境変数（Key Vault参照を含む）"
+              }
+            },
+            "allowedOrigins": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "CORS許可オリジン（空の場合はCORSは無効）"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites/slots",
+              "apiVersion": "2022-03-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'staging')]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2022-03-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "defaultHostName": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01').defaultHostName]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]"
+            },
+            "stagingPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites/slots', parameters('name'), 'staging'), '2022-03-01', 'full').identity.principalId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "appServicePlan",
+        "frontendApp",
+        "rg"
+      ]
+    },
+    "apiServiceApp": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "apiServiceApp",
+      "resourceGroup": "[format('rg-management-app-{0}', parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('app-api-service-{0}', parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "planId": {
+            "value": "[reference('appServicePlan').outputs.id.value]"
+          },
+          "runtime": {
+            "value": "python"
+          },
+          "runtimeVersion": {
+            "value": "3.11"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "environmentVariables": {
+            "value": []
+          },
+          "allowedOrigins": {
+            "value": [
+              "[format('https://{0}', reference('frontendApp').outputs.defaultHostName.value)]"
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "5273591829785134672"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service名"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "リージョン"
+              }
+            },
+            "planId": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service PlanのID"
+              }
+            },
+            "runtime": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイム (node, python)"
+              }
+            },
+            "runtimeVersion": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイムバージョン"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "タグ"
+              }
+            },
+            "environmentVariables": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "追加の環境変数（Key Vault参照を含む）"
+              }
+            },
+            "allowedOrigins": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "CORS許可オリジン（空の場合はCORSは無効）"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites/slots",
+              "apiVersion": "2022-03-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'staging')]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2022-03-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "defaultHostName": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01').defaultHostName]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]"
+            },
+            "stagingPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites/slots', parameters('name'), 'staging'), '2022-03-01', 'full').identity.principalId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "appServicePlan",
+        "frontendApp",
+        "rg"
+      ]
+    },
+    "backupServiceApp": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "backupServiceApp",
+      "resourceGroup": "[format('rg-management-app-{0}', parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('app-backup-service-{0}', parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "planId": {
+            "value": "[reference('appServicePlan').outputs.id.value]"
+          },
+          "runtime": {
+            "value": "python"
+          },
+          "runtimeVersion": {
+            "value": "3.11"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "environmentVariables": {
+            "value": []
+          },
+          "allowedOrigins": {
+            "value": [
+              "[format('https://{0}', reference('frontendApp').outputs.defaultHostName.value)]"
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "5273591829785134672"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service名"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "リージョン"
+              }
+            },
+            "planId": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service PlanのID"
+              }
+            },
+            "runtime": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイム (node, python)"
+              }
+            },
+            "runtimeVersion": {
+              "type": "string",
+              "metadata": {
+                "description": "ランタイムバージョン"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "タグ"
+              }
+            },
+            "environmentVariables": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "追加の環境変数（Key Vault参照を含む）"
+              }
+            },
+            "allowedOrigins": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "CORS許可オリジン（空の場合はCORSは無効）"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites/slots",
+              "apiVersion": "2022-03-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'staging')]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2022-03-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('planId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "alwaysOn": true,
+                  "http20Enabled": true,
+                  "minTlsVersion": "1.2",
+                  "ftpsState": "Disabled",
+                  "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+                  "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+                  "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+                  "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "defaultHostName": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01').defaultHostName]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]"
+            },
+            "stagingPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites/slots', parameters('name'), 'staging'), '2022-03-01', 'full').identity.principalId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "appServicePlan",
+        "frontendApp",
+        "rg"
+      ]
+    },
+    "keyVault": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "keyVault",
+      "resourceGroup": "[format('rg-management-app-{0}', parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('kv-mgmt-app-{0}-{1}', parameters('environment'), uniqueString(subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-management-app-{0}', parameters('environment')))))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "cosmosDbConnectionString": {
+            "value": "[listOutputsWithSecureValues('cosmosDb', '2025-04-01').connectionString]"
+          },
+          "appInsightsInstrumentationKey": {
+            "value": "[reference('appInsights').outputs.instrumentationKey.value]"
+          },
+          "jwtSecretKey": {
+            "value": "[parameters('jwtSecretKey')]"
+          },
+          "serviceSharedSecret": {
+            "value": "[parameters('serviceSharedSecret')]"
+          },
+          "appServicePrincipalIds": {
+            "value": [
+              "[reference('frontendApp').outputs.principalId.value]",
+              "[reference('frontendApp').outputs.stagingPrincipalId.value]",
+              "[reference('authServiceApp').outputs.principalId.value]",
+              "[reference('authServiceApp').outputs.stagingPrincipalId.value]",
+              "[reference('tenantServiceApp').outputs.principalId.value]",
+              "[reference('tenantServiceApp').outputs.stagingPrincipalId.value]",
+              "[reference('serviceSettingApp').outputs.principalId.value]",
+              "[reference('serviceSettingApp').outputs.stagingPrincipalId.value]",
+              "[reference('fileServiceApp').outputs.principalId.value]",
+              "[reference('fileServiceApp').outputs.stagingPrincipalId.value]",
+              "[reference('messagingServiceApp').outputs.principalId.value]",
+              "[reference('messagingServiceApp').outputs.stagingPrincipalId.value]",
+              "[reference('apiServiceApp').outputs.principalId.value]",
+              "[reference('apiServiceApp').outputs.stagingPrincipalId.value]",
+              "[reference('backupServiceApp').outputs.principalId.value]",
+              "[reference('backupServiceApp').outputs.stagingPrincipalId.value]"
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "10877846255094020275"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault名"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "リージョン"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "タグ"
+              }
+            },
+            "appServicePrincipalIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "App Serviceのプリンシパルに対してシークレット読み取り権限を付与"
+              }
+            },
+            "cosmosDbConnectionString": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Cosmos DB接続文字列"
+              }
+            },
+            "appInsightsInstrumentationKey": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Application Insights instrumentation key"
+              }
+            },
+            "jwtSecretKey": {
+              "type": "securestring",
+              "metadata": {
+                "description": "JWT secret key"
+              }
+            },
+            "serviceSharedSecret": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Service shared secret"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.KeyVault/vaults",
+              "apiVersion": "2023-02-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "sku": {
+                  "family": "A",
+                  "name": "standard"
+                },
+                "tenantId": "[subscription().tenantId]",
+                "enableRbacAuthorization": true,
+                "enabledForDeployment": false,
+                "enabledForDiskEncryption": false,
+                "enabledForTemplateDeployment": true,
+                "enableSoftDelete": true,
+                "softDeleteRetentionInDays": 90,
+                "enablePurgeProtection": true,
+                "networkAcls": {
+                  "defaultAction": "Deny",
+                  "bypass": "AzureServices",
+                  "ipRules": [],
+                  "virtualNetworkRules": []
+                },
+                "publicNetworkAccess": "Enabled"
+              }
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2023-02-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'cosmos-db-connection-string')]",
+              "properties": {
+                "value": "[parameters('cosmosDbConnectionString')]",
+                "contentType": "text/plain"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2023-02-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'app-insights-instrumentation-key')]",
+              "properties": {
+                "value": "[parameters('appInsightsInstrumentationKey')]",
+                "contentType": "text/plain"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2023-02-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'jwt-secret-key')]",
+              "properties": {
+                "value": "[parameters('jwtSecretKey')]",
+                "contentType": "text/plain"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2023-02-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'service-shared-secret')]",
+              "properties": {
+                "value": "[parameters('serviceSharedSecret')]",
+                "contentType": "text/plain"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+              ]
+            },
+            {
+              "copy": {
+                "name": "keyVaultSecretsUserRole",
+                "count": "[length(parameters('appServicePrincipalIds'))]"
+              },
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]",
+              "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('name')), parameters('appServicePrincipalIds')[copyIndex()], 'Key Vault Secrets User')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
+                "principalId": "[parameters('appServicePrincipalIds')[copyIndex()]]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "vaultUri": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults', parameters('name')), '2023-02-01').vaultUri]"
+            },
+            "cosmosDbConnectionStringSecretUri": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults/secrets', parameters('name'), 'cosmos-db-connection-string'), '2023-02-01').secretUri]"
+            },
+            "appInsightsKeySecretUri": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults/secrets', parameters('name'), 'app-insights-instrumentation-key'), '2023-02-01').secretUri]"
+            },
+            "jwtSecretKeySecretUri": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults/secrets', parameters('name'), 'jwt-secret-key'), '2023-02-01').secretUri]"
+            },
+            "serviceSharedSecretSecretUri": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults/secrets', parameters('name'), 'service-shared-secret'), '2023-02-01').secretUri]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "apiServiceApp",
+        "appInsights",
+        "authServiceApp",
+        "backupServiceApp",
+        "cosmosDb",
+        "fileServiceApp",
+        "frontendApp",
+        "messagingServiceApp",
+        "rg",
+        "serviceSettingApp",
+        "tenantServiceApp"
+      ]
+    }
+  },
+  "outputs": {
+    "resourceGroupName": {
+      "type": "string",
+      "value": "[format('rg-management-app-{0}', parameters('environment'))]"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "value": "[reference('keyVault').outputs.name.value]"
+    },
+    "keyVaultUri": {
+      "type": "string",
+      "value": "[reference('keyVault').outputs.vaultUri.value]"
+    },
+    "frontendUrl": {
+      "type": "string",
+      "value": "[reference('frontendApp').outputs.defaultHostName.value]"
+    },
+    "authServiceUrl": {
+      "type": "string",
+      "value": "[reference('authServiceApp').outputs.defaultHostName.value]"
+    }
+  }
+}

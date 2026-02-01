@@ -1,0 +1,137 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "5273591829785134672"
+    }
+  },
+  "parameters": {
+    "name": {
+      "type": "string",
+      "metadata": {
+        "description": "App Service名"
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "リージョン"
+      }
+    },
+    "planId": {
+      "type": "string",
+      "metadata": {
+        "description": "App Service PlanのID"
+      }
+    },
+    "runtime": {
+      "type": "string",
+      "metadata": {
+        "description": "ランタイム (node, python)"
+      }
+    },
+    "runtimeVersion": {
+      "type": "string",
+      "metadata": {
+        "description": "ランタイムバージョン"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "metadata": {
+        "description": "タグ"
+      }
+    },
+    "environmentVariables": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "追加の環境変数（Key Vault参照を含む）"
+      }
+    },
+    "allowedOrigins": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "CORS許可オリジン（空の場合はCORSは無効）"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/sites/slots",
+      "apiVersion": "2022-03-01",
+      "name": "[format('{0}/{1}', parameters('name'), 'staging')]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "serverFarmId": "[parameters('planId')]",
+        "httpsOnly": true,
+        "siteConfig": {
+          "alwaysOn": true,
+          "http20Enabled": true,
+          "minTlsVersion": "1.2",
+          "ftpsState": "Disabled",
+          "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+          "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+          "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+          "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2022-03-01",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "serverFarmId": "[parameters('planId')]",
+        "httpsOnly": true,
+        "siteConfig": {
+          "alwaysOn": true,
+          "http20Enabled": true,
+          "minTlsVersion": "1.2",
+          "ftpsState": "Disabled",
+          "cors": "[if(greater(length(parameters('allowedOrigins')), 0), createObject('allowedOrigins', parameters('allowedOrigins'), 'supportCredentials', true()), null())]",
+          "linuxFxVersion": "[if(equals(parameters('runtime'), 'python'), format('PYTHON|{0}', parameters('runtimeVersion')), null())]",
+          "nodeVersion": "[if(equals(parameters('runtime'), 'node'), parameters('runtimeVersion'), null())]",
+          "appSettings": "[concat(createArray(createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')), parameters('environmentVariables'))]"
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "id": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+    },
+    "name": {
+      "type": "string",
+      "value": "[parameters('name')]"
+    },
+    "defaultHostName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01').defaultHostName]"
+    },
+    "principalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]"
+    },
+    "stagingPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Web/sites/slots', parameters('name'), 'staging'), '2022-03-01', 'full').identity.principalId]"
+    }
+  }
+}
