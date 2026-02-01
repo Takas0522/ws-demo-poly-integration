@@ -745,6 +745,8 @@ GET /api/v1/roles
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
 
+**必要ロール**: なし（認証済みユーザーであれば誰でも利用可能）
+
 **レスポンス** (200 OK):
 ```json
 {
@@ -752,18 +754,83 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
     {
       "serviceId": "auth-service",
       "roleName": "全体管理者",
-      "description": "ユーザー登録・削除、特権テナント操作"
+      "description": "ユーザー登録・削除、ロール割り当て"
     },
     {
       "serviceId": "auth-service",
       "roleName": "閲覧者",
       "description": "ユーザー情報の参照のみ"
+    },
+    {
+      "serviceId": "tenant-management",
+      "roleName": "管理者",
+      "description": "テナントのCRUD操作"
+    },
+    {
+      "serviceId": "tenant-management",
+      "roleName": "閲覧者",
+      "description": "テナント情報の参照のみ"
     }
   ]
 }
 ```
 
-#### 3.4.2 POST /users/{userId}/roles
+**ビジネスロジック**:
+1. 現在のユーザーのテナントIDを取得
+2. Phase 1では、ハードコードされたロール定義を返却
+3. Phase 2では、各サービスの `/api/roles` エンドポイントを呼び出して統合
+
+**パフォーマンス要件**: < 200ms (P95)
+
+#### 3.4.2 GET /users/{userId}/roles
+ユーザーロール一覧取得
+
+**リクエスト**:
+```http
+GET /api/v1/users/user_550e8400/roles?tenantId=tenant_123
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+
+**必要ロール**: auth-service: 閲覧者 以上
+
+**パスパラメータ**:
+- `userId` (required): ユーザーID
+
+**クエリパラメータ**:
+- `tenantId` (required): テナントID
+
+**レスポンス** (200 OK):
+```json
+{
+  "data": [
+    {
+      "id": "role_assignment_123e4567...",
+      "userId": "user_550e8400",
+      "serviceId": "auth-service",
+      "roleName": "全体管理者",
+      "assignedAt": "2026-02-01T10:00:00Z",
+      "assignedBy": "user_admin..."
+    },
+    {
+      "id": "role_assignment_456e7890...",
+      "userId": "user_550e8400",
+      "serviceId": "tenant-management",
+      "roleName": "管理者",
+      "assignedAt": "2026-01-10T09:00:00Z",
+      "assignedBy": "user_admin..."
+    }
+  ]
+}
+```
+
+**ビジネスロジック**:
+1. ユーザーの存在確認
+2. テナント分離チェック（特権テナント以外は自テナントのみ）
+3. Cosmos DBから該当ユーザーのRoleAssignmentを検索
+
+**パフォーマンス要件**: < 200ms (P95)
+
+#### 3.4.3 POST /users/{userId}/roles
 ユーザーへのロール割り当て
 
 **リクエスト**:
@@ -773,6 +840,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 Content-Type: application/json
 
 {
+  "tenantId": "tenant_123",
   "serviceId": "tenant-management",
   "roleName": "管理者"
 }
@@ -783,21 +851,64 @@ Content-Type: application/json
 **レスポンス** (201 Created):
 ```json
 {
-  "id": "role_abc123",
+  "id": "role_assignment_abc123...",
   "userId": "user_550e8400",
+  "tenantId": "tenant_123",
   "serviceId": "tenant-management",
   "roleName": "管理者",
-  "assignedAt": "2026-01-20T10:00:00Z"
+  "assignedAt": "2026-02-01T11:00:00Z",
+  "assignedBy": "user_admin..."
 }
 ```
 
-#### 3.4.3 DELETE /users/{userId}/roles/{roleId}
+**エラーレスポンス**:
+- `404 Not Found`: ユーザーが存在しない
+- `409 Conflict`: 同じロールが既に割り当て済み
+- `403 Forbidden`: テナント分離違反、または権限不足
+
+**バリデーション**:
+- ユーザーの存在確認
+- サービスIDとロール名の妥当性確認
+- 重複チェック
+- テナント分離チェック
+
+**ビジネスロジック**:
+1. ユーザーの存在確認
+2. 重複チェック（同じservice_id + role_nameの組み合わせ）
+3. RoleAssignmentオブジェクト作成
+4. Cosmos DBに保存
+5. 監査ログ記録（assigned_by に現在のユーザーID）
+
+**パフォーマンス要件**: < 300ms (P95)
+
+#### 3.4.4 DELETE /users/{userId}/roles/{roleAssignmentId}
 ユーザーからのロール削除
 
 **リクエスト**:
 ```http
-DELETE /api/v1/users/user_550e8400/roles/role_abc123
+DELETE /api/v1/users/user_550e8400/roles/role_assignment_abc123?tenantId=tenant_123
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+
+**必要ロール**: auth-service: 全体管理者
+
+**パスパラメータ**:
+- `userId` (required): ユーザーID
+- `roleAssignmentId` (required): ロール割り当てID
+
+**クエリパラメータ**:
+- `tenantId` (required): テナントID
+
+**レスポンス** (204 No Content)
+
+**ビジネスロジック**:
+1. RoleAssignmentの存在確認
+2. ユーザーIDの一致確認
+3. テナント分離チェック
+4. Cosmos DBから削除
+5. 監査ログ記録（deleted_by に現在のユーザーID）
+
+**パフォーマンス要件**: < 200ms (P95)
 ```
 
 **必要ロール**: auth-service: 全体管理者
@@ -1578,3 +1689,4 @@ FastAPIの自動生成機能を使用：
 | 1.0.0 | 2026-02-01 | 初版作成 | - |
 | 1.1.0 | 2026-02-01 | APIバージョニング戦略の詳細化（破壊的変更の定義、複数バージョン同時サポート、廃止プロセス）（アーキテクチャレビュー対応） | [アーキテクチャレビュー001](../review/architecture-review-001.md) |
 | 1.2.0 | 2026-02-01 | 認証認可サービスAPIの詳細を更新（ログインエラーコード、JWT検証レスポンス、ビジネスロジック、パフォーマンス要件を追加） | [03-認証認可サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/03-認証認可サービス-コアAPI.md) |
+| 1.3.0 | 2026-02-01 | ロール管理APIの詳細を追加（タスク04対応）、GET /users/{userId}/roles エンドポイント追加、各エンドポイントにビジネスロジックとパフォーマンス要件を追加 | [04-認証認可サービス-ロール管理](../../管理アプリ/Phase1-MVP開発/Specs/04-認証認可サービス-ロール管理.md) |

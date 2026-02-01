@@ -120,43 +120,105 @@ WHERE c.tenantId = "tenant_123"
 #### 2.2.1 スキーマ
 ```json
 {
-  "id": "role_650e8400-e29b-41d4-a716-446655440000",
+  "id": "role_assignment_123e4567-e89b-12d3-a456-426614174000",
   "tenantId": "tenant_123",
   "type": "role_assignment",
   "userId": "user_550e8400-e29b-41d4-a716-446655440000",
   "serviceId": "tenant-management",
   "roleName": "管理者",
   "assignedBy": "user_admin_001",
-  "assignedAt": "2026-01-10T12:00:00Z"
+  "assignedAt": "2026-01-10T12:00:00Z",
+  "createdAt": "2026-01-10T12:00:00Z"
 }
 ```
 
 #### 2.2.2 フィールド説明
 | フィールド | 型 | 必須 | 説明 |
 |----------|---|-----|------|
-| id | string | ✅ | ユニークID（`role_` + UUID） |
+| id | string | ✅ | ユニークID（`role_assignment_` + UUID、または決定的ID: `ra_{userId}_{serviceId}_{roleName}`） |
 | tenantId | string | ✅ | パーティションキー |
 | type | string | ✅ | "role_assignment" |
 | userId | string | ✅ | ユーザーID |
-| serviceId | string | ✅ | サービス識別子 |
-| roleName | string | ✅ | ロール名 |
+| serviceId | string | ✅ | サービス識別子（例: "auth-service", "tenant-management"） |
+| roleName | string | ✅ | ロール名（例: "全体管理者", "管理者", "閲覧者"） |
 | assignedBy | string | ✅ | 割り当てを実行したユーザーID |
-| assignedAt | string | ✅ | 割り当て日時 |
+| assignedAt | string | ✅ | 割り当て日時（ISO 8601形式） |
+| createdAt | string | ✅ | 作成日時（ISO 8601形式） |
 
-#### 2.2.3 クエリ例
+**ID設計**:
+- Phase 1では決定的ID（`ra_{userId}_{serviceId}_{roleName}`）を使用し、Cosmos DBの一意制約を活用して重複を防止
+- 同じユーザーに同じサービスの同じロールを重複割り当てすることを技術的に防止
+
+#### 2.2.3 インデックス
+```json
+{
+  "indexingMode": "consistent",
+  "includedPaths": [
+    {"path": "/userId/?"},
+    {"path": "/serviceId/?"},
+    {"path": "/roleName/?"},
+    {"path": "/assignedAt/?"}
+  ]
+}
+```
+
+#### 2.2.4 クエリ例
 ```sql
--- ユーザーの全ロール取得
+-- ユーザーの全ロール取得（JWT生成時に使用）
 SELECT * FROM c 
-WHERE c.tenantId = "tenant_123" 
+WHERE c.tenantId = @tenant_id
   AND c.type = "role_assignment" 
-  AND c.userId = "user_550e8400-e29b-41d4-a716-446655440000"
+  AND c.userId = @user_id
 
 -- 特定サービスの特定ロールを持つユーザー一覧
 SELECT * FROM c 
-WHERE c.tenantId = "tenant_123" 
+WHERE c.tenantId = @tenant_id
   AND c.type = "role_assignment" 
-  AND c.serviceId = "tenant-management"
-  AND c.roleName = "管理者"
+  AND c.serviceId = @service_id
+  AND c.roleName = @role_name
+
+-- 特定ロール割り当ての重複チェック
+SELECT * FROM c
+WHERE c.tenantId = @tenant_id
+  AND c.type = "role_assignment"
+  AND c.userId = @user_id
+  AND c.serviceId = @service_id
+  AND c.roleName = @role_name
+```
+
+#### 2.2.5 データ整合性
+
+**カスケード削除**:
+ユーザー削除時、関連するRoleAssignmentも自動的に削除されます（論理削除）。
+
+```python
+# app/services/user_service.py
+async def delete_user(self, user_id: str, tenant_id: str, deleted_by: str) -> None:
+    """ユーザー削除（論理削除 + RoleAssignmentのカスケード削除）"""
+    # 1. ユーザーの論理削除
+    user = await self.user_repository.get(user_id, tenant_id)
+    user.is_active = False
+    await self.user_repository.update(user_id, tenant_id, user.dict())
+    
+    # 2. 関連RoleAssignmentを削除
+    role_assignments = await self.role_repository.get_by_user_id(user_id, tenant_id)
+    for ra in role_assignments:
+        await self.role_repository.delete(ra.id, tenant_id)
+```
+
+**重複防止**:
+決定的ID（`ra_{userId}_{serviceId}_{roleName}`）により、Cosmos DBのid一意制約を活用して重複を防止。
+
+```python
+# 409 Conflictエラーをキャッチして既存レコードを返却
+try:
+    await self.create(role_assignment)
+    return role_assignment, True
+except CosmosHttpResponseError as e:
+    if e.status_code == 409:  # Conflict: ID重複
+        existing = await self.get(role_assignment.id, tenant_id)
+        return existing, False
+    raise
 ```
 
 ### 2.3 ServiceRoleDefinition エンティティ
@@ -1119,3 +1181,4 @@ async def backup_before_migration(container_name: str):
 | 1.0.0 | 2026-02-01 | 初版作成 | - |
 | 1.1.0 | 2026-02-01 | データモデルバージョニング戦略の詳細化（移行戦略、互換性保証、ロールバック手順）（アーキテクチャレビュー対応） | [アーキテクチャレビュー001](../review/architecture-review-001.md) |
 | 1.2.0 | 2026-02-01 | Userエンティティに監査フィールド（createdBy, updatedBy）を追加、パスワードハッシュのcost factor明記 | [03-認証認可サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/03-認証認可サービス-コアAPI.md) |
+| 1.3.0 | 2026-02-01 | RoleAssignmentエンティティの詳細を追加（タスク04対応）、決定的IDによる重複防止、カスケード削除、インデックス設計、クエリ例を追加 | [04-認証認可サービス-ロール管理](../../管理アプリ/Phase1-MVP開発/Specs/04-認証認可サービス-ロール管理.md) |
