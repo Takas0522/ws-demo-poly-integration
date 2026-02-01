@@ -55,7 +55,7 @@ class TestErrorHandlerMiddleware:
     def test_successful_request(self):
         """正常なリクエストが成功すること"""
         app = create_test_app()
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         response = client.get("/")
         
@@ -65,7 +65,7 @@ class TestErrorHandlerMiddleware:
     def test_http_exception_handling(self):
         """HTTPExceptionが標準フォーマットで返却されること"""
         app = create_test_app()
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         response = client.get("/error")
         
@@ -80,7 +80,7 @@ class TestErrorHandlerMiddleware:
     def test_validation_error_handling(self):
         """ValidationErrorが標準フォーマットで返却されること"""
         app = create_test_app()
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         # 不正なデータ（ageが文字列）
         response = client.post("/validate", json={"name": "John", "age": "invalid"})
@@ -96,7 +96,7 @@ class TestErrorHandlerMiddleware:
     def test_validation_error_missing_field(self):
         """必須フィールド欠落時にValidationErrorが発生すること"""
         app = create_test_app()
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         # nameフィールドが欠落
         response = client.post("/validate", json={"age": 25})
@@ -108,7 +108,7 @@ class TestErrorHandlerMiddleware:
     def test_unexpected_error_handling(self):
         """予期しないエラーが500エラーとして返却されること"""
         app = create_test_app()
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         response = client.get("/server-error")
         
@@ -122,7 +122,7 @@ class TestErrorHandlerMiddleware:
     def test_error_response_includes_timestamp(self):
         """エラーレスポンスにタイムスタンプが含まれること"""
         app = create_test_app()
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         response = client.get("/error")
         
@@ -138,7 +138,7 @@ class TestRequestIDMiddleware:
     def test_request_id_generation(self):
         """リクエストIDが生成されること"""
         app = create_test_app()
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         response = client.get("/")
         
@@ -150,7 +150,7 @@ class TestRequestIDMiddleware:
     def test_request_id_unique(self):
         """各リクエストで異なるリクエストIDが生成されること"""
         app = create_test_app()
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         response1 = client.get("/")
         response2 = client.get("/")
@@ -163,7 +163,7 @@ class TestRequestIDMiddleware:
     def test_request_id_preserved_in_error(self):
         """エラー時にもリクエストIDが保持されること"""
         app = create_test_app()
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         response = client.get("/error")
         
@@ -175,7 +175,7 @@ class TestRequestIDMiddleware:
     def test_request_id_format(self):
         """リクエストIDがUUID形式であること"""
         app = create_test_app()
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         response = client.get("/")
         request_id = response.headers["X-Request-ID"]
@@ -197,7 +197,7 @@ class TestCORSMiddleware:
         async def root():
             return {"message": "Hello"}
         
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         # Preflightリクエスト
         response = client.options(
@@ -220,7 +220,7 @@ class TestCORSMiddleware:
         async def root():
             return {"message": "Hello"}
         
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         response = client.get(
             "/",
@@ -240,7 +240,7 @@ class TestCORSMiddleware:
         async def root():
             return {"message": "Hello"}
         
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         response = client.get(
             "/",
@@ -258,7 +258,7 @@ class TestMiddlewareIntegration:
         """複数のミドルウェアが連携して動作すること"""
         app = create_test_app()
         setup_cors(app, allow_origins=["*"])
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         response = client.get(
             "/",
@@ -274,7 +274,7 @@ class TestMiddlewareIntegration:
         """エラー時に全ミドルウェアが正常に動作すること"""
         app = create_test_app()
         setup_cors(app, allow_origins=["*"])
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         response = client.get(
             "/error",

@@ -146,7 +146,7 @@ class TestJWTAuthenticationMiddleware:
         async def test_endpoint(request: Request):
             return {"user_id": request.state.user.get("user_id")}
         
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         # トークン生成
         token = create_access_token({"user_id": "user_123", "tenant_id": "tenant_456"})
@@ -170,7 +170,7 @@ class TestJWTAuthenticationMiddleware:
         async def test_endpoint():
             return {"message": "success"}
         
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         response = client.get("/api/test")
         
@@ -188,7 +188,7 @@ class TestJWTAuthenticationMiddleware:
         async def test_endpoint():
             return {"message": "success"}
         
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         response = client.get(
             "/api/test",
@@ -209,7 +209,7 @@ class TestJWTAuthenticationMiddleware:
         async def test_endpoint():
             return {"message": "success"}
         
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         response = client.get(
             "/api/test",
@@ -229,7 +229,7 @@ class TestJWTAuthenticationMiddleware:
         async def test_endpoint():
             return {"message": "success"}
         
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         # 期限切れトークン
         token = create_access_token(
@@ -259,7 +259,7 @@ class TestJWTAuthenticationMiddleware:
         async def docs():
             return {"message": "docs"}
         
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         
         # 認証ヘッダーなしでアクセス
         response = client.get("/health")
