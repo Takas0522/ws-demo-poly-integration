@@ -1194,10 +1194,336 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 ### 4.3 テナントユーザー管理エンドポイント
 
-#### 4.3.1 GET /tenants/{tenantId}/users
+#### 4.3.1 POST /tenants/{tenant_id}/users
+ユーザー招待
+
+**リクエスト**:
+```http
+POST /api/v1/tenants/tenant_acme/users
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+Content-Type: application/json
+
+{
+  "user_id": "user_550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**必要ロール**: tenant-management: 管理者
+
+**パスパラメータ**:
+- `tenant_id` (required): テナントID
+
+**リクエストボディ**:
+- `user_id` (required): 招待するユーザーのID
+
+**レスポンス** (201 Created):
+```json
+{
+  "id": "tenant_user_tenant_acme_user_550e8400",
+  "tenant_id": "tenant_acme",
+  "user_id": "user_550e8400-e29b-41d4-a716-446655440000",
+  "user_details": {
+    "username": "user@example.com",
+    "display_name": "山田太郎",
+    "email": "user@example.com"
+  },
+  "assigned_at": "2026-02-01T10:00:00Z",
+  "assigned_by": "user_admin_001"
+}
+```
+
+**エラーレスポンス**:
+- `404 Not Found`: テナントまたはユーザーが存在しない
+- `409 Conflict`: ユーザーは既にテナントに所属
+- `400 Bad Request`: 最大ユーザー数を超過
+- `403 Forbidden`: 権限不足
+- `503 Service Unavailable`: 認証認可サービスダウン
+
+**ビジネスロジック**:
+1. ロール認可チェック（tenant-management: 管理者）
+2. テナント存在確認
+3. **ユーザー存在確認（認証認可サービスに問い合わせ）**
+   - エンドポイント: `GET {AUTH_SERVICE_URL}/api/v1/users/{user_id}`
+   - 認証方式: サービス間API Key（`X-Service-Key`ヘッダー）
+   - タイムアウト: 2秒
+   - リトライ: 最大3回、指数バックオフ（100ms, 200ms, 400ms）
+   - エラーハンドリング:
+     - 404: ユーザーが存在しない → HTTPException(404, "User not found")
+     - 503/タイムアウト: 認証認可サービスダウン → HTTPException(503, "User verification service unavailable")
+     - 401: API Key無効 → HTTPException(500, "Service authentication failed")
+4. 重複チェック（決定的ID: `tenant_user_{tenant_id}_{user_id}`）
+5. 最大ユーザー数チェック（`tenant.user_count >= tenant.max_users`の場合は400エラー）
+6. TenantUser作成
+7. TenantServiceの`increment_user_count(tenant_id)`を呼び出し（楽観的ロック使用）
+8. 監査ログ記録
+
+**パフォーマンス要件**: < 500ms (P95)（認証認可サービス問い合わせ含む）
+
+#### 4.3.2 GET /tenants/{tenant_id}/users
 テナント所属ユーザー一覧
 
 **リクエスト**:
+```http
+GET /api/v1/tenants/tenant_acme/users?skip=0&limit=20&include_total=true
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+
+**必要ロール**: tenant-management: 閲覧者以上
+
+**パスパラメータ**:
+- `tenant_id` (required): テナントID
+
+**クエリパラメータ**:
+- `skip` (optional, default=0): スキップ件数
+- `limit` (optional, default=20, max=100): 取得件数
+- `include_total` (optional, default=false): totalカウントを含めるか
+  - `true`: 別クエリでCOUNT(*)を実行してtotalを返却（RU消費増）
+  - `false`: totalフィールドを省略（パフォーマンス優先）
+
+**レスポンス** (200 OK):
+```json
+{
+  "data": [
+    {
+      "id": "tenant_user_tenant_acme_user_550e8400",
+      "user_id": "user_550e8400-e29b-41d4-a716-446655440000",
+      "user_details": {
+        "username": "user@example.com",
+        "display_name": "山田太郎",
+        "email": "user@example.com",
+        "is_active": true
+      },
+      "assigned_at": "2026-01-15T10:00:00Z",
+      "assigned_by": "user_admin_001"
+    }
+  ],
+  "pagination": {
+    "skip": 0,
+    "limit": 20,
+    "total": 5
+  }
+}
+```
+
+**ビジネスロジック**:
+1. ロール認可チェック（tenant-management: 閲覧者以上）
+2. テナント分離チェック（特権テナント以外は自テナントのみ）
+3. Cosmos DBから該当テナントのTenantUserを取得
+4. `skip`と`limit`でページネーション
+5. totalカウント取得（`include_total=true`時のみ、COUNT(*)クエリ実行）
+6. 各TenantUserに対して、認証認可サービスからユーザー詳細情報を並列取得（`asyncio.gather`で最大10件同時）
+7. 取得失敗時は該当ユーザーをスキップ（部分的失敗を許容）
+
+**パフォーマンス要件**:
+- `include_total=false`: < 300ms (P95)
+- `include_total=true`: < 400ms (P95)（COUNT(*)クエリ追加のため）
+
+#### 4.3.3 DELETE /tenants/{tenant_id}/users/{user_id}
+テナントからのユーザー削除
+
+**リクエスト**:
+```http
+DELETE /api/v1/tenants/tenant_acme/users/user_550e8400-e29b-41d4-a716-446655440000
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+
+**必要ロール**: tenant-management: 管理者
+
+**パスパラメータ**:
+- `tenant_id` (required): テナントID
+- `user_id` (required): ユーザーID
+
+**レスポンス** (204 No Content):
+（レスポンスボディなし）
+
+**エラーレスポンス**:
+- `404 Not Found`: TenantUserが存在しない
+- `403 Forbidden`: 権限不足
+
+**ビジネスロジック**:
+1. ロール認可チェック（tenant-management: 管理者）
+2. TenantUser存在確認
+3. Cosmos DBから物理削除
+4. TenantServiceの`decrement_user_count(tenant_id)`を呼び出し（楽観的ロック使用）
+5. 監査ログ記録（`deleted_by`に現在のユーザーID）
+
+**パフォーマンス要件**: < 200ms (P95)
+
+### 4.4 ドメイン管理エンドポイント
+
+#### 4.4.1 POST /tenants/{tenant_id}/domains
+ドメイン追加
+
+**リクエスト**:
+```http
+POST /api/v1/tenants/tenant_acme/domains
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+Content-Type: application/json
+
+{
+  "domain": "example.com"
+}
+```
+
+**必要ロール**: tenant-management: 管理者
+
+**パスパラメータ**:
+- `tenant_id` (required): テナントID
+
+**リクエストボディ**:
+- `domain` (required): ドメイン名（例: "example.com"）
+
+**レスポンス** (201 Created):
+```json
+{
+  "id": "domain_tenant_acme_example_com",
+  "tenant_id": "tenant_acme",
+  "domain": "example.com",
+  "verified": false,
+  "verification_token": "txt-verification-a1b2c3d4e5f6...",
+  "verification_instructions": {
+    "step1": "DNSプロバイダーにログイン",
+    "step2": "以下のTXTレコードを追加:",
+    "record_name": "_tenant_verification.example.com",
+    "record_type": "TXT",
+    "record_value": "txt-verification-a1b2c3d4e5f6..."
+  },
+  "created_at": "2026-02-01T11:00:00Z",
+  "created_by": "user_admin_001"
+}
+```
+
+**エラーレスポンス**:
+- `404 Not Found`: テナントが存在しない
+- `422 Unprocessable Entity`: ドメイン形式不正
+- `403 Forbidden`: 権限不足
+
+**ビジネスロジック**:
+1. ロール認可チェック（tenant-management: 管理者）
+2. テナント存在確認
+3. ドメイン形式バリデーション（正規表現）
+4. 検証トークン生成（`txt-verification-{ランダム文字列32桁}`）
+5. Domainオブジェクト作成
+6. Cosmos DBに保存
+7. 監査ログ記録
+
+**パフォーマンス要件**: < 200ms (P95)
+
+#### 4.4.2 POST /tenants/{tenant_id}/domains/{domain_id}/verify
+ドメイン検証実行
+
+**リクエスト**:
+```http
+POST /api/v1/tenants/tenant_acme/domains/domain_tenant_acme_example_com/verify
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+
+**必要ロール**: tenant-management: 管理者
+
+**パスパラメータ**:
+- `tenant_id` (required): テナントID
+- `domain_id` (required): ドメインID
+
+**レスポンス** (200 OK):
+```json
+{
+  "id": "domain_tenant_acme_example_com",
+  "domain": "example.com",
+  "verified": true,
+  "verified_at": "2026-02-01T11:30:00Z",
+  "verified_by": "user_admin_001"
+}
+```
+
+**エラーレスポンス**:
+- `404 Not Found`: Domainが存在しない
+- `422 Unprocessable Entity`: 検証失敗（TXTレコード不一致）
+- `403 Forbidden`: 権限不足
+
+**ビジネスロジック**:
+1. ロール認可チェック（tenant-management: 管理者）
+2. Domain取得
+3. 既に検証済みの場合はスキップ
+4. **DNS TXTレコードクエリ**（dnspythonライブラリ使用）
+   - `_tenant_verification.{domain}`のTXTレコードを取得
+   - タイムアウト: 5秒
+   - リトライ: 最大3回、固定間隔1秒
+5. 検証トークンとの一致確認
+6. 一致した場合、`verified=true`、`verified_at`、`verified_by`を更新
+7. 不一致の場合は422エラー
+8. 監査ログ記録
+
+**パフォーマンス要件**: < 1000ms (P95)（DNS問い合わせを含む）
+
+#### 4.4.3 GET /tenants/{tenant_id}/domains
+ドメイン一覧取得
+
+**リクエスト**:
+```http
+GET /api/v1/tenants/tenant_acme/domains?verified=true
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+
+**必要ロール**: tenant-management: 閲覧者以上
+
+**パスパラメータ**:
+- `tenant_id` (required): テナントID
+
+**クエリパラメータ**:
+- `verified` (optional): 検証済みフィルタ（true/false）
+
+**レスポンス** (200 OK):
+```json
+{
+  "data": [
+    {
+      "id": "domain_tenant_acme_example_com",
+      "domain": "example.com",
+      "verified": true,
+      "verified_at": "2026-01-02T12:00:00Z",
+      "created_at": "2026-01-01T10:00:00Z"
+    }
+  ]
+}
+```
+
+**ビジネスロジック**:
+1. ロール認可チェック（tenant-management: 閲覧者以上）
+2. テナント分離チェック
+3. Cosmos DBから該当テナントのDomainを取得
+4. `verified`フィルタを適用（指定された場合）
+
+**パフォーマンス要件**: < 100ms (P95)
+
+#### 4.4.4 DELETE /tenants/{tenant_id}/domains/{domain_id}
+ドメイン削除
+
+**リクエスト**:
+```http
+DELETE /api/v1/tenants/tenant_acme/domains/domain_tenant_acme_example_com
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+
+**必要ロール**: tenant-management: 管理者
+
+**パスパラメータ**:
+- `tenant_id` (required): テナントID
+- `domain_id` (required): ドメインID
+
+**レスポンス** (204 No Content):
+（レスポンスボディなし）
+
+**エラーレスポンス**:
+- `404 Not Found`: Domainが存在しない
+- `403 Forbidden`: 権限不足
+
+**ビジネスロジック**:
+1. ロール認可チェック（tenant-management: 管理者）
+2. Domain取得
+3. Cosmos DBから物理削除
+4. 監査ログ記録（`deleted_by`に現在のユーザーID）
+
+**パフォーマンス要件**: < 200ms (P95)
 ```http
 GET /api/v1/tenants/tenant_123/users
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
@@ -1796,3 +2122,4 @@ FastAPIの自動生成機能を使用：
 | 1.2.0 | 2026-02-01 | 認証認可サービスAPIの詳細を更新（ログインエラーコード、JWT検証レスポンス、ビジネスロジック、パフォーマンス要件を追加） | [03-認証認可サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/03-認証認可サービス-コアAPI.md) |
 | 1.3.0 | 2026-02-01 | ロール管理APIの詳細を追加（タスク04対応）、GET /users/{userId}/roles エンドポイント追加、各エンドポイントにビジネスロジックとパフォーマンス要件を追加 | [04-認証認可サービス-ロール管理](../../管理アプリ/Phase1-MVP開発/Specs/04-認証認可サービス-ロール管理.md) |
 | 1.4.0 | 2026-02-01 | テナント管理サービスAPIの詳細化（タスク05対応）、5つのコアAPIエンドポイントにビジネスロジック、パフォーマンス要件、エラーレスポンスを追加 | [05-テナント管理サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/05-テナント管理サービス-コアAPI.md) |
+| 1.5.0 | 2026-02-01 | TenantUser管理、Domain管理APIの詳細化（タスク06対応）、認証認可サービス連携、DNS検証、user_count自動更新、ビジネスロジック、パフォーマンス要件を追加 | [06-テナント管理サービス-ユーザー・ドメイン管理](../../管理アプリ/Phase1-MVP開発/Specs/06-テナント管理サービス-ユーザー・ドメイン管理.md) |

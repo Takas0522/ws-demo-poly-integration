@@ -385,7 +385,211 @@ async def decrement_user_count(self, tenant_id: str) -> None:
 
 これらのメソッドはタスク06のTenantUserServiceから呼び出されます。
 
-#### 3.1.6 クエリ例
+#### 3.1.6 user_countの自動更新（楽観的ロック使用）
+
+TenantUser作成・削除時に`user_count`を自動的に更新します。楽観的ロック（ETag）を使用して競合を制御します。
+
+```python
+from azure.cosmos.exceptions import CosmosHttpResponseError
+import asyncio
+
+async def increment_user_count(self, tenant_id: str) -> None:
+    """
+    テナントのユーザー数をインクリメント（楽観的ロック使用）
+    
+    Concurrency Control:
+        - ETag（Entity Tag）を使用した楽観的ロック
+        - 競合発生時は最大3回リトライ
+        - リトライ間隔: 100ms固定
+    
+    Error Handling:
+        - 412 Precondition Failed: 競合発生 → リトライ
+        - 404 Not Found: テナント存在しない → 例外伝播
+    """
+    max_retries = 3
+    retry_delay = 0.1  # 100ms
+    
+    for attempt in range(max_retries):
+        try:
+            # 1. 最新データを取得（ETag含む）
+            tenant = await self.tenant_repository.get(tenant_id, tenant_id)
+            
+            if not tenant:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Tenant not found"
+                )
+            
+            # 2. user_countをインクリメント
+            tenant.user_count += 1
+            tenant.updated_at = datetime.utcnow()
+            
+            # 3. ETagを使用してアトミックに更新（楽観的ロック）
+            await self.tenant_repository.update_with_etag(
+                tenant_id, 
+                tenant_id, 
+                tenant.model_dump(),
+                etag=tenant._etag  # Cosmos DBから取得したETag
+            )
+            
+            logger.info(f"Successfully incremented user_count for tenant {tenant_id}")
+            return
+            
+        except CosmosHttpResponseError as e:
+            if e.status_code == 412:  # Precondition Failed（競合）
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        f"Conflict updating user_count for {tenant_id}, "
+                        f"retry {attempt + 1}/{max_retries}"
+                    )
+                    await asyncio.sleep(retry_delay)
+                    continue
+                else:
+                    # 最大リトライ回数超過
+                    logger.error(f"Failed to increment user_count after {max_retries} retries")
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Failed to update user count due to conflicts"
+                    )
+            else:
+                # その他のエラーは即座に伝播
+                raise
+
+async def decrement_user_count(self, tenant_id: str) -> None:
+    """
+    テナントのユーザー数をデクリメント（楽観的ロック使用）
+    
+    同様の楽観的ロックを使用
+    """
+    max_retries = 3
+    retry_delay = 0.1
+    
+    for attempt in range(max_retries):
+        try:
+            tenant = await self.tenant_repository.get(tenant_id, tenant_id)
+            
+            if not tenant:
+                raise HTTPException(status_code=404, detail="Tenant not found")
+            
+            # 0以下にならないように
+            tenant.user_count = max(0, tenant.user_count - 1)
+            tenant.updated_at = datetime.utcnow()
+            
+            await self.tenant_repository.update_with_etag(
+                tenant_id, 
+                tenant_id, 
+                tenant.model_dump(),
+                etag=tenant._etag
+            )
+            
+            logger.info(f"Successfully decremented user_count for tenant {tenant_id}")
+            return
+            
+        except CosmosHttpResponseError as e:
+            if e.status_code == 412:
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        f"Conflict updating user_count for {tenant_id}, "
+                        f"retry {attempt + 1}/{max_retries}"
+                    )
+                    await asyncio.sleep(retry_delay)
+                    continue
+                else:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Failed to update user count due to conflicts"
+                    )
+            else:
+                raise
+
+async def repair_user_count(self, tenant_id: str) -> int:
+    """
+    user_countの不整合を修復
+    
+    Usage:
+        - 定期的なバッチジョブ（例: 毎日深夜）
+        - 管理画面からの手動実行
+        - データ移行後の整合性チェック
+    
+    Process:
+        1. TenantUserの実際の件数をCosmos DBでカウント
+        2. Tenantの user_count と比較
+        3. 不一致の場合は実際の件数で上書き
+    
+    Returns:
+        int: 修復後の正しいuser_count
+    """
+    # 1. TenantUserの実際の件数を取得
+    query = """
+    SELECT VALUE COUNT(1) 
+    FROM c 
+    WHERE c.tenant_id = @tenant_id 
+      AND c.type = 'tenant_user'
+    """
+    parameters = [{"name": "@tenant_id", "value": tenant_id}]
+    
+    actual_count_result = await self.tenant_repository.query_raw(
+        query, 
+        parameters, 
+        partition_key=tenant_id
+    )
+    actual_count = actual_count_result[0] if actual_count_result else 0
+    
+    # 2. Tenantを取得
+    tenant = await self.tenant_repository.get(tenant_id, tenant_id)
+    
+    # 3. 不一致の場合は修復
+    if tenant.user_count != actual_count:
+        logger.warning(
+            f"user_count mismatch for {tenant_id}: "
+            f"stored={tenant.user_count}, actual={actual_count}"
+        )
+        
+        tenant.user_count = actual_count
+        tenant.updated_at = datetime.utcnow()
+        
+        await self.tenant_repository.update(
+            tenant_id, 
+            tenant_id, 
+            tenant.model_dump()
+        )
+        
+        logger.info(f"Repaired user_count for {tenant_id}: {actual_count}")
+    
+    return actual_count
+```
+
+**BaseRepository.update_with_etagの実装**:
+```python
+# common/database/repository.py
+async def update_with_etag(
+    self, 
+    id: str, 
+    partition_key: str, 
+    data: dict,
+    etag: str
+) -> T:
+    """
+    ETagを使用した楽観的ロックによる更新
+    
+    Args:
+        id: アイテムID
+        partition_key: パーティションキー
+        data: 更新データ
+        etag: 楽観的ロック用のETag
+    
+    Raises:
+        CosmosHttpResponseError(412): 競合発生（他のプロセスが先に更新）
+    """
+    # ETagをif_matchに設定して更新
+    updated = await self.container.upsert_item(
+        body=data,
+        if_match=etag  # この条件が満たされない場合は412エラー
+    )
+    return self.model_class(**updated)
+```
+
+#### 3.1.7 クエリ例
 ```sql
 -- アクティブなテナント一覧（単一パーティションクエリ）
 SELECT * FROM c 
@@ -408,52 +612,264 @@ WHERE c.type = "tenant"
 
 ### 3.2 TenantUser エンティティ
 
-テナントとユーザーの関連を管理：
+#### 3.2.1 スキーマ
+```python
+class TenantUser(BaseModel):
+    id: str                          # tenant_user_{tenant_id}_{user_id}
+    tenant_id: str                   # パーティションキー
+    type: str = "tenant_user"        # Cosmos DB識別子
+    user_id: str                     # ユーザーID
+    assigned_at: datetime            # 招待日時
+    assigned_by: str                 # 招待者ユーザーID
+```
 
+#### 3.2.2 Cosmos DB格納例
 ```json
 {
-  "id": "tenant_user_abc123",
-  "tenantId": "tenant_123",
+  "id": "tenant_user_tenant_acme_user_550e8400",
+  "tenantId": "tenant_acme",
   "type": "tenant_user",
   "userId": "user_550e8400-e29b-41d4-a716-446655440000",
-  "role": "member",
+  "assignedAt": "2026-02-01T10:00:00Z",
   "assignedBy": "user_admin_001",
-  "assignedAt": "2026-01-05T10:00:00Z"
+  "_ts": 1738408800
 }
 ```
+
+#### 3.2.3 ID設計
+決定的ID（`tenant_user_{tenant_id}_{user_id}`）を使用し、Cosmos DBの一意制約を活用して重複を防止します。
+
+**利点**:
+- 同一テナント・同一ユーザーの重複招待を技術的に防止
+- IDから対象のテナントとユーザーが特定可能（デバッグ容易）
+
+#### 3.2.4 インデックス設計
+```json
+{
+  "indexingPolicy": {
+    "indexingMode": "consistent",
+    "automatic": true,
+    "includedPaths": [
+      {"path": "/userId/?"},
+      {"path": "/assignedAt/?"}
+    ]
+  }
+}
+```
+
+#### 3.2.5 クエリ例
+```sql
+-- テナント所属ユーザー一覧
+SELECT * FROM c 
+WHERE c.tenantId = @tenant_id
+  AND c.type = 'tenant_user'
+ORDER BY c.assignedAt DESC
+OFFSET @skip LIMIT @limit
+
+-- ユーザーが特定テナントに所属しているか確認
+SELECT * FROM c 
+WHERE c.tenantId = @tenant_id
+  AND c.type = 'tenant_user'
+  AND c.userId = @user_id
+
+-- 特定ユーザーが所属するテナント一覧（クロスパーティションクエリ）
+SELECT * FROM c 
+WHERE c.type = 'tenant_user'
+  AND c.userId = @user_id
+```
+
+#### 3.2.6 データ整合性
+
+**重複チェック**:
+```python
+async def create_tenant_user(
+    self, 
+    tenant_id: str, 
+    user_id: str, 
+    assigned_by: str
+) -> TenantUser:
+    """ユーザー招待（重複チェック）"""
+    # 決定的IDで重複防止
+    tenant_user_id = f"tenant_user_{tenant_id}_{user_id}"
+    
+    # 既存チェック
+    existing = await self.get(tenant_user_id, tenant_id)
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="User is already a member of this tenant"
+        )
+    
+    tenant_user = TenantUser(
+        id=tenant_user_id,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        assigned_at=datetime.utcnow(),
+        assigned_by=assigned_by
+    )
+    
+    await self.create(tenant_user)
+    return tenant_user
+```
+
+**カスケード削除**:
+ユーザー削除時、関連するTenantUserも削除されます（タスク03で実装済み）。
 
 ### 3.3 Domain エンティティ
 
-テナントが管理するメールドメイン：
+#### 3.3.1 スキーマ
+```python
+class Domain(BaseModel):
+    id: str                          # domain_{tenant_id}_{slug化したdomain}
+    tenant_id: str                   # パーティションキー
+    type: str = "domain"             # Cosmos DB識別子
+    domain: str                      # ドメイン名（例: example.com）
+    verified: bool = False           # 検証済みフラグ
+    verification_token: str          # 検証トークン
+    verified_at: Optional[datetime]  # 検証完了日時
+    verified_by: Optional[str]       # 検証者ユーザーID
+    created_at: datetime             # 作成日時
+    created_by: str                  # 作成者ユーザーID
+```
 
+#### 3.3.2 Cosmos DB格納例
 ```json
 {
-  "id": "domain_example_com",
-  "tenantId": "tenant_123",
+  "id": "domain_tenant_acme_example_com",
+  "tenantId": "tenant_acme",
   "type": "domain",
   "domain": "example.com",
   "verified": true,
-  "verificationToken": "token_abc123xyz",
-  "verifiedAt": "2026-01-02T12:00:00Z",
-  "createdAt": "2026-01-01T10:00:00Z"
+  "verificationToken": "txt-verification-a1b2c3d4e5f6...",
+  "verifiedAt": "2026-02-01T11:30:00Z",
+  "verifiedBy": "user_admin_001",
+  "createdAt": "2026-02-01T11:00:00Z",
+  "createdBy": "user_admin_001",
+  "_ts": 1738410600
 }
 ```
 
-#### 3.3.1 ドメイン検証フロー
+#### 3.3.3 ID設計
+`domain_{tenant_id}_{slug化したdomain}` 形式で決定的IDを生成します。
+
+**slug化ルール**:
+- `.`（ドット） → `_`（アンダースコア）に変換
+- 小文字に統一
+- 例: `example.com` → `domain_tenant_acme_example_com`
+
+#### 3.3.4 検証トークン生成
+```python
+import secrets
+
+def generate_verification_token() -> str:
+    """検証トークン生成（32桁のランダム文字列）"""
+    random_str = secrets.token_hex(16)  # 32文字
+    return f"txt-verification-{random_str}"
+```
+
+**トークン形式**: `txt-verification-{ランダム文字列32桁}`
+
+#### 3.3.5 インデックス設計
+```json
+{
+  "indexingPolicy": {
+    "indexingMode": "consistent",
+    "automatic": true,
+    "includedPaths": [
+      {"path": "/domain/?"},
+      {"path": "/verified/?"},
+      {"path": "/createdAt/?"}
+    ],
+    "excludedPaths": [
+      {"path": "/verificationToken/*"}  # 検証トークンは検索不要、RU節約
+    ]
+  }
+}
+```
+
+#### 3.3.6 ドメイン検証フロー
 1. テナント管理者がドメイン追加リクエスト
-2. システムが検証トークン生成
+2. システムが検証トークン生成（`txt-verification-{ランダム32桁}`）
 3. 管理者がDNS TXTレコードにトークン設定
-4. システムがDNSクエリで検証
+   - レコード名: `_tenant_verification.{domain}`
+   - タイプ: `TXT`
+   - 値: 生成された検証トークン
+4. システムがDNSクエリで検証（dnspythonライブラリ使用）
+   - タイムアウト: 5秒
+   - リトライ: 最大3回、固定間隔1秒
 5. 検証成功で `verified: true` に更新
 
-#### 3.3.2 クエリ例
+```python
+import dns.resolver
+from tenacity import retry, stop_after_attempt, wait_fixed
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_fixed(1),
+    reraise=True
+)
+async def verify_domain_ownership(domain: str, expected_token: str) -> bool:
+    """DNS TXTレコードでドメイン所有権を検証"""
+    record_name = f"_tenant_verification.{domain}"
+    
+    try:
+        resolver = dns.resolver.Resolver()
+        resolver.timeout = 5.0  # タイムアウト5秒
+        resolver.lifetime = 5.0
+        
+        answers = resolver.resolve(record_name, 'TXT')
+        
+        for rdata in answers:
+            for txt_string in rdata.strings:
+                txt_value = txt_string.decode('utf-8')
+                if txt_value == expected_token:
+                    return True
+        
+        return False
+        
+    except dns.resolver.NXDOMAIN:
+        logger.warning(f"Domain does not exist: {domain}")
+        return False
+    except dns.resolver.NoAnswer:
+        logger.warning(f"No TXT record found for {record_name}")
+        return False
+    except dns.exception.Timeout:
+        logger.warning(f"DNS query timeout for {record_name}")
+        raise
+    except Exception as e:
+        logger.error(f"DNS verification error for {domain}: {e}")
+        return False
+```
+
+#### 3.3.7 クエリ例
 ```sql
+-- テナントの全ドメイン一覧
+SELECT * FROM c 
+WHERE c.tenantId = @tenant_id
+  AND c.type = 'domain'
+ORDER BY c.createdAt DESC
+
 -- テナントの検証済みドメイン一覧
 SELECT * FROM c 
-WHERE c.tenantId = "tenant_123" 
-  AND c.type = "domain" 
+WHERE c.tenantId = @tenant_id
+  AND c.type = 'domain'
   AND c.verified = true
+
+-- 特定ドメインの存在チェック
+SELECT * FROM c 
+WHERE c.tenantId = @tenant_id
+  AND c.type = 'domain'
+  AND c.domain = @domain
 ```
+
+#### 3.3.8 データ整合性
+
+**同一ドメインの複数テナント登録**:
+Phase 1では、異なるテナントが同じドメインを登録可能です。検証済みドメインのみが有効として扱われます。
+
+**Phase 2での改善**:
+- 検証済みドメインは1テナントのみに制限
+- ドメイン所有権の移管機能
 
 ## 4. サービス設定サービス (service-setting コンテナ)
 
@@ -1282,3 +1698,4 @@ async def backup_before_migration(container_name: str):
 | 1.2.0 | 2026-02-01 | Userエンティティに監査フィールド（createdBy, updatedBy）を追加、パスワードハッシュのcost factor明記 | [03-認証認可サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/03-認証認可サービス-コアAPI.md) |
 | 1.3.0 | 2026-02-01 | RoleAssignmentエンティティの詳細を追加（タスク04対応）、決定的IDによる重複防止、カスケード削除、インデックス設計、クエリ例を追加 | [04-認証認可サービス-ロール管理](../../管理アプリ/Phase1-MVP開発/Specs/04-認証認可サービス-ロール管理.md) |
 | 1.4.0 | 2026-02-01 | Tenantエンティティの詳細化（タスク05対応）、updatedByフィールド追加、インデックス設計、一意性チェック、userCount更新方法、クエリ例を追加 | [05-テナント管理サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/05-テナント管理サービス-コアAPI.md) |
+| 1.5.0 | 2026-02-01 | TenantUser、Domainエンティティの詳細化（タスク06対応）、決定的ID設計、インデックス設計、ドメイン検証フロー、user_count自動更新ロジック（楽観的ロック）を追加 | [06-テナント管理サービス-ユーザー・ドメイン管理](../../管理アプリ/Phase1-MVP開発/Specs/06-テナント管理サービス-ユーザー・ドメイン管理.md) |
