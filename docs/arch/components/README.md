@@ -341,57 +341,78 @@ src/tenant-management-service/
 ```python
 # app/api/tenants.py
 @router.get("/", response_model=List[TenantResponse])
+@require_role("tenant-management", ["閲覧者", "管理者", "全体管理者"])
 async def list_tenants(
+    status: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 20,
     current_user: User = Depends(get_current_user),
     tenant_service: TenantService = Depends()
 ):
-    """テナント一覧取得（ロールベース認可）"""
-    # 権限チェック
-    if not current_user.has_role("閲覧者", "tenant-management"):
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    """テナント一覧取得（ロールベース認可とテナント分離）"""
+    # 特権テナントかどうかチェック
+    is_privileged = current_user.tenant_id == "tenant_privileged"
     
-    tenants = await tenant_service.list_tenants()
+    if is_privileged:
+        # 特権テナントは全テナントを取得
+        tenants = await tenant_service.list_all_tenants(status, skip, limit)
+    else:
+        # 一般テナントは自テナントのみ取得
+        tenants = await tenant_service.list_tenant_by_id(
+            current_user.tenant_id, status
+        )
+    
     return tenants
 ```
 
 #### 4.4.2 テナント作成
 ```python
 @router.post("/", response_model=TenantResponse)
+@require_role("tenant-management", ["管理者", "全体管理者"])
 async def create_tenant(
     tenant_data: TenantCreateRequest,
     current_user: User = Depends(get_current_user),
     tenant_service: TenantService = Depends()
 ):
     """テナント新規作成（管理者のみ）"""
-    if not current_user.has_role("管理者", "tenant-management"):
-        raise HTTPException(status_code=403, detail="Admin role required")
-    
-    tenant = await tenant_service.create_tenant(tenant_data)
+    tenant = await tenant_service.create_tenant(
+        tenant_data, 
+        created_by=current_user.id
+    )
     return tenant
 ```
 
-#### 4.4.3 特権テナント保護
+#### 4.4.3 テナント更新（特権テナント保護）
 ```python
-# app/services/tenant_service.py
-async def update_tenant(self, tenant_id: str, data: TenantUpdateRequest) -> Tenant:
+@router.put("/{tenant_id}", response_model=TenantResponse)
+@require_role("tenant-management", ["管理者", "全体管理者"])
+async def update_tenant(
+    tenant_id: str,
+    data: TenantUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    tenant_service: TenantService = Depends()
+):
     """テナント更新（特権テナント保護）"""
-    tenant = await self.repository.get(tenant_id)
-    
-    # 特権テナントは編集不可
-    if tenant.is_privileged:
-        raise ValueError("Privileged tenant cannot be modified")
-    
-    return await self.repository.update(tenant_id, data)
+    tenant = await tenant_service.update_tenant(
+        tenant_id, 
+        data, 
+        updated_by=current_user.id
+    )
+    return tenant
+```
 
-async def delete_tenant(self, tenant_id: str) -> None:
+#### 4.4.4 テナント削除（特権テナント保護）
+```python
+@router.delete("/{tenant_id}")
+@require_role("tenant-management", ["管理者", "全体管理者"])
+async def delete_tenant(
+    tenant_id: str,
+    current_user: User = Depends(get_current_user),
+    tenant_service: TenantService = Depends()
+):
     """テナント削除（特権テナント保護）"""
-    tenant = await self.repository.get(tenant_id)
-    
-    # 特権テナントは削除不可
-    if tenant.is_privileged:
-        raise ValueError("Privileged tenant cannot be deleted")
-    
-    await self.repository.delete(tenant_id)
+    await tenant_service.delete_tenant(tenant_id, deleted_by=current_user.id)
+    return Response(status_code=204)
 ```
 
 ### 4.5 データモデル
@@ -399,13 +420,21 @@ async def delete_tenant(self, tenant_id: str) -> None:
 #### 4.5.1 Tenant
 ```python
 class Tenant(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str  # パーティションキー
-    name: str
-    is_privileged: bool = False  # 特権テナントフラグ
-    user_count: int = 0
-    created_at: datetime
-    updated_at: datetime
+    id: str                          # tenant_{slug化したname}
+    tenant_id: str                   # パーティションキー（idと同値）
+    type: str = "tenant"             # Cosmos DB識別子
+    name: str                        # テナント名（一意、英数字とハイフン・アンダースコア、不変）
+    display_name: str                # 表示名
+    is_privileged: bool = False      # 特権テナントフラグ
+    status: str = "active"           # ステータス（active/suspended/deleted）
+    plan: str = "standard"           # プラン（free/standard/premium）
+    user_count: int = 0              # 所属ユーザー数
+    max_users: int = 100             # 最大ユーザー数
+    metadata: Optional[dict] = None  # 追加メタデータ（業種、国など）
+    created_at: datetime             # 作成日時
+    updated_at: datetime             # 更新日時
+    created_by: Optional[str]        # 作成者ユーザーID（監査用）
+    updated_by: Optional[str]        # 更新者ユーザーID（監査用）
 ```
 
 #### 4.5.2 TenantUser
@@ -428,9 +457,180 @@ class Domain(BaseModel):
 ```
 
 ### 4.6 ロール定義
-- **全体管理者**: 特権テナント操作、全テナント管理
-- **管理者**: 通常テナントの追加・削除・編集
-- **閲覧者**: テナント情報の参照のみ
+
+#### 4.6.1 テナント管理サービスのロール
+
+| ロール名 | 権限 | 説明 |
+|---------|------|------|
+| 全体管理者 | 特権テナント操作、全テナント管理 | システム全体の管理者。全テナントを操作可能 |
+| 管理者 | 通常テナントの追加・削除・編集 | 通常テナントの管理が可能 |
+| 閲覧者 | テナント情報の参照 | 自テナント情報を参照できるが、変更は不可 |
+
+**ロール階層**:
+- 全体管理者 > 管理者 > 閲覧者
+
+**実装状況（Phase 1完了）**:
+- ✅ ロール管理API実装完了
+- ✅ JWT内のrolesフィールドにロール情報を含める
+- ✅ `require_role`デコレータによるロールベース認可が有効化
+- ✅ RoleAssignmentエンティティによるロール割り当て管理
+
+### 4.7 ビジネスロジック詳細
+
+#### 4.7.1 テナント作成
+```python
+# app/services/tenant_service.py
+async def create_tenant(
+    self, 
+    tenant_data: TenantCreateRequest, 
+    created_by: str
+) -> Tenant:
+    """テナント作成（一意性チェック付き）"""
+    # 1. テナント名の一意性チェック（アクティブなテナント間のみ）
+    existing = await self.tenant_repository.find_by_name(tenant_data.name)
+    if existing and existing.status == "active":
+        raise HTTPException(
+            status_code=409,
+            detail="Tenant name already exists"
+        )
+    
+    # 2. テナントID生成（nameをslug化）
+    tenant_id = f"tenant_{tenant_data.name.lower().replace(' ', '-')}"
+    
+    # 3. テナント作成
+    tenant = Tenant(
+        id=tenant_id,
+        tenant_id=tenant_id,
+        name=tenant_data.name,
+        display_name=tenant_data.display_name,
+        plan=tenant_data.plan or "standard",
+        max_users=tenant_data.max_users or 100,
+        user_count=0,
+        status="active",
+        is_privileged=False,
+        metadata=tenant_data.metadata,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+        created_by=created_by
+    )
+    
+    await self.tenant_repository.create(tenant)
+    
+    # 4. 監査ログ記録
+    await log_audit(
+        action="tenant.create",
+        target_type="tenant",
+        target_id=tenant_id,
+        performed_by=created_by
+    )
+    
+    return tenant
+```
+
+#### 4.7.2 テナント更新（特権テナント保護）
+```python
+async def update_tenant(
+    self, 
+    tenant_id: str, 
+    data: TenantUpdateRequest, 
+    updated_by: str
+) -> Tenant:
+    """テナント更新（特権テナント保護）"""
+    # 1. テナント取得
+    tenant = await self.tenant_repository.get(tenant_id, partition_key=tenant_id)
+    
+    # 2. 特権テナントチェック
+    if tenant.is_privileged:
+        raise HTTPException(
+            status_code=403,
+            detail="Privileged tenant cannot be modified"
+        )
+    
+    # 3. 更新
+    if data.display_name is not None:
+        tenant.display_name = data.display_name
+    if data.plan is not None:
+        tenant.plan = data.plan
+    if data.max_users is not None:
+        tenant.max_users = data.max_users
+    if data.metadata is not None:
+        tenant.metadata = data.metadata
+    
+    tenant.updated_at = datetime.utcnow()
+    tenant.updated_by = updated_by
+    
+    await self.tenant_repository.update(tenant_id, tenant_id, tenant.model_dump())
+    
+    # 4. 監査ログ記録
+    await log_audit(
+        action="tenant.update",
+        target_type="tenant",
+        target_id=tenant_id,
+        performed_by=updated_by,
+        changes=data.model_dump(exclude_unset=True)
+    )
+    
+    return tenant
+```
+
+#### 4.7.3 テナント削除（特権テナント保護とユーザー数チェック）
+```python
+async def delete_tenant(self, tenant_id: str, deleted_by: str) -> None:
+    """テナント削除（Phase 1: 物理削除）"""
+    # 1. テナント取得
+    tenant = await self.tenant_repository.get(tenant_id, partition_key=tenant_id)
+    
+    # 2. 特権テナントチェック
+    if tenant.is_privileged:
+        raise HTTPException(
+            status_code=403,
+            detail="Privileged tenant cannot be deleted"
+        )
+    
+    # 3. ユーザー数チェック（Phase 1）
+    if tenant.user_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete tenant with existing users. Please remove all users first."
+        )
+    
+    # 4. 物理削除（Phase 1）
+    await self.tenant_repository.delete(tenant_id, tenant_id)
+    
+    # 5. 監査ログ記録（Application Insightsに記録）
+    await log_audit(
+        action="tenant.delete",
+        target_type="tenant",
+        target_id=tenant_id,
+        performed_by=deleted_by
+    )
+    
+    logger.info(f"Tenant deleted: {tenant_id} by {deleted_by}")
+```
+
+**Phase 2での改善**:
+- 論理削除に変更（`status=deleted`、`deleted_at`、`deleted_by`を記録）
+- 30日後に物理削除する自動バッチ処理
+- 関連データのカスケード削除（ServiceAssignment、TenantUser、Domain）
+
+#### 4.7.4 user_countの更新（Phase 1実装予定）
+```python
+async def increment_user_count(self, tenant_id: str) -> None:
+    """テナントのユーザー数をインクリメント（タスク06で呼び出し）"""
+    tenant = await self.tenant_repository.get(tenant_id, tenant_id)
+    tenant.user_count += 1
+    tenant.updated_at = datetime.utcnow()
+    await self.tenant_repository.update(tenant_id, tenant_id, tenant.model_dump())
+
+async def decrement_user_count(self, tenant_id: str) -> None:
+    """テナントのユーザー数をデクリメント（タスク06で呼び出し）"""
+    tenant = await self.tenant_repository.get(tenant_id, tenant_id)
+    tenant.user_count = max(0, tenant.user_count - 1)
+    tenant.updated_at = datetime.utcnow()
+    await self.tenant_repository.update(tenant_id, tenant_id, tenant.model_dump())
+```
+
+これらのメソッドはタスク06のTenantUserServiceから呼び出され、TenantUser作成・削除時に自動的に`user_count`を更新します。
 
 ### 4.7 技術スタック
 - **フレームワーク**: FastAPI 0.100+
@@ -1850,3 +2050,4 @@ async def list_tenants(current_user: dict = Depends(get_current_user)):
 | 1.2.0 | 2026-02-01 | 共通ライブラリの詳細設計を追加（認証、データベース、ロギング、モデル、ミドルウェア、ユーティリティモジュール）、テナント分離のセキュリティ機構を強化 | [02-共通ライブラリ実装](../../管理アプリ/Phase1-MVP開発/Specs/02-共通ライブラリ実装.md) |
 | 1.3.0 | 2026-02-01 | 認証認可サービスの詳細設計を更新（Phase 1のロール定義、JWT発行・検証フロー、パスワードポリシーの明確化） | [03-認証認可サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/03-認証認可サービス-コアAPI.md) |
 | 1.4.0 | 2026-02-01 | ロール管理機能の実装完了を反映（タスク04対応）、RoleServiceとRoleRepositoryの追加、JWT内ロール情報の有効化、require_roleデコレータの有効化 | [04-認証認可サービス-ロール管理](../../管理アプリ/Phase1-MVP開発/Specs/04-認証認可サービス-ロール管理.md) |
+| 1.5.0 | 2026-02-01 | テナント管理サービスの詳細化（タスク05対応）、Tenantデータモデルの詳細、一意性チェック、特権テナント保護、userCount更新方法を追加 | [05-テナント管理サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/05-テナント管理サービス-コアAPI.md) |

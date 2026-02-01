@@ -247,52 +247,82 @@ except CosmosHttpResponseError as e:
 #### 3.1.1 スキーマ
 ```json
 {
-  "id": "tenant_123",
-  "tenantId": "tenant_123",
+  "id": "tenant_acme",
+  "tenantId": "tenant_acme",
   "type": "tenant",
-  "name": "株式会社サンプル",
-  "displayName": "Sample Corp",
+  "name": "acme",
+  "displayName": "Acme Corporation",
   "isPrivileged": false,
   "status": "active",
   "plan": "standard",
   "userCount": 25,
   "maxUsers": 100,
   "metadata": {
-    "industry": "IT",
-    "country": "JP"
+    "industry": "Manufacturing",
+    "country": "US"
   },
-  "createdBy": "user_admin_001",
   "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-01-20T15:00:00Z"
+  "updatedAt": "2026-01-20T15:00:00Z",
+  "createdBy": "user_admin_001",
+  "updatedBy": "user_admin_001",
+  "_ts": 1706178600
 }
 ```
 
 #### 3.1.2 フィールド説明
 | フィールド | 型 | 必須 | 説明 |
 |----------|---|-----|------|
-| id | string | ✅ | テナントID（`tenant_` + 識別子） |
+| id | string | ✅ | テナントID（`tenant_` + slug化したname） |
 | tenantId | string | ✅ | パーティションキー（idと同値） |
 | type | string | ✅ | "tenant" |
-| name | string | ✅ | テナント正式名称 |
-| displayName | string | ✅ | 表示名 |
-| isPrivileged | boolean | ✅ | 特権テナントフラグ |
-| status | string | ✅ | ステータス（active/suspended/deleted） |
-| plan | string | ✅ | プラン（free/standard/premium） |
-| userCount | number | ✅ | 所属ユーザー数 |
-| maxUsers | number | ✅ | 最大ユーザー数 |
-| metadata | object | - | 追加メタデータ |
-| createdBy | string | ✅ | 作成者ユーザーID |
-| createdAt | string | ✅ | 作成日時 |
-| updatedAt | string | ✅ | 更新日時 |
+| name | string | ✅ | テナント識別名（英数字とハイフン・アンダースコア、3-100文字） |
+| displayName | string | ✅ | 表示名（1-200文字） |
+| isPrivileged | boolean | ✅ | 特権テナントフラグ（デフォルト: false） |
+| status | string | ✅ | ステータス（active/suspended/deleted、デフォルト: active） |
+| plan | string | ✅ | プラン（free/standard/premium、デフォルト: standard） |
+| userCount | number | ✅ | 所属ユーザー数（デフォルト: 0） |
+| maxUsers | number | ✅ | 最大ユーザー数（1-10000、デフォルト: 100） |
+| metadata | object | - | 追加メタデータ（業種、国など） |
+| createdAt | string | ✅ | 作成日時（ISO 8601） |
+| updatedAt | string | ✅ | 更新日時（ISO 8601） |
+| createdBy | string | ✅ | 作成者ユーザーID（監査用） |
+| updatedBy | string | - | 更新者ユーザーID（監査用） |
+| _ts | number | - | Cosmos DB自動タイムスタンプ |
 
-#### 3.1.3 特権テナント
+#### 3.1.3 インデックス設計
+```json
+{
+  "indexingPolicy": {
+    "indexingMode": "consistent",
+    "automatic": true,
+    "includedPaths": [
+      {"path": "/name/?"},
+      {"path": "/status/?"},
+      {"path": "/isPrivileged/?"},
+      {"path": "/createdAt/?"}
+    ],
+    "excludedPaths": [
+      {"path": "/metadata/*"}
+    ]
+  }
+}
+```
+
+**インデックス設計の理由**:
+- `/name/?`: テナント名検索で使用（一意性チェック）
+- `/status/?`: ステータスフィルタで使用
+- `/isPrivileged/?`: 特権テナント検索で使用
+- `/createdAt/?`: 作成日時でソート
+- `/metadata/*`: メタデータは検索対象外のため除外（RU削減）
+
+#### 3.1.4 特権テナント
 ```json
 {
   "id": "tenant_privileged",
   "tenantId": "tenant_privileged",
   "type": "tenant",
-  "name": "管理会社",
-  "displayName": "Management Company",
+  "name": "privileged",
+  "displayName": "管理会社",
   "isPrivileged": true,
   "status": "active",
   "plan": "privileged",
@@ -306,6 +336,75 @@ except CosmosHttpResponseError as e:
 **制約**:
 - `isPrivileged: true` のテナントは削除・編集不可（アプリケーション層で制御）
 - システム初期化時に自動作成
+- `is_privileged`フラグは変更不可
+
+#### 3.1.5 データ整合性
+
+**テナント名の一意性チェック**:
+```python
+# app/repositories/tenant_repository.py
+async def find_by_name(self, name: str) -> Optional[Tenant]:
+    """テナント名でテナントを検索（アクティブなテナントのみ）"""
+    query = "SELECT * FROM c WHERE c.type = 'tenant' AND c.name = @name AND c.status = 'active'"
+    parameters = [{"name": "@name", "value": name}]
+    
+    results = await self.query(
+        query, 
+        parameters, 
+        partition_key=None,  # クロスパーティションクエリ
+        allow_cross_partition=True
+    )
+    
+    return results[0] if results else None
+```
+
+**ビジネスルール**:
+- テナント名はアクティブなテナント(`status=active`)間で一意である必要がある
+- 削除済みテナント名の再利用は可能
+- `name`フィールドは作成後変更不可（不変フィールド）
+
+**userCountの更新方法（Phase 1）**:
+タスク06（TenantUser管理）実装時に、TenantUser作成・削除時に`userCount`をインクリメント/デクリメントします。
+
+```python
+# app/services/tenant_service.py（Phase 1実装予定）
+async def increment_user_count(self, tenant_id: str) -> None:
+    """テナントのユーザー数をインクリメント"""
+    tenant = await self.tenant_repository.get(tenant_id, tenant_id)
+    tenant.user_count += 1
+    tenant.updated_at = datetime.utcnow()
+    await self.tenant_repository.update(tenant_id, tenant_id, tenant.model_dump())
+
+async def decrement_user_count(self, tenant_id: str) -> None:
+    """テナントのユーザー数をデクリメント"""
+    tenant = await self.tenant_repository.get(tenant_id, tenant_id)
+    tenant.user_count = max(0, tenant.user_count - 1)
+    tenant.updated_at = datetime.utcnow()
+    await self.tenant_repository.update(tenant_id, tenant_id, tenant.model_dump())
+```
+
+これらのメソッドはタスク06のTenantUserServiceから呼び出されます。
+
+#### 3.1.6 クエリ例
+```sql
+-- アクティブなテナント一覧（単一パーティションクエリ）
+SELECT * FROM c 
+WHERE c.tenantId = "tenant_acme" 
+  AND c.type = "tenant"
+
+-- 全テナント一覧（特権テナントのみ、クロスパーティションクエリ）
+SELECT * FROM c 
+WHERE c.type = "tenant" 
+  AND c.status = "active"
+ORDER BY c.createdAt DESC
+OFFSET 0 LIMIT 20
+
+-- テナント名の一意性チェック
+SELECT * FROM c 
+WHERE c.type = "tenant" 
+  AND c.name = "example-corp" 
+  AND c.status = "active"
+```
 
 ### 3.2 TenantUser エンティティ
 
@@ -1182,3 +1281,4 @@ async def backup_before_migration(container_name: str):
 | 1.1.0 | 2026-02-01 | データモデルバージョニング戦略の詳細化（移行戦略、互換性保証、ロールバック手順）（アーキテクチャレビュー対応） | [アーキテクチャレビュー001](../review/architecture-review-001.md) |
 | 1.2.0 | 2026-02-01 | Userエンティティに監査フィールド（createdBy, updatedBy）を追加、パスワードハッシュのcost factor明記 | [03-認証認可サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/03-認証認可サービス-コアAPI.md) |
 | 1.3.0 | 2026-02-01 | RoleAssignmentエンティティの詳細を追加（タスク04対応）、決定的IDによる重複防止、カスケード削除、インデックス設計、クエリ例を追加 | [04-認証認可サービス-ロール管理](../../管理アプリ/Phase1-MVP開発/Specs/04-認証認可サービス-ロール管理.md) |
+| 1.4.0 | 2026-02-01 | Tenantエンティティの詳細化（タスク05対応）、updatedByフィールド追加、インデックス設計、一意性チェック、userCount更新方法、クエリ例を追加 | [05-テナント管理サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/05-テナント管理サービス-コアAPI.md) |

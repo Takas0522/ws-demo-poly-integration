@@ -929,80 +929,100 @@ https://tenant.example.com/api/v1
 
 **リクエスト**:
 ```http
-GET /api/v1/tenants?page=1&pageSize=20&status=active
+GET /api/v1/tenants?status=active&skip=0&limit=20
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
 
 **必要ロール**: tenant-management: 閲覧者 以上
+
+**クエリパラメータ**:
+- `status` (optional): ステータスフィルタ（active/suspended/deleted）
+- `skip` (optional, default=0): スキップ件数（ページネーション）
+- `limit` (optional, default=20, max=100): 取得件数
 
 **レスポンス** (200 OK):
 ```json
 {
   "data": [
     {
-      "id": "tenant_123",
-      "name": "株式会社サンプル",
-      "displayName": "Sample Corp",
-      "userCount": 25,
+      "id": "tenant_acme",
+      "name": "acme",
+      "display_name": "Acme Corporation",
+      "is_privileged": false,
       "status": "active",
-      "services": [
-        {"id": "file-service", "name": "ファイル管理"},
-        {"id": "messaging-service", "name": "メッセージング"}
-      ],
-      "createdAt": "2026-01-01T00:00:00Z"
+      "plan": "standard",
+      "user_count": 25,
+      "max_users": 100,
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-20T15:00:00Z"
     }
   ],
   "pagination": {
-    "total": 15,
-    "page": 1,
-    "pageSize": 20
+    "skip": 0,
+    "limit": 20,
+    "total": 15
   }
 }
 ```
 
-#### 4.2.2 GET /tenants/{tenantId}
+**ビジネスロジック**:
+1. JWTから現在のユーザーのテナントIDを取得
+2. 特権テナント（`tenant_privileged`）の場合、全テナントをクロスパーティションクエリで取得
+3. 一般テナントの場合、自テナントのみを単一パーティションクエリで取得
+4. `status`フィルタを適用（指定された場合）
+5. `skip`と`limit`でページネーション
+
+**パフォーマンス要件**:
+- 単一パーティションクエリ（一般テナント）: < 100ms (P95)
+- クロスパーティションクエリ（特権テナント）: < 500ms (P95)
+
+#### 4.2.2 GET /tenants/{tenant_id}
 テナント詳細取得
 
 **リクエスト**:
 ```http
-GET /api/v1/tenants/tenant_123
+GET /api/v1/tenants/tenant_acme
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
 
 **必要ロール**: tenant-management: 閲覧者 以上
 
+**パスパラメータ**:
+- `tenant_id` (required): テナントID
+
 **レスポンス** (200 OK):
 ```json
 {
-  "id": "tenant_123",
-  "name": "株式会社サンプル",
-  "displayName": "Sample Corp",
-  "isPrivileged": false,
+  "id": "tenant_acme",
+  "name": "acme",
+  "display_name": "Acme Corporation",
+  "is_privileged": false,
   "status": "active",
   "plan": "standard",
-  "userCount": 25,
-  "maxUsers": 100,
-  "domains": [
-    {
-      "domain": "example.com",
-      "verified": true
-    }
-  ],
-  "services": [
-    {
-      "id": "file-service",
-      "name": "ファイル管理",
-      "assignedAt": "2026-01-10T00:00:00Z"
-    }
-  ],
+  "user_count": 25,
+  "max_users": 100,
   "metadata": {
-    "industry": "IT",
-    "country": "JP"
+    "industry": "Manufacturing",
+    "country": "US"
   },
-  "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-01-20T15:00:00Z"
+  "created_at": "2026-01-01T00:00:00Z",
+  "updated_at": "2026-01-20T15:00:00Z",
+  "created_by": "user_admin_001",
+  "updated_by": "user_admin_001"
 }
 ```
+
+**エラーレスポンス**:
+- `404 Not Found`: テナントが存在しない
+- `403 Forbidden`: テナント分離違反
+
+**ビジネスロジック**:
+1. JWTから現在のユーザーのテナントIDを取得
+2. 特権テナント以外は、`tenant_id`が自テナントと一致するかチェック
+3. Cosmos DBから該当テナントを取得
+4. 存在しない場合は404エラー
+
+**パフォーマンス要件**: < 100ms (P95)
 
 #### 4.2.3 POST /tenants
 テナント新規作成
@@ -1014,12 +1034,12 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 Content-Type: application/json
 
 {
-  "name": "新規テナント株式会社",
-  "displayName": "New Tenant Corp",
+  "name": "example-corp",
+  "display_name": "Example Corporation",
   "plan": "standard",
-  "maxUsers": 50,
+  "max_users": 50,
   "metadata": {
-    "industry": "Manufacturing",
+    "industry": "IT",
     "country": "JP"
   }
 }
@@ -1027,65 +1047,150 @@ Content-Type: application/json
 
 **必要ロール**: tenant-management: 管理者
 
-**レスポンス** (201 Created): 作成されたテナント情報
+**リクエストボディ**:
+- `name` (required): テナント名（3-100文字、英数字とハイフン・アンダースコアのみ）
+- `display_name` (required): 表示名（1-200文字）
+- `plan` (optional, default="standard"): プラン（free/standard/premium）
+- `max_users` (optional, default=100): 最大ユーザー数（1-10000）
+- `metadata` (optional): 追加メタデータ（業種、国など）
 
-**エラーレスポンス** (409 Conflict):
+**レスポンス** (201 Created):
 ```json
 {
-  "error": {
-    "code": "TENANT_ALREADY_EXISTS",
-    "message": "A tenant with this name already exists"
-  }
+  "id": "tenant_example-corp",
+  "name": "example-corp",
+  "display_name": "Example Corporation",
+  "is_privileged": false,
+  "status": "active",
+  "plan": "standard",
+  "user_count": 0,
+  "max_users": 50,
+  "metadata": {
+    "industry": "IT",
+    "country": "JP"
+  },
+  "created_at": "2026-02-01T10:00:00Z",
+  "updated_at": "2026-02-01T10:00:00Z",
+  "created_by": "user_admin_001"
 }
 ```
 
-#### 4.2.4 PUT /tenants/{tenantId}
+**エラーレスポンス**:
+- `409 Conflict`: テナント名が既に存在
+- `422 Unprocessable Entity`: バリデーションエラー
+- `403 Forbidden`: 権限不足
+
+**ビジネスロジック**:
+1. ロール認可チェック（tenant-management: 管理者）
+2. バリデーション
+   - テナント名の一意性チェック: `SELECT * FROM c WHERE c.name = @name AND c.status = 'active'`
+   - 必須フィールドの確認
+3. テナントIDを生成（`tenant_{slug化したname}`）
+4. Tenantオブジェクト作成
+   - `user_count=0`、`status=active`、`is_privileged=false`で初期化
+   - `created_by`に現在のユーザーID
+5. Cosmos DBに保存
+6. 監査ログ記録
+
+**パフォーマンス要件**: < 300ms (P95)
+
+#### 4.2.4 PUT /tenants/{tenant_id}
 テナント更新
 
 **リクエスト**:
 ```http
-PUT /api/v1/tenants/tenant_123
+PUT /api/v1/tenants/tenant_example-corp
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 Content-Type: application/json
 
 {
-  "displayName": "Updated Corp",
-  "maxUsers": 150
+  "display_name": "Example Corp (Updated)",
+  "max_users": 100
 }
 ```
 
 **必要ロール**: tenant-management: 管理者
 
-**制約**: 特権テナント（`isPrivileged: true`）は更新不可
+**パスパラメータ**:
+- `tenant_id` (required): テナントID
 
-**レスポンス** (200 OK): 更新後のテナント情報
+**リクエストボディ**:
+- `display_name` (optional): 表示名
+- `plan` (optional): プラン
+- `max_users` (optional): 最大ユーザー数
+- `metadata` (optional): メタデータ
 
-**エラーレスポンス** (403 Forbidden):
+**レスポンス** (200 OK):
 ```json
 {
-  "error": {
-    "code": "PRIVILEGED_TENANT_IMMUTABLE",
-    "message": "Privileged tenant cannot be modified"
-  }
+  "id": "tenant_example-corp",
+  "name": "example-corp",
+  "display_name": "Example Corp (Updated)",
+  "is_privileged": false,
+  "status": "active",
+  "plan": "standard",
+  "user_count": 0,
+  "max_users": 100,
+  "updated_at": "2026-02-01T11:00:00Z",
+  "updated_by": "user_admin_002"
 }
 ```
 
-#### 4.2.5 DELETE /tenants/{tenantId}
+**エラーレスポンス**:
+- `404 Not Found`: テナントが存在しない
+- `403 Forbidden`: 特権テナント、または権限不足
+- `422 Unprocessable Entity`: バリデーションエラー
+
+**ビジネスロジック**:
+1. ロール認可チェック（tenant-management: 管理者）
+2. テナント取得
+3. 特権テナントチェック（`is_privileged=true`の場合は403エラー）
+4. 更新フィールドをマージ
+5. `updated_at`を現在時刻に更新
+6. `updated_by`に現在のユーザーID
+7. Cosmos DBに保存
+8. 監査ログ記録
+
+**パフォーマンス要件**: < 200ms (P95)
+
+#### 4.2.5 DELETE /tenants/{tenant_id}
 テナント削除
 
 **リクエスト**:
 ```http
-DELETE /api/v1/tenants/tenant_123
+DELETE /api/v1/tenants/tenant_example-corp
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
 
 **必要ロール**: tenant-management: 管理者
 
-**制約**: 
-- 特権テナントは削除不可
-- 所属ユーザーがいる場合は削除不可
+**パスパラメータ**:
+- `tenant_id` (required): テナントID
 
-**レスポンス** (204 No Content)
+**レスポンス** (204 No Content):
+（レスポンスボディなし）
+
+**エラーレスポンス**:
+- `404 Not Found`: テナントが存在しない
+- `403 Forbidden`: 特権テナント、または権限不足
+- `400 Bad Request`: ユーザーが存在するため削除不可
+
+**ビジネスロジック**:
+1. ロール認可チェック（tenant-management: 管理者）
+2. テナント取得
+3. 特権テナントチェック（`is_privileged=true`の場合は403エラー）
+4. 削除前チェック（Phase 1）:
+   - ユーザー数チェック: `user_count > 0`の場合は400エラーを返却
+   - エラーメッセージ: "Cannot delete tenant with existing users. Please remove all users first."
+5. Cosmos DBから物理削除（Phase 1は物理削除、Phase 2で論理削除に変更）
+6. 監査ログ記録（`deleted_by`に現在のユーザーID、Application Insightsに記録）
+
+**Phase 2での改善**:
+- 論理削除に変更（`status=deleted`、`deleted_at`、`deleted_by`を記録）
+- 30日後に物理削除する自動バッチ処理
+- 関連データのカスケード削除（ServiceAssignment、TenantUser、Domain）
+
+**パフォーマンス要件**: < 200ms (P95)
 
 ### 4.3 テナントユーザー管理エンドポイント
 
@@ -1690,3 +1795,4 @@ FastAPIの自動生成機能を使用：
 | 1.1.0 | 2026-02-01 | APIバージョニング戦略の詳細化（破壊的変更の定義、複数バージョン同時サポート、廃止プロセス）（アーキテクチャレビュー対応） | [アーキテクチャレビュー001](../review/architecture-review-001.md) |
 | 1.2.0 | 2026-02-01 | 認証認可サービスAPIの詳細を更新（ログインエラーコード、JWT検証レスポンス、ビジネスロジック、パフォーマンス要件を追加） | [03-認証認可サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/03-認証認可サービス-コアAPI.md) |
 | 1.3.0 | 2026-02-01 | ロール管理APIの詳細を追加（タスク04対応）、GET /users/{userId}/roles エンドポイント追加、各エンドポイントにビジネスロジックとパフォーマンス要件を追加 | [04-認証認可サービス-ロール管理](../../管理アプリ/Phase1-MVP開発/Specs/04-認証認可サービス-ロール管理.md) |
+| 1.4.0 | 2026-02-01 | テナント管理サービスAPIの詳細化（タスク05対応）、5つのコアAPIエンドポイントにビジネスロジック、パフォーマンス要件、エラーレスポンスを追加 | [05-テナント管理サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/05-テナント管理サービス-コアAPI.md) |
