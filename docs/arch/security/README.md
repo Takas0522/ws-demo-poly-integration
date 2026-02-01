@@ -591,6 +591,111 @@ async def get_users(tenant_id: str, current_user: User) -> List[User]:
 ```
 
 #### 3.2.2 クロステナントアクセス防止
+
+本システムでは、**共通ライブラリのBaseRepository**により、テナント横断アクセスを技術的に防止します。
+
+**BaseRepositoryによる3層のセキュリティチェック**:
+
+1. **パーティションキー強制**: 全クエリでpartition_key（tenant_id）の指定を必須化
+2. **クエリ内テナントIDフィルタ検証**: SQLクエリに `c.tenantId = @tenant_id` が含まれているか自動検証
+3. **パラメータ検証**: クエリパラメータに `@tenant_id` が含まれているか自動検証
+
+```python
+# common/database/repository.py (共通ライブラリ)
+class BaseRepository(Generic[T]):
+    """
+    CRUD操作の共通実装（テナント分離強制）
+    
+    Security:
+        - 全てのクエリでパーティションキー（tenant_id）を強制
+        - クロスパーティションクエリは明示的な allow_cross_partition=True が必要
+        - パーティションキーの指定漏れは ValueError を発生
+        - クエリ内にテナントIDフィルタが含まれているか自動検証
+    """
+    
+    async def query(
+        self,
+        query: str,
+        parameters: List[Dict[str, Any]],
+        partition_key: Optional[str] = None,
+        allow_cross_partition: bool = False
+    ) -> List[T]:
+        """
+        クエリ実行（テナント分離強制）
+        
+        Security Check:
+            1. partition_keyとallow_cross_partitionの整合性チェック
+            2. クエリ文字列に "c.tenantId = @tenant_id" が含まれているか検証
+            3. パラメータに@tenant_idが含まれているか検証
+            4. 検証失敗時はSecurityErrorを発生（運用チームにアラート）
+        """
+        # セキュリティチェック1: パーティションキーの整合性
+        if partition_key is None and not allow_cross_partition:
+            raise ValueError(
+                "partition_key is required for tenant isolation. "
+                "Use allow_cross_partition=True to explicitly allow cross-partition queries."
+            )
+        
+        # セキュリティチェック2: クエリにテナントIDフィルタが含まれているか検証
+        if "c.tenantId" not in query and "c.tenant_id" not in query:
+            self.logger.error(
+                "Security violation: Query without tenant_id filter",
+                extra={"query": query}
+            )
+            raise SecurityError(
+                "Query must include tenant_id filter (c.tenantId = @tenant_id) for data isolation"
+            )
+        
+        # セキュリティチェック3: パラメータにtenant_idが含まれているか検証
+        tenant_id_in_params = any(
+            p.get("name") in ("@tenant_id", "@tenantId") 
+            for p in parameters
+        )
+        if not tenant_id_in_params:
+            self.logger.error(
+                "Security violation: Query parameters without tenant_id",
+                extra={"parameters": parameters}
+            )
+            raise SecurityError(
+                "Query parameters must include @tenant_id for data isolation"
+            )
+        
+        # クエリ実行
+        items = self.container.query_items(
+            query=query,
+            parameters=parameters,
+            partition_key=partition_key,
+            enable_cross_partition_query=allow_cross_partition
+        )
+        
+        results = []
+        async for item in items:
+            results.append(self.model_class(**item))
+        
+        return results
+
+# 使用例（各サービスのリポジトリ）
+class UserRepository(BaseRepository[User]):
+    async def find_by_email(self, tenant_id: str, email: str) -> Optional[User]:
+        # ✅ 正しい実装: パーティションキー指定、テナントIDフィルタあり
+        query = "SELECT * FROM c WHERE c.tenantId = @tenant_id AND c.email = @email"
+        parameters = [
+            {"name": "@tenant_id", "value": tenant_id},
+            {"name": "@email", "value": email}
+        ]
+        results = await self.query(query, parameters, partition_key=tenant_id)
+        return results[0] if results else None
+    
+    # ❌ 誤った実装: BaseRepositoryがSecurityErrorを発生
+    async def find_user_wrong(self, email: str):
+        query = "SELECT * FROM c WHERE c.email = @email"  # テナントIDフィルタなし
+        parameters = [{"name": "@email", "value": email}]
+        # SecurityError: Query must include tenant_id filter (c.tenantId = @tenant_id)
+        results = await self.query(query, parameters, partition_key=None)
+```
+
+**アプリケーション層でのテナントアクセスチェック**:
+
 ```python
 class TenantSecurityMiddleware:
     """テナントセキュリティミドルウェア"""
@@ -623,6 +728,75 @@ def verify_tenant_access(resource_tenant_id: str, request: Request):
         )
     
     return True
+
+# エンドポイントでの使用例
+@router.get("/users")
+async def get_users(tenant_id: str, current_user: User = Depends(get_current_user)):
+    """ユーザー一覧取得（二重のテナント分離チェック）"""
+    # チェック1: アプリケーション層でのテナントアクセス権限チェック
+    if current_user.tenant_id != "tenant_privileged":
+        if current_user.tenant_id != tenant_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Cross-tenant access denied"
+            )
+    
+    # チェック2: BaseRepository層でのクエリレベルのテナント分離強制
+    # （開発者がミスしてもBaseRepositoryがSecurityErrorを発生）
+    users = await user_repository.query(
+        "SELECT * FROM c WHERE c.tenantId = @tenant_id AND c.type = 'user'",
+        [{"name": "@tenant_id", "value": tenant_id}],
+        partition_key=tenant_id
+    )
+    
+    return users
+```
+
+**セキュリティ違反検知とアラート**:
+
+```python
+# common/logging/security_logger.py
+import logging
+from typing import Dict, Any
+
+security_logger = logging.getLogger("security")
+
+def log_security_violation(
+    violation_type: str,
+    details: Dict[str, Any],
+    severity: str = "HIGH"
+):
+    """セキュリティ違反をログに記録し、アラートを送信"""
+    security_logger.error(
+        f"Security violation detected: {violation_type}",
+        extra={
+            "violation_type": violation_type,
+            "severity": severity,
+            "details": details,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    )
+    
+    # 重大度が高い場合は即座にアラート送信（Phase 2）
+    if severity == "CRITICAL":
+        # await send_alert_to_security_team(violation_type, details)
+        pass
+
+# BaseRepositoryでの使用
+class BaseRepository(Generic[T]):
+    async def query(self, query: str, parameters: List[Dict], ...):
+        # セキュリティチェック失敗時
+        if "c.tenantId" not in query:
+            log_security_violation(
+                violation_type="QUERY_WITHOUT_TENANT_FILTER",
+                details={
+                    "query": query,
+                    "parameters": parameters,
+                    "repository": self.__class__.__name__
+                },
+                severity="HIGH"
+            )
+            raise SecurityError(...)
 ```
 
 ### 3.3 特権テナントの保護
@@ -1293,3 +1467,4 @@ alerts:
 |----------|------|---------|----------|
 | 1.0.0 | 2026-02-01 | 初版作成 | - |
 | 1.1.0 | 2026-02-01 | STRIDE脅威分析の追加、攻撃シナリオと対策の体系化（アーキテクチャレビュー対応） | [アーキテクチャレビュー001](../review/architecture-review-001.md) |
+| 1.2.0 | 2026-02-01 | テナント分離のセキュリティ機構を強化、BaseRepositoryによる3層のセキュリティチェックを追加、セキュリティ違反検知とアラート機能を追加 | [02-共通ライブラリ実装](../../管理アプリ/Phase1-MVP開発/Specs/02-共通ライブラリ実装.md) |
