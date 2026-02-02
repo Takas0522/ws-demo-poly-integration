@@ -3,32 +3,30 @@
 {
 	"name": "ws-demo-poly-integration",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"dockerComposeFile": "docker-compose.yml",
-	"service": "app",
-	"runServices": ["app", "cosmosdb"],
-	"workspaceFolder": "/workspace",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+
+	// Fix Docker DNS for WSL2 before building
+	"initializeCommand": "bash .devcontainer/fix-docker-dns.sh",
 	"features": {
 		"ghcr.io/devcontainers/features/azure-cli:1": {},
+		// GitHub CLI is installed directly in Dockerfile to avoid feature installation issues
 		"ghcr.io/devcontainers/features/github-cli:1": {},
 		// "ghcr.io/schlich/devcontainer-features/playwright:0": {},
 		"ghcr.io/devcontainers/features/node:1": {}
-	},
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"GitHub.copilot-chat"
-			]
-		}
 	},
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [8081, 1234],
+	"forwardPorts": [8081, 1234]
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "bash .devcontainer/setup-env.sh"
+	// "postCreateCommand": "bash .devcontainer/setup-env.sh"
+
+	// DNS configuration is handled by docker-compose.yml
 
 	// Configure tool-specific properties.１
 	// "customizations": {},
