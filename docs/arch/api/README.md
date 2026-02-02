@@ -1,8 +1,8 @@
 # API設計
 
 ## ドキュメント情報
-- バージョン: 1.0.0
-- 最終更新日: 2026-02-01
+- バージョン: 1.6.0
+- 最終更新日: 2026-02-02
 - 関連: [システムアーキテクチャ概要](../overview.md)
 
 ## 1. API設計原則
@@ -1807,35 +1807,249 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 **レスポンス** (204 No Content)
 
-### 5.4 ロール統合エンドポイント
+### 5.4 ロール統合エンドポイント（タスク08 - Phase 1実装）
 
-#### 5.4.1 GET /tenants/{tenantId}/available-roles
-テナントが利用可能な全サービスのロール
+#### 5.4.1 GET /integrated-roles
+全サービスの統合ロール情報取得
 
 **リクエスト**:
 ```http
-GET /api/v1/tenants/tenant_123/available-roles
+GET /api/v1/integrated-roles
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
+
+**必要ロール**: service-setting: 閲覧者 以上
+
+**クエリパラメータ**:
+- `include_service_ids` (optional): カンマ区切りのサービスID（フィルタ用）
 
 **レスポンス** (200 OK):
 ```json
 {
-  "tenantId": "tenant_123",
   "roles": {
-    "file-service": [
-      {"name": "管理者", "description": "全機能へのアクセス"},
-      {"name": "編集者", "description": "ファイルの作成・編集"},
-      {"name": "閲覧者", "description": "ファイルの参照のみ"}
+    "auth-service": [
+      {
+        "serviceId": "auth-service",
+        "roleName": "全体管理者",
+        "description": "ユーザー登録・削除、ロール割り当て"
+      },
+      {
+        "serviceId": "auth-service",
+        "roleName": "閲覧者",
+        "description": "ユーザー情報の参照のみ"
+      }
     ],
-    "messaging-service": [
-      {"name": "管理者", "description": "チャネル管理、メンバー管理"},
-      {"name": "メンバー", "description": "メッセージ送受信"},
-      {"name": "閲覧者", "description": "メッセージ閲覧のみ"}
+    "tenant-management": [
+      {
+        "serviceId": "tenant-management",
+        "roleName": "全体管理者",
+        "description": "特権テナント操作、全テナント管理"
+      },
+      {
+        "serviceId": "tenant-management",
+        "roleName": "管理者",
+        "description": "通常テナントの追加・削除・編集"
+      },
+      {
+        "serviceId": "tenant-management",
+        "roleName": "閲覧者",
+        "description": "テナント情報の参照のみ"
+      }
+    ],
+    "file-service": [
+      {
+        "serviceId": "file-service",
+        "roleName": "管理者",
+        "description": "全機能へのアクセス"
+      },
+      {
+        "serviceId": "file-service",
+        "roleName": "編集者",
+        "description": "ファイルのアップロード、削除"
+      },
+      {
+        "serviceId": "file-service",
+        "roleName": "閲覧者",
+        "description": "ファイルのダウンロード、一覧表示のみ"
+      }
     ]
+  },
+  "metadata": {
+    "totalServices": 7,
+    "totalRoles": 18,
+    "failedServices": [],
+    "cachedAt": null
   }
 }
 ```
+
+**エラーレスポンス** (503 Service Unavailable):
+```json
+{
+  "error": {
+    "code": "ROLE_AGGREGATION_001_ALL_SERVICES_UNAVAILABLE",
+    "message": "All services failed to provide role information",
+    "details": {
+      "failedServices": ["file-service", "messaging-service", "api-service", "backup-service"]
+    },
+    "timestamp": "2026-02-02T10:00:00Z",
+    "requestId": "req_abc123"
+  }
+}
+```
+
+**ビジネスロジック**:
+1. サービスカタログから全サービスID取得（コアサービス3種 + 管理対象サービス4種）
+2. 各サービスの `/api/v1/roles` エンドポイントを並列呼び出し（最大7件同時）
+3. タイムアウト: 各サービス500ms
+4. 取得したロール情報を統合
+5. 一部サービス失敗時も、他のサービスのロールは返却
+6. エラーログ記録（失敗したサービスID、エラー内容、タイムスタンプ）
+
+**パフォーマンス要件**: < 500ms (P95)
+
+#### 5.4.2 GET /tenants/{tenantId}/available-roles
+テナントが利用可能なサービスのロール取得
+
+**リクエスト**:
+```http
+GET /api/v1/tenants/tenant_acme/available-roles
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+
+**必要ロール**: service-setting: 閲覧者 以上
+
+**パスパラメータ**:
+- `tenant_id` (required): テナントID
+
+**レスポンス** (200 OK):
+```json
+{
+  "tenantId": "tenant_acme",
+  "roles": {
+    "auth-service": [
+      {
+        "serviceId": "auth-service",
+        "roleName": "全体管理者",
+        "description": "ユーザー登録・削除、ロール割り当て"
+      },
+      {
+        "serviceId": "auth-service",
+        "roleName": "閲覧者",
+        "description": "ユーザー情報の参照のみ"
+      }
+    ],
+    "tenant-management": [
+      {
+        "serviceId": "tenant-management",
+        "roleName": "管理者",
+        "description": "通常テナントの追加・削除・編集"
+      },
+      {
+        "serviceId": "tenant-management",
+        "roleName": "閲覧者",
+        "description": "テナント情報の参照のみ"
+      }
+    ],
+    "file-service": [
+      {
+        "serviceId": "file-service",
+        "roleName": "管理者",
+        "description": "全機能へのアクセス"
+      },
+      {
+        "serviceId": "file-service",
+        "roleName": "閲覧者",
+        "description": "ファイルのダウンロード、一覧表示のみ"
+      }
+    ]
+  },
+  "metadata": {
+    "totalServices": 4,
+    "totalRoles": 8,
+    "assignedServices": ["file-service"],
+    "cachedAt": null
+  }
+}
+```
+
+**テナント分離**:
+- 特権テナント以外は、自テナントの情報のみ取得可能
+- 他テナントへのアクセス試行は403エラー
+
+**エラーレスポンス**:
+- `403 Forbidden`: テナント分離違反
+  ```json
+  {
+    "error": {
+      "code": "TENANT_ISOLATION_VIOLATION",
+      "message": "Cannot access roles for different tenant",
+      "timestamp": "2026-02-02T10:00:00Z",
+      "requestId": "req_abc123"
+    }
+  }
+  ```
+- `404 Not Found`: テナントが存在しない（ServiceAssignmentが0件の場合も該当）
+
+**ビジネスロジック**:
+1. テナントのServiceAssignment一覧を取得（`status=active`でフィルタ）
+2. コアサービス（auth-service、tenant-management、service-setting）を自動追加
+3. 各サービスのロール情報を並列取得（`get_all_service_roles()` 処理を再利用）
+4. テナントが利用しているサービスのロールのみをフィルタリング
+
+**パフォーマンス要件**: < 400ms (P95)
+
+#### 5.4.3 GET /services/{serviceId}/roles
+特定サービスのロール情報取得
+
+**リクエスト**:
+```http
+GET /api/v1/services/file-service/roles
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+
+**必要ロール**: service-setting: 閲覧者 以上
+
+**パスパラメータ**:
+- `service_id` (required): サービスID
+
+**レスポンス** (200 OK):
+```json
+{
+  "serviceId": "file-service",
+  "serviceName": "ファイル管理サービス",
+  "roles": [
+    {
+      "roleName": "管理者",
+      "description": "全機能へのアクセス"
+    },
+    {
+      "roleName": "編集者",
+      "description": "ファイルのアップロード、削除"
+    },
+    {
+      "roleName": "閲覧者",
+      "description": "ファイルのダウンロード、一覧表示のみ"
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-02-01T10:00:00Z"
+  }
+}
+```
+
+**エラーレスポンス**:
+- `404 Not Found`: サービスが存在しない
+- `503 Service Unavailable`: サービスのロールエンドポイントにアクセスできない
+
+**ビジネスロジック**:
+1. サービス存在確認
+2. サービスの `/api/v1/roles` エンドポイントを呼び出し
+3. タイムアウト: 500ms
+4. レスポンスをIntegratedRole形式に変換
+
+**パフォーマンス要件**: < 200ms (P95)
 
 ## 6. 管理対象サービスAPI（共通パターン）
 
@@ -2123,3 +2337,4 @@ FastAPIの自動生成機能を使用：
 | 1.3.0 | 2026-02-01 | ロール管理APIの詳細を追加（タスク04対応）、GET /users/{userId}/roles エンドポイント追加、各エンドポイントにビジネスロジックとパフォーマンス要件を追加 | [04-認証認可サービス-ロール管理](../../管理アプリ/Phase1-MVP開発/Specs/04-認証認可サービス-ロール管理.md) |
 | 1.4.0 | 2026-02-01 | テナント管理サービスAPIの詳細化（タスク05対応）、5つのコアAPIエンドポイントにビジネスロジック、パフォーマンス要件、エラーレスポンスを追加 | [05-テナント管理サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/05-テナント管理サービス-コアAPI.md) |
 | 1.5.0 | 2026-02-01 | TenantUser管理、Domain管理APIの詳細化（タスク06対応）、認証認可サービス連携、DNS検証、user_count自動更新、ビジネスロジック、パフォーマンス要件を追加 | [06-テナント管理サービス-ユーザー・ドメイン管理](../../管理アプリ/Phase1-MVP開発/Specs/06-テナント管理サービス-ユーザー・ドメイン管理.md) |
+| 1.6.0 | 2026-02-02 | サービス設定サービスにロール統合API 3種を追加（タスク08対応）、GET /integrated-roles、GET /tenants/{tenantId}/available-roles、GET /services/{serviceId}/roles エンドポイントの詳細仕様、エラーハンドリング、パフォーマンス要件を追加 | [08-サービス設定サービス-ロール統合](../../管理アプリ/Phase1-MVP開発/Specs/08-サービス設定サービス-ロール統合.md) |

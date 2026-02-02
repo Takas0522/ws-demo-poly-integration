@@ -1,8 +1,8 @@
 # コンポーネント設計
 
 ## ドキュメント情報
-- バージョン: 1.0.0
-- 最終更新日: 2026-02-01
+- バージョン: 1.7.0
+- 最終更新日: 2026-02-02
 - 関連: [システムアーキテクチャ概要](../overview.md)
 
 ## 1. コンポーネント構成概要
@@ -655,9 +655,13 @@ async def decrement_user_count(self, tenant_id: str) -> None:
 - テナント利用サービス一覧取得（GET /api/v1/tenants/{tenantId}/services）
 - サービス割り当て（POST /api/v1/tenants/{tenantId}/services）
 - サービス割り当て解除（DELETE /api/v1/tenants/{tenantId}/services/{serviceId}）
+- **ロール情報統合機能（タスク08）**
+  - 全サービスのロール情報取得（GET /api/v1/integrated-roles）
+  - テナント利用可能ロール取得（GET /api/v1/tenants/{tenantId}/available-roles）
+  - 特定サービスのロール取得（GET /api/v1/services/{serviceId}/roles）
 
 **Phase 2以降**:
-- ロール情報統合機能（タスク08）
+- ロール情報キャッシング（Redis導入）
 - サービス利用統計・使用量管理
 
 ### 5.3 ディレクトリ構造
@@ -670,20 +674,23 @@ src/service-setting-service/
 │   ├── api/                         # APIエンドポイント
 │   │   ├── __init__.py
 │   │   ├── services.py              # サービスカタログAPI
-│   │   └── assignments.py           # サービス割り当てAPI
+│   │   ├── assignments.py           # サービス割り当てAPI
+│   │   └── roles.py                 # ロール統合API（タスク08）
 │   ├── models/                      # Pydanticモデル
 │   │   ├── __init__.py
 │   │   ├── service.py               # Serviceモデル
-│   │   └── assignment.py            # ServiceAssignmentモデル
+│   │   ├── assignment.py            # ServiceAssignmentモデル
+│   │   └── role.py                  # IntegratedRoleモデル（タスク08）
 │   ├── schemas/                     # リクエスト/レスポンススキーマ
 │   │   ├── __init__.py
 │   │   ├── service.py               # Service関連スキーマ
-│   │   └── assignment.py            # ServiceAssignment関連スキーマ
+│   │   ├── assignment.py            # ServiceAssignment関連スキーマ
+│   │   └── role.py                  # IntegratedRole関連スキーマ（タスク08）
 │   ├── services/                    # ビジネスロジック
 │   │   ├── __init__.py
 │   │   ├── service_catalog_service.py
 │   │   ├── assignment_service.py
-│   │   └── role_aggregator.py       # ロール統合ロジック（Phase 2）
+│   │   └── role_aggregator.py       # ロール統合ロジック（タスク08）
 │   ├── repositories/                # データアクセス層
 │   │   ├── __init__.py
 │   │   ├── service_repository.py
@@ -696,8 +703,10 @@ src/service-setting-service/
 │   ├── conftest.py                  # pytestフィクスチャ
 │   ├── test_api_services.py
 │   ├── test_api_assignments.py
+│   ├── test_api_roles.py            # ロール統合APIテスト（タスク08）
 │   ├── test_service_catalog_service.py
 │   ├── test_assignment_service.py
+│   ├── test_role_aggregator.py      # ロール統合ロジックテスト（タスク08）
 │   ├── test_service_repository.py
 │   └── test_assignment_repository.py
 ├── pytest.ini                       # pytest設定
@@ -890,48 +899,323 @@ async def unassign_service(
 - 論理削除への変更（`status=deleted`、`deleted_at`、`deleted_by`を記録）
 - カスケード削除の実装（タスク08で実装される`GET /api/v1/services/{serviceId}/roles`を活用）
 
-#### 5.4.5 ロール情報統合（Phase 2）
-各サービスから動的にロール情報を取得します（タスク08で実装予定）：
+#### 5.4.5 ロール情報統合（タスク08 - Phase 1実装）
+各サービスから動的にロール情報を取得し、統合します。
 
+##### 5.4.5.1 概要
+サービス設定サービスは、各マイクロサービスからロール情報を収集し、テナントの利用状況に応じてフィルタリングした統合ロール情報を提供します。これにより、認証認可サービスがロール割り当てUI表示時に必要なロール一覧を取得できます。
+
+##### 5.4.5.2 全サービスのロール情報取得
+- **エンドポイント**: `GET /api/v1/integrated-roles`
+- **認証**: service-setting: 閲覧者以上
+- **処理フロー**:
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant API as サービス設定<br/>サービス
+    participant RA as RoleAggregator
+    participant SR as ServiceRepository
+    participant AS as 認証認可サービス
+    participant TM as テナント管理サービス
+    participant FS as ファイル管理サービス
+    participant MS as メッセージングサービス
+    
+    C->>API: GET /api/v1/integrated-roles
+    API->>RA: get_all_service_roles()
+    RA->>SR: list_services(is_active=True)
+    SR-->>RA: [Services]
+    
+    par 並列ロール取得
+        RA->>AS: GET /api/v1/roles
+        AS-->>RA: [Roles]
+    and
+        RA->>TM: GET /api/v1/roles
+        TM-->>RA: [Roles]
+    and
+        RA->>FS: GET /api/v1/roles
+        FS-->>RA: [Roles]
+    and
+        RA->>MS: GET /api/v1/roles
+        MS-->>RA: [Roles]
+    end
+    
+    RA->>RA: 統合とエラーハンドリング
+    RA-->>API: IntegratedRoles
+    API-->>C: 200 OK
+```
+
+**実装例**:
 ```python
 # app/services/role_aggregator.py
+import os
+import logging
+import asyncio
+from typing import Dict, List, Optional
+import httpx
+from fastapi import HTTPException
+
 class RoleAggregator:
-    def __init__(self):
-        self.service_registry = {
-            "tenant-management": "http://tenant-service/api/roles",
-            "auth-service": "http://auth-service/api/roles",
-            "file-service": "http://file-service/api/roles",
-            "messaging-service": "http://messaging-service/api/roles",
-            # ...
+    """ロール集約サービス（タスク08）"""
+    
+    def __init__(
+        self,
+        service_repository: ServiceRepository,
+        http_client: httpx.AsyncClient
+    ):
+        self.service_repository = service_repository
+        self.http_client = http_client
+        self.logger = logging.getLogger(__name__)
+        
+        # サービスのベースURL（環境変数から取得）
+        self.service_base_urls = {
+            "auth-service": os.getenv("AUTH_SERVICE_URL"),
+            "tenant-management": os.getenv("TENANT_SERVICE_URL"),
+            "service-setting": "http://localhost:8002",  # 自サービス
+            "file-service": os.getenv("FILE_SERVICE_URL"),
+            "messaging-service": os.getenv("MESSAGING_SERVICE_URL"),
+            "api-service": os.getenv("API_SERVICE_URL"),
+            "backup-service": os.getenv("BACKUP_SERVICE_URL"),
         }
     
-    async def get_roles_for_tenant(self, tenant_id: str) -> Dict[str, List[Role]]:
-        """テナントが利用可能な全サービスのロールを取得"""
-        # テナントの利用サービス取得
-        assigned_services = await self.get_tenant_services(tenant_id)
+    async def fetch_service_roles(self, service_id: str) -> List[ServiceRoleInfo]:
+        """
+        特定サービスのロール情報取得
         
-        # 各サービスのロールAPIを並列呼び出し
-        tasks = [
-            self.fetch_service_roles(service.id)
-            for service in assigned_services
-        ]
-        results = await asyncio.gather(*tasks)
+        Args:
+            service_id: サービスID
         
-        # サービスIDをキーとした辞書に変換
-        return {
-            service.id: roles
-            for service, roles in zip(assigned_services, results)
-        }
+        Returns:
+            List[ServiceRoleInfo]: ロール情報配列
+        
+        Raises:
+            httpx.TimeoutException: タイムアウト
+            httpx.HTTPStatusError: HTTPエラー
+        """
+        base_url = self.service_base_urls.get(service_id)
+        if not base_url:
+            self.logger.error(f"Service URL not configured: {service_id}")
+            raise ValueError(f"Service URL not configured for {service_id}")
+        
+        url = f"{base_url}/api/v1/roles"
+        
+        try:
+            response = await self.http_client.get(
+                url,
+                timeout=0.5,  # 500msタイムアウト
+                headers={"X-Service-Key": os.getenv("SERVICE_SHARED_SECRET")}
+            )
+            response.raise_for_status()
+            
+            data = response.json()
+            roles = [ServiceRoleInfo(**r) for r in data.get("data", [])]
+            
+            self.logger.info(
+                f"Fetched roles from {service_id}: {len(roles)} roles",
+                extra={"service_id": service_id, "role_count": len(roles)}
+            )
+            
+            return roles
+        
+        except httpx.TimeoutException:
+            self.logger.warning(
+                f"Timeout fetching roles from {service_id}",
+                extra={"service_id": service_id, "timeout": 0.5}
+            )
+            raise
+        
+        except httpx.HTTPStatusError as e:
+            self.logger.error(
+                f"HTTP error fetching roles from {service_id}: {e.response.status_code}",
+                extra={
+                    "service_id": service_id,
+                    "status_code": e.response.status_code,
+                    "response": e.response.text
+                }
+            )
+            raise
     
-    async def fetch_service_roles(self, service_id: str) -> List[Role]:
-        """特定サービスのロール情報を取得"""
-        url = self.service_registry.get(service_id)
-        if not url:
-            return []
+    async def get_all_service_roles(self) -> Dict[str, List[IntegratedRole]]:
+        """
+        全サービスのロール情報取得
         
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url)
-            return [Role(**r) for r in response.json()]
+        Returns:
+            Dict[str, List[IntegratedRole]]: サービスIDをキーとした統合ロール情報
+        
+        Note:
+            一部サービスのロール取得失敗時も、他のサービスのロール情報は返却
+        """
+        # サービスカタログ取得
+        services = await self.service_repository.list_services(is_active=True)
+        
+        # 並列ロール取得（エラーハンドリング付き）
+        async def fetch_service_roles_safe(
+            service_id: str
+        ) -> tuple[str, Optional[List[ServiceRoleInfo]]]:
+            try:
+                roles = await asyncio.wait_for(
+                    self.fetch_service_roles(service_id),
+                    timeout=0.5
+                )
+                return service_id, roles
+            except asyncio.TimeoutError:
+                self.logger.warning(
+                    f"Timeout fetching roles from {service_id}",
+                    extra={"service_id": service_id}
+                )
+                return service_id, None
+            except Exception as e:
+                self.logger.error(
+                    f"Failed to fetch roles from {service_id}: {e}",
+                    extra={"service_id": service_id, "error": str(e)}
+                )
+                return service_id, None
+        
+        # 並列実行
+        results = await asyncio.gather(
+            *[fetch_service_roles_safe(s.id) for s in services],
+            return_exceptions=False
+        )
+        
+        # 統合ロール情報を構築
+        integrated_roles = {}
+        failed_services = []
+        
+        for service_id, roles in results:
+            if roles is not None:
+                integrated_roles[service_id] = [
+                    IntegratedRole(
+                        service_id=service_id,
+                        role_name=r.role_name,
+                        description=r.description
+                    )
+                    for r in roles
+                ]
+            else:
+                failed_services.append(service_id)
+        
+        # 全サービス失敗時はエラー
+        if len(failed_services) == len(services):
+            self.logger.error("All services failed to provide role information")
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "ROLE_AGGREGATION_001_ALL_SERVICES_UNAVAILABLE",
+                    "message": "All services failed to provide role information",
+                    "failedServices": failed_services
+                }
+            )
+        
+        self.logger.info(
+            f"Aggregated roles: {len(integrated_roles)} services, "
+            f"{sum(len(r) for r in integrated_roles.values())} total roles, "
+            f"{len(failed_services)} failed services",
+            extra={
+                "service_count": len(integrated_roles),
+                "role_count": sum(len(r) for r in integrated_roles.values()),
+                "failed_services": failed_services
+            }
+        )
+        
+        return integrated_roles
+    
+    async def get_tenant_available_roles(
+        self,
+        tenant_id: str
+    ) -> Dict[str, List[IntegratedRole]]:
+        """
+        テナント利用可能ロール取得
+        
+        Args:
+            tenant_id: テナントID
+        
+        Returns:
+            Dict[str, List[IntegratedRole]]: フィルタリングされた統合ロール情報
+        
+        Business Logic:
+            1. テナントのServiceAssignment取得（status=active）
+            2. コアサービス（auth-service、tenant-management、service-setting）を自動追加
+            3. 全サービスのロール情報取得
+            4. テナントが利用しているサービスのロールのみをフィルタ
+        """
+        # 1. テナントのServiceAssignment取得
+        assignments = await self.assignment_repository.list_by_tenant(
+            tenant_id, status="active"
+        )
+        
+        # 2. コアサービスを自動追加
+        available_service_ids = {
+            "auth-service",
+            "tenant-management",
+            "service-setting"
+        }
+        
+        # 3. 管理対象サービスを追加
+        for assignment in assignments:
+            available_service_ids.add(assignment.service_id)
+        
+        # 4. 全サービスのロール情報取得
+        all_roles = await self.get_all_service_roles()
+        
+        # 5. フィルタリング
+        filtered_roles = {
+            service_id: roles
+            for service_id, roles in all_roles.items()
+            if service_id in available_service_ids
+        }
+        
+        self.logger.info(
+            f"Tenant available roles: {len(filtered_roles)} services, "
+            f"{sum(len(r) for r in filtered_roles.values())} roles",
+            extra={
+                "tenant_id": tenant_id,
+                "service_count": len(filtered_roles),
+                "role_count": sum(len(r) for r in filtered_roles.values()),
+                "assigned_services": list(available_service_ids - {"auth-service", "tenant-management", "service-setting"})
+            }
+        )
+        
+        return filtered_roles
+```
+
+##### 5.4.5.3 パフォーマンス要件
+| API | 目標応答時間 (P95) | 最大応答時間 (P99) |
+|-----|-------------------|---------------------|
+| GET /api/v1/integrated-roles | < 500ms | < 800ms |
+| GET /api/v1/tenants/{tenantId}/available-roles | < 400ms | < 600ms |
+| GET /api/v1/services/{serviceId}/roles | < 200ms | < 300ms |
+
+##### 5.4.5.4 エラーハンドリング
+| エラーコード | 条件 | メッセージ | HTTPステータス |
+|--------------|------|------------|----------------|
+| ROLE_AGGREGATION_001_ALL_SERVICES_UNAVAILABLE | 全サービスのロール取得に失敗 | All services failed to provide role information | 503 |
+| ROLE_AGGREGATION_002_SERVICE_TIMEOUT | 特定サービスのロール取得がタイムアウト | Timeout fetching roles from {service_id} | 200 (部分成功) |
+| ROLE_AGGREGATION_003_INVALID_RESPONSE | サービスのレスポンス形式が不正 | Invalid role response from {service_id} | 200 (部分成功) |
+| TENANT_002_NOT_FOUND | テナントが存在しない | Tenant not found | 404 |
+| TENANT_ISOLATION_VIOLATION | テナント分離違反 | Cannot access roles for different tenant | 403 |
+| SERVICE_001_NOT_FOUND | サービスが存在しない | Service not found | 404 |
+| CONFIG_001_SERVICE_URL_MISSING | サービスURLが設定されていない | Service URL not configured for {service_id} | 500 |
+
+**部分的失敗の許容**:
+- 一部サービスのロール取得失敗時も、他のサービスのロール情報は返却
+- 失敗したサービスIDは `metadata.failedServices` に含まれる
+- エラーログに記録し、運用チームに通知
+
+```python
+# 部分的失敗時のレスポンス例
+{
+  "roles": {
+    "auth-service": [...],
+    "tenant-management": [...]
+    # file-service はタイムアウトで除外
+  },
+  "metadata": {
+    "totalServices": 2,
+    "totalRoles": 5,
+    "failedServices": ["file-service"],  # 失敗したサービス
+    "cachedAt": null
+  }
+}
 ```
 
 ### 5.5 データモデル
@@ -2460,3 +2744,4 @@ async def list_tenants(current_user: dict = Depends(get_current_user)):
 | 1.4.0 | 2026-02-01 | ロール管理機能の実装完了を反映（タスク04対応）、RoleServiceとRoleRepositoryの追加、JWT内ロール情報の有効化、require_roleデコレータの有効化 | [04-認証認可サービス-ロール管理](../../管理アプリ/Phase1-MVP開発/Specs/04-認証認可サービス-ロール管理.md) |
 | 1.5.0 | 2026-02-01 | テナント管理サービスの詳細化（タスク05対応）、Tenantデータモデルの詳細、一意性チェック、特権テナント保護、userCount更新方法を追加 | [05-テナント管理サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/05-テナント管理サービス-コアAPI.md) |
 | 1.6.0 | 2026-02-01 | TenantUser管理、Domain管理機能の追加（タスク06対応）、user_count自動更新（楽観的ロック）、認証認可サービス連携、DNS検証ロジックを追加 | [06-テナント管理サービス-ユーザー・ドメイン管理](../../管理アプリ/Phase1-MVP開発/Specs/06-テナント管理サービス-ユーザー・ドメイン管理.md) |
+| 1.7.0 | 2026-02-02 | サービス設定サービスにロール統合機能を追加（タスク08対応）、RoleAggregatorクラスの詳細実装、並列ロール取得処理、エラーハンドリング、パフォーマンス要件を記載 | [08-サービス設定サービス-ロール統合](../../管理アプリ/Phase1-MVP開発/Specs/08-サービス設定サービス-ロール統合.md) |

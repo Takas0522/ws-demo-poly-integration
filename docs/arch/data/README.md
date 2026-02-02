@@ -1,8 +1,8 @@
 # データモデル設計
 
 ## ドキュメント情報
-- バージョン: 1.0.0
-- 最終更新日: 2026-02-01
+- バージョン: 1.6.0
+- 最終更新日: 2026-02-02
 - 関連: [システムアーキテクチャ概要](../overview.md)
 
 ## 1. データストア概要
@@ -1078,7 +1078,151 @@ WHERE c.type = 'service_assignment'
   AND c.status = 'active'
 ```
 
-### 4.3 ServiceUsage エンティティ
+### 4.3 IntegratedRole モデル（タスク08 - Phase 1実装）
+
+ロール統合機能で使用される統合ロール情報モデルです。各サービスから取得したロール情報を統合して表現します。
+
+**注意**: このモデルはCosmos DBに保存されません（Phase 1では動的に生成）。Phase 2でRedisキャッシュに保存される可能性があります。
+
+#### 4.3.1 Python モデル定義
+
+```python
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Optional, List
+
+class IntegratedRole(BaseModel):
+    """統合ロール情報（タスク08）"""
+    
+    model_config = ConfigDict(populate_by_name=True)
+    
+    service_id: str = Field(..., alias="serviceId")
+    role_name: str = Field(..., alias="roleName")
+    description: str
+    
+    # 追加メタデータ（Phase 2で拡張予定）
+    permissions: Optional[List[str]] = None  # 権限一覧
+    is_default: bool = False  # デフォルトロールフラグ
+    display_order: int = 0  # 表示順序
+
+
+class ServiceRoleInfo(BaseModel):
+    """サービスロール情報（各サービスの /api/v1/roles レスポンス形式）"""
+    
+    model_config = ConfigDict(populate_by_name=True)
+    
+    role_name: str = Field(..., alias="roleName")
+    description: str
+
+
+class IntegratedRolesResponse(BaseModel):
+    """統合ロール情報レスポンス（タスク08）"""
+    
+    roles: Dict[str, List[IntegratedRole]]  # サービスIDをキーとした辞書
+    metadata: IntegratedRolesMetadata
+
+
+class IntegratedRolesMetadata(BaseModel):
+    """統合ロール情報メタデータ（タスク08）"""
+    
+    total_services: int = Field(..., alias="totalServices")
+    total_roles: int = Field(..., alias="totalRoles")
+    failed_services: List[str] = Field(default_factory=list, alias="failedServices")
+    cached_at: Optional[datetime] = Field(None, alias="cachedAt")
+```
+
+#### 4.3.2 フィールド説明
+
+| フィールド | 型 | 必須 | 説明 |
+|----------|---|-----|------|
+| service_id | string | ✅ | ロールを定義しているサービスID（例: "file-service"） |
+| role_name | string | ✅ | ロール名（例: "管理者"） |
+| description | string | ✅ | ロールの説明（50-200文字） |
+| permissions | array[string] | - | 権限一覧（Phase 2で追加、例: ["files:read", "files:write"]） |
+| is_default | boolean | - | 新規ユーザーに自動割り当てするデフォルトロールか（Phase 2で追加、デフォルト: false） |
+| display_order | integer | - | UI表示時のソート順序（Phase 2で追加、デフォルト: 0） |
+
+#### 4.3.3 JSON レスポンス例
+
+**全サービスの統合ロール情報**:
+```json
+{
+  "roles": {
+    "auth-service": [
+      {
+        "serviceId": "auth-service",
+        "roleName": "全体管理者",
+        "description": "ユーザー登録・削除、ロール割り当て"
+      },
+      {
+        "serviceId": "auth-service",
+        "roleName": "閲覧者",
+        "description": "ユーザー情報の参照のみ"
+      }
+    ],
+    "file-service": [
+      {
+        "serviceId": "file-service",
+        "roleName": "管理者",
+        "description": "全機能へのアクセス"
+      },
+      {
+        "serviceId": "file-service",
+        "roleName": "編集者",
+        "description": "ファイルのアップロード、削除"
+      },
+      {
+        "serviceId": "file-service",
+        "roleName": "閲覧者",
+        "description": "ファイルのダウンロード、一覧表示のみ"
+      }
+    ]
+  },
+  "metadata": {
+    "totalServices": 7,
+    "totalRoles": 18,
+    "failedServices": [],
+    "cachedAt": null
+  }
+}
+```
+
+**テナント利用可能ロール**:
+```json
+{
+  "tenantId": "tenant_acme",
+  "roles": {
+    "auth-service": [
+      {
+        "serviceId": "auth-service",
+        "roleName": "全体管理者",
+        "description": "ユーザー登録・削除、ロール割り当て"
+      }
+    ],
+    "file-service": [
+      {
+        "serviceId": "file-service",
+        "roleName": "管理者",
+        "description": "全機能へのアクセス"
+      }
+    ]
+  },
+  "metadata": {
+    "totalServices": 4,
+    "totalRoles": 8,
+    "assignedServices": ["file-service"],
+    "cachedAt": null
+  }
+}
+```
+
+#### 4.3.4 Phase 2での拡張予定
+
+- **permissions フィールド**: 各ロールが持つ詳細な権限リスト
+- **is_default フィールド**: 新規ユーザーに自動割り当てするロールのマーク
+- **display_order フィールド**: UI表示時のソート順序
+- **Redisキャッシュ**: ロール情報をRedisにキャッシュし、TTL: 5分で自動更新
+
+### 4.4 ServiceUsage エンティティ
 
 サービス利用統計：
 
@@ -1826,3 +1970,4 @@ async def backup_before_migration(container_name: str):
 | 1.3.0 | 2026-02-01 | RoleAssignmentエンティティの詳細を追加（タスク04対応）、決定的IDによる重複防止、カスケード削除、インデックス設計、クエリ例を追加 | [04-認証認可サービス-ロール管理](../../管理アプリ/Phase1-MVP開発/Specs/04-認証認可サービス-ロール管理.md) |
 | 1.4.0 | 2026-02-01 | Tenantエンティティの詳細化（タスク05対応）、updatedByフィールド追加、インデックス設計、一意性チェック、userCount更新方法、クエリ例を追加 | [05-テナント管理サービス-コアAPI](../../管理アプリ/Phase1-MVP開発/Specs/05-テナント管理サービス-コアAPI.md) |
 | 1.5.0 | 2026-02-01 | TenantUser、Domainエンティティの詳細化（タスク06対応）、決定的ID設計、インデックス設計、ドメイン検証フロー、user_count自動更新ロジック（楽観的ロック）を追加 | [06-テナント管理サービス-ユーザー・ドメイン管理](../../管理アプリ/Phase1-MVP開発/Specs/06-テナント管理サービス-ユーザー・ドメイン管理.md) |
+| 1.6.0 | 2026-02-02 | IntegratedRoleモデルを追加（タスク08対応）、サービスロール情報統合のためのデータモデル定義、Phase 2での拡張予定を明記 | [08-サービス設定サービス-ロール統合](../../管理アプリ/Phase1-MVP開発/Specs/08-サービス設定サービス-ロール統合.md) |
