@@ -7,7 +7,7 @@ import os
 
 class CosmosDBClient:
     """Cosmos DB 接続クライアント"""
-    
+
     def __init__(
         self,
         endpoint: Optional[str] = None,
@@ -17,17 +17,22 @@ class CosmosDBClient:
         self.endpoint = endpoint or os.getenv("COSMOS_DB_ENDPOINT")
         self.key = key or os.getenv("COSMOS_DB_KEY")
         self.database_name = database_name or os.getenv("COSMOS_DB_DATABASE")
-        
+
         # SSL検証を開発環境では無効化（Emulator用）
-        connection_verify = os.getenv("COSMOS_DB_CONNECTION_VERIFY", "true").lower() == "true"
-        
+        connection_verify = os.getenv(
+            "COSMOS_DB_CONNECTION_VERIFY", "true").lower() == "true"
+
+        # エミュレーター使用時はGatewayモードを使用してIPリダイレクトを回避
+        # enable_endpoint_discovery=False で自動エンドポイント検出を無効化
         self.client = CosmosClient(
             self.endpoint,
             self.key,
-            connection_verify=connection_verify
+            connection_verify=connection_verify,
+            connection_mode="Gateway",
+            enable_endpoint_discovery=False
         )
         self.database = None
-        
+
     def create_database(self):
         """データベース作成"""
         try:
@@ -36,7 +41,7 @@ class CosmosDBClient:
         except CosmosResourceExistsError:
             self.database = self.client.get_database_client(self.database_name)
             print(f"✓ Database '{self.database_name}' already exists")
-    
+
     def create_container(
         self,
         container_name: str,
@@ -53,7 +58,9 @@ class CosmosDBClient:
         except CosmosResourceExistsError:
             print(f"✓ Container '{container_name}' already exists")
             return self.database.get_container_client(container_name)
-    
+
     def get_container(self, container_name: str):
         """コンテナ取得"""
+        if self.database is None:
+            self.database = self.client.get_database_client(self.database_name)
         return self.database.get_container_client(container_name)

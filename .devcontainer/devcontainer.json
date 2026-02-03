@@ -45,7 +45,7 @@
     }
   },
   
-  "forwardPorts": [3000, 8001, 8002, 8003, 8081],
+  "forwardPorts": [3000, 8001, 8002, 8003, 8081, 1234],
   "portsAttributes": {
     "3000": {
       "label": "Next.js Frontend",
@@ -65,6 +65,10 @@
     },
     "8081": {
       "label": "Cosmos DB Emulator",
+      "onAutoForward": "silent"
+    },
+    "1234": {
+      "label": "Cosmos DB Data Explorer",
       "onAutoForward": "silent"
     }
   },

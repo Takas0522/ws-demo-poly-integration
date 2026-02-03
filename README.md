@@ -188,6 +188,23 @@ lsof -i :3000
 netstat -ano | findstr :3000
 ```
 
+### Cosmos DB Emulator の使用
+
+本プロジェクトでは Azure Cosmos DB Emulator (vnext-preview) を使用しています。
+DevContainer起動時に自動的に開始されます。
+
+**接続情報:**
+- **エンドポイント**: https://localhost:8081
+- **Data Explorer**: http://localhost:1234
+- **キー**: `C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==`
+
+**接続テスト:**
+```bash
+python scripts/test_cosmos_connection.py
+```
+
+詳細は [Cosmos DB Emulator セットアップガイド](./docs/cosmos-db-emulator.md) を参照してください。
+
 ### Cosmos DB Emulator が起動しない
 
 コンテナのログを確認してください：
@@ -200,6 +217,12 @@ docker logs cosmosdb-emulator
 
 ```bash
 docker-compose restart cosmosdb
+```
+
+接続テストを実行:
+
+```bash
+python scripts/test_cosmos_connection.py
 ```
 
 ### パッケージインストールエラー

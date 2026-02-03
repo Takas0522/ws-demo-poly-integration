@@ -15,29 +15,29 @@ services:
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
 
-  # Cosmos DB Emulator
+  # Cosmos DB Emulator (vnext-preview)
   cosmosdb:
-    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
     container_name: cosmosdb-emulator
     ports:
-      - "8081:8081"
-      - "10251:10251"
-      - "10252:10252"
-      - "10253:10253"
-      - "10254:10254"
+      - "0.0.0.0:8081:8081"  # Cosmos DB エンドポイント
+      - "0.0.0.0:1234:1234"  # Data Explorer
     environment:
-      - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10
-      - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true
-      - AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=127.0.0.1
+      - PROTOCOL=https
+      - ENABLE_EXPLORER=true
+      - LOG_LEVEL=info
+      - ENABLE_TELEMETRY=false
+      - AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=cosmosdb
     volumes:
-      - cosmosdb-data:/data/db
+      - cosmosdb-data:/data
     networks:
       - poc-network
     healthcheck:
-      test: ["CMD", "curl", "-k", "https://localhost:8081/_explorer/emulator.pem"]
+      test: ["CMD", "curl", "-k", "https://localhost:8081/"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 60s
 
 networks:
   poc-network:
