@@ -1,0 +1,54 @@
+#!/bin/bash
+set -e
+
+echo "======================================"
+echo " DevContainer セットアップ開始"
+echo "======================================"
+
+# Python依存関係インストール
+echo "📦 Python依存関係をインストール中..."
+for service in auth-service tenant-management-service service-setting-service; do
+  if [ -f "/workspace/src/$service/requirements.txt" ]; then
+    echo "  → $service"
+    pip install -q -r "/workspace/src/$service/requirements.txt"
+  fi
+done
+
+# Node.js依存関係インストール
+echo "📦 Node.js依存関係をインストール中..."
+if [ -f "/workspace/src/front/package.json" ]; then
+  echo "  → frontend"
+  cd /workspace/src/front
+  npm install --silent
+  cd /workspace
+fi
+
+# 環境変数ファイルの作成
+echo "🔧 環境変数ファイルをセットアップ中..."
+for service in front auth-service tenant-management-service service-setting-service; do
+  ENV_EXAMPLE="/workspace/src/$service/.env.example"
+  ENV_FILE="/workspace/src/$service/.env"
+  if [ -f "$ENV_EXAMPLE" ] && [ ! -f "$ENV_FILE" ]; then
+    echo "  → $service/.env を作成"
+    cp "$ENV_EXAMPLE" "$ENV_FILE"
+  fi
+done
+
+# Git設定
+echo "🔧 Git設定を確認中..."
+if [ ! -f ~/.gitconfig ]; then
+  git config --global core.autocrlf input
+  git config --global core.eol lf
+fi
+
+echo ""
+echo "======================================"
+echo " ✅ セットアップ完了!"
+echo "======================================"
+echo ""
+echo "📝 次のステップ:"
+echo "  1. フロントエンド起動: cd src/front && npm run dev"
+echo "  2. 認証サービス起動: cd src/auth-service && uvicorn app.main:app --reload --port 8001"
+echo "  3. テナントサービス起動: cd src/tenant-management-service && uvicorn app.main:app --reload --port 8002"
+echo "  4. サービス設定起動: cd src/service-setting-service && uvicorn app.main:app --reload --port 8003"
+echo ""

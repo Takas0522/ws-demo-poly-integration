@@ -81,6 +81,12 @@ lerna-debug.log*
 *.tgz
 .yarn-integrity
 
+# Next.js
+.next/
+out/
+.vercel
+.turbo
+
 # Build outputs
 dist/
 build/
