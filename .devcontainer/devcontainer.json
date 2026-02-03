@@ -1,36 +1,75 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
-	"name": "ws-demo-poly-integration",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"build": {
-		"dockerfile": "Dockerfile"
-	},
-
-	// Fix Docker DNS for WSL2 before building
-	"initializeCommand": "bash .devcontainer/fix-docker-dns.sh",
-	"features": {
-		"ghcr.io/devcontainers/features/azure-cli:1": {},
-		// GitHub CLI is installed directly in Dockerfile to avoid feature installation issues
-		"ghcr.io/devcontainers/features/github-cli:1": {},
-		// "ghcr.io/schlich/devcontainer-features/playwright:0": {},
-		"ghcr.io/devcontainers/features/node:1": {}
-	},
-
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
-
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [8081, 1234]
-
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "bash .devcontainer/setup-env.sh"
-
-	// DNS configuration is handled by docker-compose.yml
-
-	// Configure tool-specific properties.１
-	// "customizations": {},
-
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+  "name": "PoC Multi-Service App",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "workspace",
+  "workspaceFolder": "/workspace",
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-azuretools.vscode-bicep",
+        "ms-azuretools.vscode-azureresourcegroups",
+        "redhat.vscode-yaml",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.formatting.provider": "black",
+        "python.formatting.blackArgs": ["--line-length", "100"],
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.organizeImports": "explicit"
+        },
+        "files.eol": "\n",
+        "files.insertFinalNewline": true,
+        "files.trimTrailingWhitespace": true,
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        }
+      }
+    }
+  },
+  
+  "forwardPorts": [3000, 8001, 8002, 8003, 8081],
+  "portsAttributes": {
+    "3000": {
+      "label": "Next.js Frontend",
+      "onAutoForward": "notify"
+    },
+    "8001": {
+      "label": "Auth Service",
+      "onAutoForward": "silent"
+    },
+    "8002": {
+      "label": "Tenant Service",
+      "onAutoForward": "silent"
+    },
+    "8003": {
+      "label": "Service Setting",
+      "onAutoForward": "silent"
+    },
+    "8081": {
+      "label": "Cosmos DB Emulator",
+      "onAutoForward": "silent"
+    }
+  },
+  
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  
+  "remoteUser": "vscode"
 }
