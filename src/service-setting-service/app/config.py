@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     cosmos_db_database: str = "service_management"
     cosmos_db_container: str = "services"
 
+    # JWT settings
+    jwt_secret: str = "your-secret-key-change-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expiration_hours: int = 24
+
     # Log settings
     log_level: str = "INFO"
 
