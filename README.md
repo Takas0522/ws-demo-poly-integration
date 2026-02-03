@@ -218,10 +218,146 @@ npm install
 
 ## ドキュメント
 
-- [アーキテクチャ概要](./docs/arch/overview.md)
-- [開発環境設計](./docs/arch/development-environment.md)
+### 📚 主要ドキュメント
+
+- **[ドキュメントIndex](./docs/README.md)** - すべてのドキュメントへのナビゲーション
+- **[プロジェクト概要](./docs/init.md)** - サービス概要と初期要件
+- **[アーキテクチャ概要](./docs/arch/overview.md)** - システムアーキテクチャの全体像
+
+### 🛠️ 設計ドキュメント
+
 - [コンポーネント設計](./docs/arch/components/README.md)
-- [機能仕様](./docs/PoCアプリ/初期構築/Specs/)
+- [API設計仕様書](./docs/arch/api/api-specification.md)
+- [データ設計](./docs/arch/data/data-model.md)
+- [デプロイメント設計](./docs/arch/deployment.md)
+- [開発環境設計](./docs/arch/development-environment.md)
+
+### 📋 開発タスク
+
+- [初期構築タスク](./docs/PoCアプリ/初期構築/開発タスク.md)
+- [タスク別機能仕様](./docs/PoCアプリ/初期構築/Specs/)
+
+### 🚀 クイックリンク
+
+| 役割 | 主要ドキュメント |
+|------|----------------|
+| **新規参加者** | [プロジェクト概要](./docs/init.md) → [アーキテクチャ概要](./docs/arch/overview.md) |
+| **フロントエンド開発者** | [コンポーネント設計 - Frontend](./docs/arch/components/README.md#1-frontend-nextjs) → [API仕様](./docs/arch/api/api-specification.md) |
+| **バックエンド開発者** | [データ設計](./docs/arch/data/data-model.md) → [API仕様](./docs/arch/api/api-specification.md) |
+| **インフラ担当者** | [デプロイメント設計](./docs/arch/deployment.md) |
+
+## 運用ガイド
+
+### デプロイメント
+
+**開発環境へのデプロイ**:
+```bash
+# Bicep テンプレートのバリデーション
+cd infra
+az deployment group validate \
+  --resource-group rg-poc-dev \
+  --template-file main.bicep \
+  --parameters @parameters.dev.json
+
+# デプロイ実行
+az deployment group create \
+  --resource-group rg-poc-dev \
+  --template-file main.bicep \
+  --parameters @parameters.dev.json
+```
+
+詳細は [デプロイメント設計](./docs/arch/deployment.md) を参照してください。
+
+### モニタリング
+
+Application Insights でアプリケーションのメトリクスを監視：
+- **Azure Portal**: https://portal.azure.com
+- **ログクエリ**: Application Insights > Logs
+
+### バックアップ
+
+Cosmos DBは自動バックアップが有効（7日間保持）。  
+手動バックアップが必要な場合は、Azure Portal から Point-in-Time Restore を実施。
+
+## トラブルシューティング
+
+### よくある問題
+
+#### Q1: DevContainerが起動しない
+
+**解決策**:
+1. Docker Desktop が起動しているか確認
+2. `.devcontainer/devcontainer.json` の設定を確認
+3. コンテナを再ビルド: "Dev Containers: Rebuild Container"
+
+#### Q2: Cosmos DB Emulator に接続できない
+
+**解決策**:
+```bash
+# コンテナの状態確認
+docker ps | grep cosmos
+
+# ログ確認
+docker logs cosmosdb-emulator
+
+# 再起動
+docker-compose restart cosmosdb
+```
+
+#### Q3: ポート競合エラー
+
+**解決策**:
+```bash
+# 使用中のポートを確認
+# Linux/macOS
+lsof -i :3000
+
+# Windows
+netstat -ano | findstr :3000
+
+# プロセスを停止するか、別のポートを使用
+```
+
+#### Q4: npm install / pip install が失敗する
+
+**解決策**:
+```bash
+# キャッシュをクリア
+# Node.js
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+
+# Python
+pip cache purge
+pip install -r requirements.txt --no-cache-dir
+```
+
+### さらなるサポート
+
+- **技術的な質問**: [GitHub Issues](https://github.com/your-org/ws-demo-poly-integration/issues)
+- **バグ報告**: [GitHub Issues](https://github.com/your-org/ws-demo-poly-integration/issues) (`bug` ラベル)
+- **機能要望**: [GitHub Issues](https://github.com/your-org/ws-demo-poly-integration/issues) (`enhancement` ラベル)
+
+## FAQ
+
+### Q: 本番環境へのデプロイ手順は？
+
+A: [デプロイメント設計](./docs/arch/deployment.md) の「本番環境デプロイ」セクションを参照してください。
+
+### Q: 新しいサービスを追加する方法は？
+
+A: [コンポーネント設計](./docs/arch/components/README.md) を参考に、既存サービスと同じ構造でサービスを作成してください。
+
+### Q: テストはどう実行する？
+
+A: 各サービスディレクトリで以下を実行：
+- **フロントエンド**: `npm test`
+- **バックエンド**: `pytest`
+
+### Q: 環境変数の設定方法は？
+
+A: 各サービスの `.env` ファイル（`.env.local`, `.env`）を編集してください。テンプレートは `.env.example` にあります。
 
 ## ライセンス
 
@@ -230,3 +366,13 @@ MIT License
 ## 貢献
 
 プルリクエストを歓迎します。大きな変更の場合は、まずissueを開いて変更内容を議論してください。
+
+### コントリビューションガイドライン
+
+1. フォークしてブランチを作成
+2. コーディング規約に従って実装
+3. テストを追加・実行
+4. ドキュメントを更新
+5. プルリクエストを作成
+
+詳細は [コーディング規約](#コーディング規約) を参照してください。

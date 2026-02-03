@@ -1,36 +1,153 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend (Next.js BFF)
 
-## Getting Started
+## 概要
 
-First, run the development server:
+本サービスは、複数サービス管理PoCアプリケーションのフロントエンドです。  
+Next.js の App Router を使用し、UIレンダリングとBFF（Backend for Frontend）機能を提供します。
+
+## 技術スタック
+
+- **フレームワーク**: Next.js 14 (App Router)
+- **言語**: TypeScript
+- **UIライブラリ**: React 18
+- **スタイリング**: Tailwind CSS
+- **状態管理**: React Context / useState
+- **認証**: JWT (JSON Web Token)
+
+## ディレクトリ構造
+
+```
+src/front/
+├── app/                      # Next.js App Router
+│   ├── api/                  # BFF APIルート
+│   │   ├── auth/            # 認証API
+│   │   ├── tenants/         # テナント管理API
+│   │   ├── users/           # ユーザー管理API
+│   │   ├── services/        # サービス設定API
+│   │   └── mock/            # モックサービスAPI
+│   ├── (auth)/              # 認証グループ
+│   │   └── login/           # ログイン画面
+│   ├── (dashboard)/         # ダッシュボードグループ
+│   │   ├── tenants/         # テナント管理画面
+│   │   ├── users/           # ユーザー管理画面
+│   │   └── services/        # サービス設定画面
+│   ├── layout.tsx           # ルートレイアウト
+│   └── page.tsx             # ホーム画面
+├── components/               # Reactコンポーネント
+│   ├── ui/                  # 汎用UIコンポーネント
+│   ├── features/            # 機能固有コンポーネント
+│   └── layout/              # レイアウトコンポーネント
+├── lib/                      # ユーティリティ・ヘルパー
+│   ├── api/                 # APIクライアント
+│   ├── auth/                # 認証ロジック
+│   └── utils/               # 汎用ユーティリティ
+├── types/                    # TypeScript型定義
+├── public/                   # 静的ファイル
+├── .env.local               # 環境変数（ローカル）
+├── next.config.js           # Next.js設定
+├── tailwind.config.js       # Tailwind CSS設定
+└── tsconfig.json            # TypeScript設定
+```
+
+## セットアップ
+
+### 1. 依存関係のインストール
+
+```bash
+npm install
+```
+
+### 2. 環境変数の設定
+
+`.env.local` ファイルを作成：
+
+```bash
+# Backend Service URLs
+AUTH_SERVICE_URL=http://localhost:8001
+TENANT_SERVICE_URL=http://localhost:8002
+SERVICE_SETTING_URL=http://localhost:8003
+
+# JWT Secret
+JWT_SECRET=your-secret-key-here
+
+# Next.js
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+### 3. 開発サーバーの起動
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+アクセス: http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 開発
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### コンポーネント作成
 
-## Learn More
+```bash
+# 新しいUIコンポーネント
+touch components/ui/Button.tsx
 
-To learn more about Next.js, take a look at the following resources:
+# 機能固有コンポーネント
+touch components/features/TenantList.tsx
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### API Route 作成
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# 新しいAPIエンドポイント
+touch app/api/tenants/[id]/route.ts
+```
 
-## Deploy on Vercel
+**例**:
+```typescript
+// app/api/tenants/[id]/route.ts
+import { NextRequest, NextResponse } from 'next/server';
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+  
+  // バックエンドサービスへのプロキシ
+  const response = await fetch(`${process.env.TENANT_SERVICE_URL}/api/v1/tenants/${id}`);
+  const data = await response.json();
+  
+  return NextResponse.json(data);
+}
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## テスト
+
+```bash
+# ユニットテスト
+npm test
+
+# リンター
+npm run lint
+
+# フォーマット
+npm run format
+```
+
+## ビルド
+
+```bash
+# 開発ビルド
+npm run build
+
+# 本番起動
+npm start
+```
+
+## 関連ドキュメント
+
+- [コンポーネント設計](../../docs/arch/components/README.md#1-frontend-nextjs)
+- [API設計仕様書](../../docs/arch/api/api-specification.md)
+
+## ライセンス
+
+MIT License
