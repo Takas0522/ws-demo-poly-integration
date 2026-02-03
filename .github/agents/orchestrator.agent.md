@@ -22,10 +22,6 @@ handoffs:
     agent: implementer
     prompt: 仕様に基づいて実装を行ってください。
     send: false
-  - label: テスト構築
-    agent: test-planner
-    prompt: 実装に対する単体テストプランを構築してください。
-    send: false
 ---
 
 # オーケストレーションエージェント
@@ -55,7 +51,7 @@ handoffs:
 - #tool:runSubagent を使用して `architect` エージェントをサブエージェントとして呼び出し
 - 指定された機能を提供できるアーキテクチャを構成
 - ドキュメントは `docs/arch` に格納される
-- **レビュー**: #tool:runSubagent を使用して `reviewer` エージェントを呼び出し（ISO29148/IEEE1016基準）
+- **レビュー**: #tool:runSubagent を使用して `reviewer` エージェントを呼び出し
 - **完了時**: 進行状況ファイルを更新（工程1: 完了、次の工程: 工程2）
 - 完了後、Commit と Push を実施
 
@@ -77,7 +73,7 @@ handoffs:
 - #tool:runSubagent を使用して `spec-writer` エージェントをサブエージェントとして呼び出し
 - 機能と仕様をビジネス観点でまとめた文書を作成
 - `docs/{アプリ名}/{開発プラン名}/Specs/{開発順序}-{開発タスク名}.md` に格納
-- **レビュー**: #tool:runSubagent を使用して `reviewer` エージェントを呼び出し（ISO29148/IEEE1016基準）
+- **レビュー**: #tool:runSubagent を使用して `reviewer` エージェントを呼び出し
 - **完了時**: 進行状況ファイルを更新（工程3-1: 完了、次の工程: 工程3-2）
 - 完了後、Commit と Push を実施
 
@@ -86,7 +82,7 @@ handoffs:
 - #tool:runSubagent を使用して `arch-updater` エージェントをサブエージェントとして呼び出し
 - 仕様をベースにアーキテクチャを再考
 - 必要に応じて `docs/arch` の仕様を更新
-- **レビュー**: #tool:runSubagent を使用して `reviewer` エージェントを呼び出し（ISO29148/IEEE1016基準）
+- **レビュー**: #tool:runSubagent を使用して `reviewer` エージェントを呼び出し
 - **完了時**: 進行状況ファイルを更新（工程3-2: 完了、次の工程: 工程3-3）
 - 完了後、Commit と Push を実施
 
@@ -95,26 +91,8 @@ handoffs:
 - #tool:runSubagent を使用して `implementer` エージェントをサブエージェントとして呼び出し
 - src内部の各サブモジュールに対して開発を実装
 - ビルド成功を完了条件とする
-- **レビュー**: #tool:runSubagent を使用して `reviewer` エージェントを呼び出し（言語ベストプラクティス + OWASP基準）
+- **レビュー**: #tool:runSubagent を使用して `reviewer` エージェントを呼び出し（言語ベストプラクティス）
 - **完了時**: 進行状況ファイルを更新（工程3-3: 完了、次の工程: 工程3-4）
-- 完了後、Commit と Push を実施
-
-#### 3-4: 単体テストプランの構築
-- **開始時**: 進行状況ファイルを更新（現在の工程: 工程3-4、現在のタスク: {タスク名}、ステータス: 進行中）
-- #tool:runSubagent を使用して `test-planner` エージェントをサブエージェントとして呼び出し
-- 仕様を満たす単体テストプランを構築
-- メソッド内部実装を除いたユニットテストコードを構成
-- **レビュー**: #tool:runSubagent を使用して `reviewer` エージェントを呼び出し（ISTQB基準）
-- **完了時**: 進行状況ファイルを更新（工程3-4: 完了、次の工程: 工程3-5）
-- 完了後、Commit と Push を実施
-
-#### 3-5: 単体テストの実装と実行
-- **開始時**: 進行状況ファイルを更新（現在の工程: 工程3-5、現在のタスク: {タスク名}、ステータス: 進行中）
-- #tool:runSubagent を使用して `test-implementer` エージェントをサブエージェントとして呼び出し
-- テストプランのメソッド内部実装を行う
-- すべてのユニットテストがパスする状態を完了条件とする
-- **レビュー**: #tool:runSubagent を使用して `reviewer` エージェントを呼び出し（ISTQB基準）
-- **完了時**: 進行状況ファイルを更新（工程3-5: 完了、タスク完了記録、次のタスクまたは工程4へ）
 - 完了後、Commit と Push を実施
 
 ### 工程4: ドキュメントの更新
@@ -123,7 +101,7 @@ handoffs:
 - 作成されたSpec情報を統合
 - `docs/{アプリ名}/仕様/` ディレクトリに格納
 - `docs` のIndexを管理しているドキュメントを更新
-- **レビュー**: #tool:runSubagent を使用して `reviewer` エージェントを呼び出し（ISO29148/IEEE1016基準）
+- **レビュー**: #tool:runSubagent を使用して `reviewer` エージェントを呼び出し
 - **完了時**: 進行状況ファイルを更新（工程4: 完了、全工程完了）
 - 完了後、Commit と Push を実施
 
@@ -138,8 +116,6 @@ handoffs:
 - `spec-writer`: 仕様作成エージェント
 - `arch-updater`: アーキテクチャ更新エージェント
 - `implementer`: 実装実行エージェント
-- `test-planner`: テストプラン構築エージェント
-- `test-implementer`: テスト実装エージェント
 - `doc-updater`: ドキュメント更新エージェント
 - `reviewer`: レビューエージェント
 

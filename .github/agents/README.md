@@ -23,8 +23,6 @@
 | `spec-writer` | 機能仕様書作成 | 工程3-1 |
 | `arch-updater` | アーキテクチャ更新 | 工程3-2 |
 | `implementer` | 機能実装 | 工程3-3 |
-| `test-planner` | テストプラン構築 | 工程3-4 |
-| `test-implementer` | テスト実装 | 工程3-5 |
 | `doc-updater` | ドキュメント統合・更新 | 工程4 |
 | `reviewer` | 品質レビュー | 各工程 |
 
@@ -42,9 +40,7 @@
 工程3: 開発の実行（各タスクごと）
   ├─ 3-1: spec-writer → reviewer
   ├─ 3-2: arch-updater → reviewer
-  ├─ 3-3: implementer → reviewer
-  ├─ 3-4: test-planner → reviewer
-  └─ 3-5: test-implementer → reviewer
+  └─ 3-3: implementer → reviewer
        ↓
 工程4: ドキュメントの更新
   └─ doc-updater エージェント
@@ -103,9 +99,7 @@ docs/
 
 | 対象 | 基準 |
 |------|------|
-| ドキュメント | ISO29148/IEEE1016 |
-| テスト | ISTQB |
-| 開発 | 言語ベストプラクティス + OWASP |
+| 開発 | 言語ベストプラクティス |
 
 ## 注意事項
 
