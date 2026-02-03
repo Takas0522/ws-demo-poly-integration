@@ -28,6 +28,10 @@
 - **低コスト**: 開発・検証に適したスケール
 - **マネージド**: 運用負荷を最小化
 
+**環境構成**:
+- **Development**: DevContainerによるローカル開発環境（詳細: [開発環境設計](./development-environment.md)）
+- **Production**: Azure上の本番環境（本ドキュメント）
+
 ### 1.2 全体アーキテクチャ
 
 ```mermaid
@@ -855,8 +859,18 @@ PoCのため未設定だが、本番では推奨：
 
 ---
 
+## 11. 関連ドキュメント
+
+- [アーキテクチャ概要](./overview.md)
+- [開発環境設計](./development-environment.md)
+- [コンポーネント設計](./components/README.md)
+- [データ設計](./data/data-model.md)
+
+---
+
 ## 変更履歴
 
 | バージョン | 日付 | 変更内容 | 作成者 |
 |-----------|------|---------|-------|
+| 1.0.1 | 2024 | 開発環境へのリンク追加 | Architecture Agent |
 | 1.0.0 | 2024 | 初版作成 | Architecture Agent |

@@ -94,7 +94,32 @@
 
 ---
 
-### 5. [デプロイメント設計](./deployment.md)
+### 5. [開発環境設計](./development-environment.md)
+ローカル開発環境の構成、DevContainer設定、Docker Compose構成。
+
+**内容**:
+- DevContainer構成
+  - Dockerfile設計
+  - devcontainer.json設定
+  - VS Code拡張機能
+- ディレクトリ構造
+- Docker Compose構成
+  - Workspace Container
+  - Cosmos DB Emulator
+- 開発ツールとパッケージ
+  - Python環境
+  - Node.js環境
+  - Azure CLI
+- 環境変数管理
+- ポート構成
+- 初期化プロセス
+- トラブルシューティング
+
+**対象読者**: すべての開発者、新規参加者
+
+---
+
+### 6. [デプロイメント設計](./deployment.md)
 Azure インフラ構成、CI/CD、Bicep IaC 設計。
 
 **内容**:
@@ -120,20 +145,23 @@ Azure インフラ構成、CI/CD、Bicep IaC 設計。
 
 1. **[アーキテクチャ概要](./overview.md)** を読む
    - システム全体を理解
-2. **[コンポーネント設計](./components/README.md)** で担当領域を確認
-3. **[API設計仕様書](./api/api-specification.md)** で連携方法を把握
+2. **[開発環境設計](./development-environment.md)** で開発環境をセットアップ
+3. **[コンポーネント設計](./components/README.md)** で担当領域を確認
+4. **[API設計仕様書](./api/api-specification.md)** で連携方法を把握
 
 ### フロントエンド開発者向け
 
-1. **[API設計仕様書](./api/api-specification.md)** でエンドポイントを確認
-2. **[コンポーネント設計](./components/README.md)** の Frontend セクションを参照
-3. **[データ設計](./data/data-model.md)** でデータ構造を理解
+1. **[開発環境設計](./development-environment.md)** でNext.js環境をセットアップ
+2. **[API設計仕様書](./api/api-specification.md)** でエンドポイントを確認
+3. **[コンポーネント設計](./components/README.md)** の Frontend セクションを参照
+4. **[データ設計](./data/data-model.md)** でデータ構造を理解
 
 ### バックエンド開発者向け
 
-1. **[コンポーネント設計](./components/README.md)** で担当サービスの詳細を確認
-2. **[データ設計](./data/data-model.md)** でデータモデルを理解
-3. **[API設計仕様書](./api/api-specification.md)** でエンドポイント仕様を実装
+1. **[開発環境設計](./development-environment.md)** でPython環境をセットアップ
+2. **[コンポーネント設計](./components/README.md)** で担当サービスの詳細を確認
+3. **[データ設計](./data/data-model.md)** でデータモデルを理解
+4. **[API設計仕様書](./api/api-specification.md)** でエンドポイント仕様を実装
 
 ### インフラ担当者向け
 
@@ -232,4 +260,5 @@ graph TB
 
 | バージョン | 日付 | 変更内容 | 作成者 |
 |-----------|------|---------|-------|
+| 1.0.1 | 2024 | 開発環境設計ドキュメント追加 | Architecture Agent |
 | 1.0.0 | 2024 | 初版作成 | Architecture Agent |
