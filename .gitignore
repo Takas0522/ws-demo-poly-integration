@@ -110,3 +110,15 @@ temp/
 # Infrastructure Outputs (contains secrets)
 infra/outputs/
 *.bicepparam.local
+
+# Test Results
+test-results/
+*.xml
+*.junit
+playwright-report/
+test-results.json
+
+# Playwright
+/playwright/.cache/
+/test-results/
+/playwright-report/
