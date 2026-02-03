@@ -12,7 +12,14 @@ class Settings(BaseSettings):
     cosmos_db_key: str
     cosmos_db_database: str = "tenant_management"
     cosmos_db_container: str = "tenants"
-
+    cosmos_db_connection_verify: bool = True
+    
+    # CORS settings
+    cors_origins: list[str] = ["http://localhost:3000"]
+    
+    # 特権テナントID
+    privileged_tenant_id: str = "privileged-tenant-001"
+    
     # Log settings
     log_level: str = "INFO"
 

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 
 from app.config import get_settings
-from app.api.v1 import health
+from app.api.v1 import health, tenants
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,14 +24,15 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify allowed origins
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Include routers
-app.include_router(health.router, tags=["Health"])
+app.include_router(health.router, prefix="/api/v1", tags=["Health"])
+app.include_router(tenants.router, prefix="/api/v1", tags=["Tenants"])
 
 
 @app.on_event("startup")
