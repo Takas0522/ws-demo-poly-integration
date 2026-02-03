@@ -95,6 +95,8 @@ Next.jsで提供する単一のWebAPIのエンドポイントを介して各サ�
 - API利用サービス
 - バックアップサービス
 
+Mockサービスは個別のサービスとして構築する必要はなくBFFを介してアクセスしたさいにMockデータを返却する構成で結構です。
+
 # 技術情報
 
 ## アプリケーションで使用する技術
@@ -104,30 +106,16 @@ Next.jsで提供する単一のWebAPIのエンドポイントを介して各サ�
 - DB: Cosmos DB
 - IaC: Bycep
 
-## リポジトリ構造
-
-ポリレポとポリレポを統合する統合リポジトリで構成されます
-
-- repo0: ws-demo-integration: 統括用
-- repo1: ws-demo-poly1: フロント
-  - https://github.com/Takas0522/ws-demo-poly1.git
-- repo2: ws-demo-poly2: テナント管理サービス
-  - https://github.com/Takas0522/ws-demo-poly2.git
-- repo3: ws-demo-poly3: 認証サービス
-  - https://github.com/Takas0522/ws-demo-poly3.git
-- repo4: ws-demo-poly4: 利用サービス設定サービス
-  - https://github.com/Takas0522/ws-demo-poly4.git
-
 ## ソース構成
 
-/:repo0
+/
 /infra:IaCコードを格納
 /docs:ドキュメントを格納
 /src:実行ソースコードを格納
-/src/front:repo1
-/src/auth-service:repo3
-/src/tenant-management-service:repo2
-/src/service-setting-service:repo4
+/src/front
+/src/auth-service
+/src/tenant-management-service
+/src/service-setting-service
 
 # 注意事項
 
