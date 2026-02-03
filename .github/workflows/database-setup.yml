@@ -1,0 +1,269 @@
+name: Database Setup
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+      initialize_only:
+        description: 'Initialize databases only (skip seed data)'
+        required: false
+        type: boolean
+        default: false
+      reset_data:
+        description: 'Reset existing data (WARNING: This will delete all data)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  AZURE_RESOURCE_GROUP: rg-poly-integration-poc
+  COSMOS_ACCOUNT_NAME: cosmos-poly-poc
+
+jobs:
+  # ========================================
+  # Database Initialization
+  # ========================================
+  initialize-database:
+    name: Initialize Cosmos DB
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install Azure Cosmos DB SDK
+        run: |
+          pip install azure-cosmos python-dotenv
+      
+      - name: Get Cosmos DB Connection Info
+        id: cosmos-info
+        run: |
+          COSMOS_ENDPOINT=$(az cosmosdb show \
+            --name ${{ env.COSMOS_ACCOUNT_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query documentEndpoint -o tsv)
+          
+          COSMOS_KEY=$(az cosmosdb keys list \
+            --name ${{ env.COSMOS_ACCOUNT_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query primaryMasterKey -o tsv)
+          
+          echo "::add-mask::$COSMOS_KEY"
+          echo "endpoint=$COSMOS_ENDPOINT" >> $GITHUB_OUTPUT
+          echo "key=$COSMOS_KEY" >> $GITHUB_OUTPUT
+      
+      - name: Reset Data (if requested)
+        if: github.event.inputs.reset_data == 'true'
+        run: |
+          echo "⚠️ Resetting all data in Cosmos DB..."
+          
+          # Run reset script
+          python scripts/cosmos-reset.py \
+            --endpoint "${{ steps.cosmos-info.outputs.endpoint }}" \
+            --key "${{ steps.cosmos-info.outputs.key }}"
+          
+          echo "✅ Data reset completed"
+        env:
+          COSMOS_ENDPOINT: ${{ steps.cosmos-info.outputs.endpoint }}
+          COSMOS_KEY: ${{ steps.cosmos-info.outputs.key }}
+      
+      - name: Create Databases and Containers
+        run: |
+          echo "📦 Creating Cosmos DB databases and containers..."
+          
+          # Run initialization script
+          python scripts/cosmos-init.py \
+            --endpoint "${{ steps.cosmos-info.outputs.endpoint }}" \
+            --key "${{ steps.cosmos-info.outputs.key }}" \
+            --environment "${{ github.event.inputs.environment }}"
+          
+          echo "✅ Database initialization completed"
+        env:
+          COSMOS_ENDPOINT: ${{ steps.cosmos-info.outputs.endpoint }}
+          COSMOS_KEY: ${{ steps.cosmos-info.outputs.key }}
+  
+  # ========================================
+  # Seed Data Insertion
+  # ========================================
+  seed-database:
+    name: Seed Database
+    runs-on: ubuntu-latest
+    needs: initialize-database
+    if: github.event.inputs.initialize_only != 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install Dependencies
+        run: |
+          pip install azure-cosmos python-dotenv bcrypt
+      
+      - name: Get Cosmos DB Connection Info
+        id: cosmos-info
+        run: |
+          COSMOS_ENDPOINT=$(az cosmosdb show \
+            --name ${{ env.COSMOS_ACCOUNT_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query documentEndpoint -o tsv)
+          
+          COSMOS_KEY=$(az cosmosdb keys list \
+            --name ${{ env.COSMOS_ACCOUNT_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query primaryMasterKey -o tsv)
+          
+          echo "::add-mask::$COSMOS_KEY"
+          echo "endpoint=$COSMOS_ENDPOINT" >> $GITHUB_OUTPUT
+          echo "key=$COSMOS_KEY" >> $GITHUB_OUTPUT
+      
+      - name: Insert Seed Data
+        run: |
+          echo "🌱 Inserting seed data into Cosmos DB..."
+          
+          # Run seed script
+          python scripts/cosmos-seed.py \
+            --endpoint "${{ steps.cosmos-info.outputs.endpoint }}" \
+            --key "${{ steps.cosmos-info.outputs.key }}" \
+            --environment "${{ github.event.inputs.environment }}"
+          
+          echo "✅ Seed data insertion completed"
+        env:
+          COSMOS_ENDPOINT: ${{ steps.cosmos-info.outputs.endpoint }}
+          COSMOS_KEY: ${{ steps.cosmos-info.outputs.key }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  
+  # ========================================
+  # Verification
+  # ========================================
+  verify-database:
+    name: Verify Database Setup
+    runs-on: ubuntu-latest
+    needs: seed-database
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install Dependencies
+        run: |
+          pip install azure-cosmos python-dotenv
+      
+      - name: Get Cosmos DB Connection Info
+        id: cosmos-info
+        run: |
+          COSMOS_ENDPOINT=$(az cosmosdb show \
+            --name ${{ env.COSMOS_ACCOUNT_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query documentEndpoint -o tsv)
+          
+          COSMOS_KEY=$(az cosmosdb keys list \
+            --name ${{ env.COSMOS_ACCOUNT_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query primaryMasterKey -o tsv)
+          
+          echo "::add-mask::$COSMOS_KEY"
+          echo "endpoint=$COSMOS_ENDPOINT" >> $GITHUB_OUTPUT
+          echo "key=$COSMOS_KEY" >> $GITHUB_OUTPUT
+      
+      - name: Verify Database Structure
+        run: |
+          echo "🔍 Verifying database structure..."
+          
+          # Run verification script
+          python scripts/cosmos-verify.py \
+            --endpoint "${{ steps.cosmos-info.outputs.endpoint }}" \
+            --key "${{ steps.cosmos-info.outputs.key }}"
+          
+          echo "✅ Database verification completed"
+        env:
+          COSMOS_ENDPOINT: ${{ steps.cosmos-info.outputs.endpoint }}
+          COSMOS_KEY: ${{ steps.cosmos-info.outputs.key }}
+  
+  # ========================================
+  # Summary
+  # ========================================
+  database-setup-summary:
+    name: Database Setup Summary
+    runs-on: ubuntu-latest
+    needs:
+      - initialize-database
+      - seed-database
+      - verify-database
+    if: always()
+    
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## 🗄️ Database Setup Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment**: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Initialize Only**: ${{ github.event.inputs.initialize_only }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Reset Data**: ${{ github.event.inputs.reset_data }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Setup Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Initialize Database | ${{ needs.initialize-database.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Seed Database | ${{ needs.seed-database.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Verify Database | ${{ needs.verify-database.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.initialize-database.result }}" == "success" ]] && \
+             [[ "${{ needs.verify-database.result }}" == "success" ]]; then
+            echo "✅ **Database setup completed successfully!**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Database Structure" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **auth_management**: users, roles containers" >> $GITHUB_STEP_SUMMARY
+            echo "- **tenant_management**: tenants container" >> $GITHUB_STEP_SUMMARY
+            echo "- **service_management**: services container" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Database setup failed. Please check the logs.**" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "1. Verify the database structure in Azure Portal" >> $GITHUB_STEP_SUMMARY
+          echo "2. Test API endpoints with seed data" >> $GITHUB_STEP_SUMMARY
+          echo "3. Run application deployment if needed" >> $GITHUB_STEP_SUMMARY
