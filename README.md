@@ -75,7 +75,7 @@ cd ws-demo-poly-integration
 
 ```bash
 # フロントエンド
-src/front/.env.local
+src/front/.env
 
 # バックエンドサービス
 src/auth-service/.env
@@ -84,6 +84,14 @@ src/service-setting-service/.env
 ```
 
 ### 4. サービスの起動
+
+#### Python仮想環境の有効化
+
+バックエンドサービスを起動する前に、Python仮想環境を有効化してください：
+
+```bash
+source .venv/bin/activate
+```
 
 #### フロントエンド
 
@@ -194,9 +202,12 @@ netstat -ano | findstr :3000
 DevContainer起動時に自動的に開始されます。
 
 **接続情報:**
-- **エンドポイント**: https://localhost:8081
+- **エンドポイント（DevContainer内）**: https://cosmosdb:8081
+- **エンドポイント（ホストOS）**: https://localhost:8081
 - **Data Explorer**: http://localhost:1234
 - **キー**: `C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==`
+
+> **注意**: DevContainer内で実行する場合は `cosmosdb` ホスト名を使用してください。各サービスの `.env` ファイルは自動的に正しいエンドポイントが設定されます。
 
 **接続テスト:**
 ```bash
@@ -380,7 +391,7 @@ A: 各サービスディレクトリで以下を実行：
 
 ### Q: 環境変数の設定方法は？
 
-A: 各サービスの `.env` ファイル（`.env.local`, `.env`）を編集してください。テンプレートは `.env.example` にあります。
+A: 各サービスの `.env` ファイルを編集してください。テンプレートは `.env.example` にあります。
 
 ## ライセンス
 

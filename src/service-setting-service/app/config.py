@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     cosmos_db_key: str
     cosmos_db_database: str = "service_management"
     cosmos_db_container: str = "services"
+    cosmos_db_connection_verify: bool = True
 
     # JWT settings
     jwt_secret: str = "your-secret-key-change-in-production"

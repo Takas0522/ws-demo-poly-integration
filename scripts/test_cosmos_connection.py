@@ -4,16 +4,30 @@ Cosmos DB Emulator接続テストスクリプト
 エミュレーターが正しく起動し、接続できることを確認します。
 """
 
+import os
 import sys
 import urllib3
+from pathlib import Path
 from azure.cosmos import CosmosClient, exceptions
+
+# .envファイルを自動読み込み
+from dotenv import load_dotenv
+
+# プロジェクトルート
+project_root = Path(__file__).resolve().parent.parent
+
+# .envファイルの読み込み
+if not os.getenv("COSMOS_DB_ENDPOINT"):
+    env_file = project_root / "src" / "auth-service" / ".env"
+    if env_file.exists():
+        load_dotenv(env_file)
 
 # SSL警告を無効化（エミュレーター使用時のみ）
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# エミュレーターのデフォルト設定
-ENDPOINT = "https://localhost:8081"
-KEY = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+# 環境変数から設定を取得（デフォルトはDevContainer内のホスト名）
+ENDPOINT = os.getenv("COSMOS_DB_ENDPOINT", "https://cosmosdb:8081")
+KEY = os.getenv("COSMOS_DB_KEY", "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==")
 
 
 def test_connection():

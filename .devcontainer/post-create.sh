@@ -5,6 +5,18 @@ echo "======================================"
 echo " DevContainer セットアップ開始"
 echo "======================================"
 
+# Python仮想環境のセットアップ
+VENV_PATH="/workspace/.venv"
+echo "🐍 Python仮想環境をセットアップ中..."
+if [ ! -d "$VENV_PATH" ]; then
+  echo "  → 仮想環境を作成: $VENV_PATH"
+  python3 -m venv "$VENV_PATH"
+fi
+
+# 仮想環境を有効化
+source "$VENV_PATH/bin/activate"
+echo "  → 仮想環境を有効化: $(which python)"
+
 # Python依存関係インストール
 echo "📦 Python依存関係をインストール中..."
 for service in auth-service tenant-management-service service-setting-service; do
@@ -54,10 +66,10 @@ echo "======================================"
 echo ""
 echo "📝 次のステップ:"
 echo ""
+echo "� Python仮想環境の有効化:"
+echo "  source /workspace/.venv/bin/activate"
+echo ""
 echo "🗄️ CosmosDB セットアップ (初回のみ):"
-echo "  export COSMOS_DB_ENDPOINT=\"https://cosmosdb:8081\""
-echo "  export COSMOS_DB_KEY=\"C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==\""
-echo "  export COSMOS_DB_CONNECTION_VERIFY=\"false\""
 echo "  python scripts/create_database.py"
 echo "  python scripts/seed_database.py"
 echo "  python scripts/seed_sample_data.py  # サンプルデータ投入（任意）"

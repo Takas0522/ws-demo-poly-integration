@@ -43,7 +43,7 @@ src/front/
 │   └── utils/               # 汎用ユーティリティ
 ├── types/                    # TypeScript型定義
 ├── public/                   # 静的ファイル
-├── .env.local               # 環境変数（ローカル）
+├── .env                     # 環境変数
 ├── next.config.js           # Next.js設定
 ├── tailwind.config.js       # Tailwind CSS設定
 └── tsconfig.json            # TypeScript設定
@@ -59,7 +59,7 @@ npm install
 
 ### 2. 環境変数の設定
 
-`.env.local` ファイルを作成：
+`.env` ファイルを作成（既に `.env.example` からコピーされている場合はスキップ）：
 
 ```bash
 # Backend Service URLs

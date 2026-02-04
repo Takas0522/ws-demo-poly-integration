@@ -4,9 +4,25 @@ Cosmos DB データベースとコンテナを作成するスクリプト
 """
 import sys
 import os
+from pathlib import Path
+
+# .envファイルを自動読み込み
+from dotenv import load_dotenv
+
+# プロジェクトルート
+project_root = Path(__file__).resolve().parent.parent
+
+# .envファイルの読み込み優先順位
+# 1. 環境変数が既に設定されていればそれを使用
+# 2. auth-service/.env を読み込み（デフォルト設定として使用）
+if not os.getenv("COSMOS_DB_ENDPOINT"):
+    env_file = project_root / "src" / "auth-service" / ".env"
+    if env_file.exists():
+        load_dotenv(env_file)
+        print(f"📝 環境変数を読み込みました: {env_file}")
 
 # プロジェクトルートをパスに追加
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.append(str(project_root / 'src'))
 
 from shared.cosmos_client import CosmosDBClient
 
