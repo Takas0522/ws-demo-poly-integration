@@ -6,8 +6,8 @@ RUN apt-get update && apt-get install -y \
     openssl \
     && rm -rf /var/lib/apt/lists/*
 
-# Node.js 18.x インストール
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+# Node.js 20.x インストール
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
 
 # Azure CLI インストール
