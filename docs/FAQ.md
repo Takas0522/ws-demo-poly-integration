@@ -116,15 +116,15 @@ npm run dev
 
 # 認証認可サービス
 cd src/auth-service
-uvicorn app.main:app --reload --port 8001
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 
 # テナント管理サービス
 cd src/tenant-management-service
-uvicorn app.main:app --reload --port 8002
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8002
 
 # 利用サービス設定サービス
 cd src/service-setting-service
-uvicorn app.main:app --reload --port 8003
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8003
 ```
 
 詳細は各サービスの README を参照してください。

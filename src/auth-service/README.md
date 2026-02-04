@@ -94,7 +94,7 @@ python -m app.scripts.init_db
 ### 4. サービスの起動
 
 ```bash
-uvicorn app.main:app --reload --port 8001
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 ```
 
 API ドキュメント: http://localhost:8001/docs

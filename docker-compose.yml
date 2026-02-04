@@ -9,6 +9,11 @@ services:
     volumes:
       - .:/workspace:cached
       - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "3000:3000"   # Next.js Frontend
+      - "8001:8001"   # Auth Service
+      - "8002:8002"   # Tenant Management Service
+      - "8003:8003"   # Service Setting Service
     command: sleep infinity
     networks:
       - poc-network

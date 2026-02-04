@@ -106,7 +106,7 @@ npm run dev
 
 ```bash
 cd src/auth-service
-uvicorn app.main:app --reload --port 8001
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 ```
 
 API ドキュメント: http://localhost:8001/docs
@@ -115,7 +115,7 @@ API ドキュメント: http://localhost:8001/docs
 
 ```bash
 cd src/tenant-management-service
-uvicorn app.main:app --reload --port 8002
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8002
 ```
 
 API ドキュメント: http://localhost:8002/docs
@@ -124,7 +124,7 @@ API ドキュメント: http://localhost:8002/docs
 
 ```bash
 cd src/service-setting-service
-uvicorn app.main:app --reload --port 8003
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8003
 ```
 
 API ドキュメント: http://localhost:8003/docs

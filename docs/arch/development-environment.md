@@ -272,9 +272,9 @@ echo "======================================"
 echo ""
 echo "📝 次のステップ:"
 echo "  1. フロントエンド起動: cd src/front && npm run dev"
-echo "  2. 認証サービス起動: cd src/auth-service && uvicorn app.main:app --reload --port 8001"
-echo "  3. テナントサービス起動: cd src/tenant-management-service && uvicorn app.main:app --reload --port 8002"
-echo "  4. サービス設定起動: cd src/service-setting-service && uvicorn app.main:app --reload --port 8003"
+echo "  2. 認証サービス起動: cd src/auth-service && uvicorn app.main:app --reload --host 0.0.0.0 --port 8001"
+echo "  3. テナントサービス起動: cd src/tenant-management-service && uvicorn app.main:app --reload --host 0.0.0.0 --port 8002"
+echo "  4. サービス設定起動: cd src/service-setting-service && uvicorn app.main:app --reload --host 0.0.0.0 --port 8003"
 echo ""
 ```
 
