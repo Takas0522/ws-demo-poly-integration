@@ -6,6 +6,7 @@ Cosmos DB Emulator接続テストスクリプト
 
 import os
 import sys
+import time
 import urllib3
 from pathlib import Path
 from azure.cosmos import CosmosClient, exceptions
@@ -27,7 +28,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # 環境変数から設定を取得（デフォルトはDevContainer内のホスト名）
 ENDPOINT = os.getenv("COSMOS_DB_ENDPOINT", "https://cosmosdb:8081")
-KEY = os.getenv("COSMOS_DB_KEY", "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==")
+KEY = os.getenv("COSMOS_DB_KEY",
+                "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==")
 
 
 def test_connection():
@@ -37,13 +39,36 @@ def test_connection():
     print("=" * 60)
     print()
 
-    # ステップ1: クライアント作成
+    # ステップ1: クライアント作成（リトライロジック付き）
     print("1. Cosmos DBクライアントを作成中...")
-    try:
-        client = CosmosClient(ENDPOINT, KEY, connection_verify=False)
-        print("   ✓ クライアント作成成功")
-    except Exception as e:
-        print(f"   ✗ クライアント作成失敗: {e}")
+    max_retries = 12
+    retry_delay = 10
+    client = None
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            client = CosmosClient(ENDPOINT, KEY, connection_verify=False)
+            # 接続確認のために軽い操作を実行
+            list(client.list_databases())
+            print("   ✓ クライアント作成成功")
+            break
+        except Exception as e:
+            error_msg = str(e)
+            if "still starting" in error_msg or "ServiceUnavailable" in error_msg:
+                if attempt < max_retries:
+                    print(f"   ⏳ エミュレーター起動中... (試行 {attempt}/{max_retries})")
+                    print(f"      {retry_delay}秒待機してから再試行します...")
+                    time.sleep(retry_delay)
+                else:
+                    print(f"   ✗ クライアント作成失敗: エミュレーターが起動しませんでした")
+                    print(f"      エラー: {e}")
+                    return False
+            else:
+                print(f"   ✗ クライアント作成失敗: {e}")
+                return False
+
+    if client is None:
+        print("   ✗ クライアント作成失敗: 予期しないエラー")
         return False
 
     # ステップ2: データベース操作
@@ -72,7 +97,8 @@ def test_connection():
 
     # ステップ4: ドキュメント作成
     print("\n4. テストドキュメントを作成中...")
-    test_item = {"id": "test_001", "name": "Test Item", "description": "Connection test"}
+    test_item = {"id": "test_001", "name": "Test Item",
+                 "description": "Connection test"}
     try:
         created_item = container.create_item(body=test_item)
         print(f"   ✓ ドキュメント作成成功: {created_item['id']}")
@@ -83,7 +109,8 @@ def test_connection():
     # ステップ5: ドキュメント読み取り
     print("\n5. テストドキュメントを読み取り中...")
     try:
-        read_item = container.read_item(item="test_001", partition_key="test_001")
+        read_item = container.read_item(
+            item="test_001", partition_key="test_001")
         print(f"   ✓ ドキュメント読み取り成功: {read_item['name']}")
     except exceptions.CosmosResourceNotFoundError:
         print("   ✗ ドキュメントが見つかりません")
@@ -96,7 +123,8 @@ def test_connection():
     print("\n6. クエリを実行中...")
     try:
         query = "SELECT * FROM c WHERE c.id = 'test_001'"
-        items = list(container.query_items(query=query, enable_cross_partition_query=True))
+        items = list(container.query_items(
+            query=query, enable_cross_partition_query=True))
         if items:
             print(f"   ✓ クエリ実行成功: {len(items)}件のドキュメントを取得")
         else:

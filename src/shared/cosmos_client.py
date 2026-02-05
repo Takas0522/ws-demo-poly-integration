@@ -3,6 +3,11 @@ from azure.cosmos import CosmosClient, PartitionKey
 from azure.cosmos.exceptions import CosmosResourceExistsError
 from typing import Optional
 import os
+import time
+import urllib3
+
+# SSL警告を無効化（エミュレーター使用時のみ）
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class CosmosDBClient:
@@ -24,13 +29,32 @@ class CosmosDBClient:
 
         # エミュレーター使用時はGatewayモードを使用してIPリダイレクトを回避
         # enable_endpoint_discovery=False で自動エンドポイント検出を無効化
-        self.client = CosmosClient(
-            self.endpoint,
-            self.key,
-            connection_verify=connection_verify,
-            connection_mode="Gateway",
-            enable_endpoint_discovery=False
-        )
+        # リトライロジック付きでクライアントを作成
+        max_retries = 12
+        retry_delay = 10
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                self.client = CosmosClient(
+                    self.endpoint,
+                    self.key,
+                    connection_verify=connection_verify,
+                    connection_mode="Gateway",
+                    enable_endpoint_discovery=False
+                )
+                # 接続確認のために軽い操作を実行
+                list(self.client.list_databases())
+                break
+            except Exception as e:
+                error_msg = str(e)
+                if ("still starting" in error_msg or "ServiceUnavailable" in error_msg) and attempt < max_retries:
+                    print(
+                        f"⏳ Cosmos DBエミュレーター起動中... (試行 {attempt}/{max_retries})")
+                    print(f"   {retry_delay}秒待機してから再試行します...")
+                    time.sleep(retry_delay)
+                else:
+                    raise
+
         self.database = None
 
     def create_database(self):

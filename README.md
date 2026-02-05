@@ -55,6 +55,10 @@
 
 ## セットアップ
 
+### クイックスタート
+
+初めてセットアップする場合は、[詳細セットアップガイド](./docs/SETUP.md)を参照してください。
+
 ### 1. リポジトリのクローン
 
 ```bash
@@ -69,7 +73,47 @@ cd ws-demo-poly-integration
 3. "Dev Containers: Reopen in Container" を選択
 4. コンテナのビルドと起動を待つ（初回は10分程度かかる場合があります）
 
-### 3. 環境変数の設定
+⚠️ **重要**:
+
+- **CosmosDBエミュレーターは自動的に起動**します（post-create.sh内で実行）
+- 初回起動時は、CosmosDBの起動に追加で2〜3分かかります
+- post-create.shの完了メッセージが表示されるまで待ってください
+
+### 3. DevContainer内でのセットアップ
+
+#### Python仮想環境の有効化:
+
+```bash
+source /workspace/.venv/bin/activate
+```
+
+#### CosmosDB起動確認:
+
+```bash
+# CosmosDBコンテナの状態を確認
+docker ps | grep cosmosdb
+```
+
+#### CosmosDB接続テスト:
+
+```bash
+python scripts/test_cosmos_connection.py
+```
+
+#### データベースの初期化:
+
+```bash
+# データベースとコンテナの作成
+python scripts/create_database.py
+
+# 初期データの投入
+python scripts/seed_database.py
+
+# サンプルデータの投入（任意）
+python scripts/seed_sample_data.py
+```
+
+### 4. 環境変数の設定
 
 各サービスディレクトリに `.env` ファイルが自動生成されます。必要に応じて編集してください。
 
@@ -85,12 +129,12 @@ src/service-setting-service/.env
 
 ### 4. サービスの起動
 
-#### Python仮想環境の有効化
+DevContainer内で以下のコマンドを実行してサービスを起動します。
 
-バックエンドサービスを起動する前に、Python仮想環境を有効化してください：
+#### Python仮想環境の有効化（最初に1回実行）
 
 ```bash
-source .venv/bin/activate
+source /workspace/.venv/bin/activate
 ```
 
 #### フロントエンド
@@ -198,25 +242,77 @@ netstat -ano | findstr :3000
 
 ### Cosmos DB Emulator の使用
 
-本プロジェクトでは Azure Cosmos DB Emulator (vnext-preview) を使用しています。
-DevContainer起動時に自動的に開始されます。
+本プロジェクトでは Azure Cosmos DB Emulator を使用しています。
+**CosmosDBエミュレーターはDevContainer起動時に自動的に起動**します（post-create.sh内で実行）。
+
+#### DevContainer内から操作:
+
+```bash
+# CosmosDBコンテナの状態を確認
+docker ps | grep cosmosdb
+
+# CosmosDBコンテナを手動で起動（必要な場合）
+docker compose up -d cosmosdb
+
+# CosmosDBコンテナを再起動
+docker restart cosmosdb-emulator
+
+# CosmosDBコンテナのログを確認
+docker logs cosmosdb-emulator
+```
 
 **接続情報:**
-- **エンドポイント（DevContainer内）**: https://cosmosdb:8081
-- **エンドポイント（ホストOS）**: https://localhost:8081
-- **Data Explorer**: http://localhost:1234
+
+- **エンドポイント（DevContainer内）**: https://cosmosdb:8081 または https://localhost:8081
 - **キー**: `C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==`
 
-> **注意**: DevContainer内で実行する場合は `cosmosdb` ホスト名を使用してください。各サービスの `.env` ファイルは自動的に正しいエンドポイントが設定されます。
+⚠️ **重要**:
+
+- CosmosDBエミュレーターは**自動的に起動**します
+- 初回起動時、ヘルスチェックが通るまで2〜3分かかります
+- post-create.shの完了を待ってから接続テストを実行してください
 
 **接続テスト:**
+
 ```bash
+# DevContainer内で実行
+source /workspace/.venv/bin/activate
 python scripts/test_cosmos_connection.py
 ```
 
-詳細は [Cosmos DB Emulator セットアップガイド](./docs/cosmos-db-emulator.md) を参照してください。
+詳細は [Cosmos DB Emulator セットアップガイド](./docs/cosmos-db-emulator.md) および [セットアップガイド](./docs/SETUP.md) を参照してください。
 
 ### Cosmos DB Emulator が起動しない
+
+#### 症状: `Failed to resolve 'cosmosdb'` エラー
+
+**原因**: CosmosDBコンテナが起動していない
+
+**解決策**:
+
+1. **DevContainer内で**CosmosDBコンテナの状態を確認:
+
+   ```bash
+   docker ps | grep cosmosdb
+   ```
+
+2. コンテナが起動していない場合、手動で起動:
+
+   ```bash
+   docker compose up -d cosmosdb
+   ```
+
+3. 起動を待機（最大2分）:
+
+   ```bash
+   sleep 30
+   docker ps | grep cosmosdb
+   ```
+
+4. DevContainerを再起動:
+   - コマンドパレット → "Dev Containers: Rebuild Container"
+
+#### その他のトラブル
 
 コンテナのログを確認してください：
 
@@ -227,12 +323,14 @@ docker logs cosmosdb-emulator
 再起動:
 
 ```bash
-docker-compose restart cosmosdb
+docker restart cosmosdb-emulator
 ```
 
 接続テストを実行:
 
 ```bash
+# DevContainer内で実行
+source /workspace/.venv/bin/activate
 python scripts/test_cosmos_connection.py
 ```
 
@@ -273,18 +371,19 @@ npm install
 
 ### 🚀 クイックリンク
 
-| 役割 | 主要ドキュメント |
-|------|----------------|
-| **新規参加者** | [プロジェクト概要](./docs/init.md) → [アーキテクチャ概要](./docs/arch/overview.md) |
+| 役割                     | 主要ドキュメント                                                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **新規参加者**           | [プロジェクト概要](./docs/init.md) → [アーキテクチャ概要](./docs/arch/overview.md)                                                    |
 | **フロントエンド開発者** | [コンポーネント設計 - Frontend](./docs/arch/components/README.md#1-frontend-nextjs) → [API仕様](./docs/arch/api/api-specification.md) |
-| **バックエンド開発者** | [データ設計](./docs/arch/data/data-model.md) → [API仕様](./docs/arch/api/api-specification.md) |
-| **インフラ担当者** | [デプロイメント設計](./docs/arch/deployment.md) |
+| **バックエンド開発者**   | [データ設計](./docs/arch/data/data-model.md) → [API仕様](./docs/arch/api/api-specification.md)                                        |
+| **インフラ担当者**       | [デプロイメント設計](./docs/arch/deployment.md)                                                                                       |
 
 ## 運用ガイド
 
 ### デプロイメント
 
 **開発環境へのデプロイ**:
+
 ```bash
 # Bicep テンプレートのバリデーション
 cd infra
@@ -305,12 +404,13 @@ az deployment group create \
 ### モニタリング
 
 Application Insights でアプリケーションのメトリクスを監視：
+
 - **Azure Portal**: https://portal.azure.com
 - **ログクエリ**: Application Insights > Logs
 
 ### バックアップ
 
-Cosmos DBは自動バックアップが有効（7日間保持）。  
+Cosmos DBは自動バックアップが有効（7日間保持）。
 手動バックアップが必要な場合は、Azure Portal から Point-in-Time Restore を実施。
 
 ## トラブルシューティング
@@ -320,6 +420,7 @@ Cosmos DBは自動バックアップが有効（7日間保持）。
 #### Q1: DevContainerが起動しない
 
 **解決策**:
+
 1. Docker Desktop が起動しているか確認
 2. `.devcontainer/devcontainer.json` の設定を確認
 3. コンテナを再ビルド: "Dev Containers: Rebuild Container"
@@ -327,6 +428,7 @@ Cosmos DBは自動バックアップが有効（7日間保持）。
 #### Q2: Cosmos DB Emulator に接続できない
 
 **解決策**:
+
 ```bash
 # コンテナの状態確認
 docker ps | grep cosmos
@@ -341,6 +443,7 @@ docker-compose restart cosmosdb
 #### Q3: ポート競合エラー
 
 **解決策**:
+
 ```bash
 # 使用中のポートを確認
 # Linux/macOS
@@ -355,6 +458,7 @@ netstat -ano | findstr :3000
 #### Q4: npm install / pip install が失敗する
 
 **解決策**:
+
 ```bash
 # キャッシュをクリア
 # Node.js
@@ -386,6 +490,7 @@ A: [コンポーネント設計](./docs/arch/components/README.md) を参考に�
 ### Q: テストはどう実行する？
 
 A: 各サービスディレクトリで以下を実行：
+
 - **フロントエンド**: `npm test`
 - **バックエンド**: `pytest`
 

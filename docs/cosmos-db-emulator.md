@@ -2,8 +2,10 @@
 
 ## 概要
 
-このプロジェクトではAzure Cosmos DB Emulator (vnext-preview) をDevContainer環境で使用しています。
+このプロジェクトではAzure Cosmos DB Emulator (latest stable) をDevContainer環境で使用しています。
 エミュレーターはDocker Composeで自動的に起動され、ローカル開発環境でCosmos DBをエミュレートします。
+
+**⚠️ 重要**: エミュレーターの初回起動には2-3分かかります。`ServiceUnavailable`エラーが出る場合は、起動完了まで待機してください。
 
 ## アクセス情報
 
@@ -11,7 +13,6 @@
 
 - **Cosmos DB エンドポイント（DevContainer内）**: `https://cosmosdb:8081`
 - **Cosmos DB エンドポイント（ホスト側）**: `https://localhost:8081`
-- **Data Explorer**: `http://localhost:1234`
 
 ### 認証情報
 
@@ -69,13 +70,15 @@ container = database.create_container_if_not_exists(
 
 ```yaml
 cosmosdb:
-  image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
+  image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
   ports:
     - "0.0.0.0:8081:8081" # Cosmos DB エンドポイント
-    - "0.0.0.0:1234:1234" # Data Explorer
+    - "0.0.0.0:10251-10254:10251-10254" # 各種API エンドポイント
   environment:
-    - PROTOCOL=https
-    - ENABLE_EXPLORER=true
+    - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10
+    - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true
+  mem_limit: 3g
+  cpus: 2.0
 ```
 
 ## 手動起動（DevContainerの外）
@@ -90,20 +93,14 @@ docker run --detach \
   mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
 ```
 
-## Data Explorerの使用
+## Data Explorer（Webインターフェース）について
 
-ブラウザで以下のURLにアクセス:
+**注意**: 現在のLinux版エミュレーターではData ExplorerのWebインターフェースは利用できません。
+データの確認には以下の方法を使用してください：
 
-```
-http://localhost:1234
-```
-
-Data Explorerでは以下の操作が可能です:
-
-- データベースの作成・削除
-- コンテナーの作成・削除
-- ドキュメントのCRUD操作
-- クエリの実行
+- Pythonスクリプトでの直接アクセス
+- Azure Storage Explorerなどのサードパーティツール
+- `test_cosmos_connection.py`スクリプトでの動作確認
 
 ## トラブルシューティング
 
@@ -144,16 +141,16 @@ Python SDKの場合は`connection_verify=False`オプションを使用。
 
 ## サポートされている機能
 
-vnext-previewバージョンでサポートされている主な機能：
+Linux版エミュレーターでサポートされている主な機能：
 
 - ✅ CRUD操作（作成、読み取り、更新、削除）
-- ✅ クエリ（基本的なSQLクエリ）
+- ✅ SQLクエリ
 - ✅ Change Feed
 - ✅ Batch/Bulk API
 - ✅ パーティション分割
-- ⚠️ カスタムインデックスポリシー（未実装）
-- ❌ ストアドプロシージャ（計画なし）
-- ❌ トリガー（計画なし）
+- ✅ インデックスポリシー
+- ⚠️ ストアドプロシージャ（制限あり）
+- ⚠️ トリガー（制限あり）
 
 詳細は公式ドキュメントを参照:
 https://learn.microsoft.com/ja-jp/azure/cosmos-db/emulator-linux

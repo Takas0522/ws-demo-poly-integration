@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # DevContainer用ワークスペース
   workspace:
@@ -10,39 +8,44 @@ services:
       - .:/workspace:cached
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - "3000:3000"   # Next.js Frontend
-      - "8001:8001"   # Auth Service
-      - "8002:8002"   # Tenant Management Service
-      - "8003:8003"   # Service Setting Service
+      - "3000:3000" # Next.js Frontend
+      - "8001:8001" # Auth Service
+      - "8002:8002" # Tenant Management Service
+      - "8003:8003" # Service Setting Service
     command: sleep infinity
     networks:
       - poc-network
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
 
-  # Cosmos DB Emulator (vnext-preview)
+  # Cosmos DB Emulator
   cosmosdb:
-    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
     container_name: cosmosdb-emulator
     ports:
-      - "0.0.0.0:8081:8081"  # Cosmos DB エンドポイント
-      - "0.0.0.0:1234:1234"  # Data Explorer
+      - "0.0.0.0:8081:8081" # Cosmos DB エンドポイント
+      - "0.0.0.0:10251:10251" # MongoDB endpoint
+      - "0.0.0.0:10252:10252" # Cassandra endpoint
+      - "0.0.0.0:10253:10253" # Tables endpoint
+      - "0.0.0.0:10254:10254" # Gremlin/Graph endpoint
     environment:
-      - PROTOCOL=https
-      - ENABLE_EXPLORER=true
-      - LOG_LEVEL=info
-      - ENABLE_TELEMETRY=false
-      - AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=cosmosdb
+      - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10
+      - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true
+      - AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=127.0.0.1
+    tmpfs:
+      - /tmp:exec
     volumes:
-      - cosmosdb-data:/data
+      - cosmosdb-data:/data/db
     networks:
       - poc-network
     healthcheck:
       test: ["CMD", "curl", "-k", "https://localhost:8081/"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 60s
+      retries: 10
+      start_period: 120s
+    mem_limit: 3g
+    cpus: 2.0
 
 networks:
   poc-network:

@@ -1,9 +1,53 @@
 {
   "name": "PoC Multi-Service App",
-  "dockerComposeFile": "../docker-compose.yml",
-  "service": "workspace",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
   "workspaceFolder": "/workspace",
-  
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
+  "forwardPorts": [3000, 8001, 8002, 8003, 8081, 10251, 10252, 10253, 10254],
+  "portsAttributes": {
+    "3000": {
+      "label": "Next.js Frontend",
+      "onAutoForward": "notify"
+    },
+    "8001": {
+      "label": "Auth Service",
+      "onAutoForward": "silent"
+    },
+    "8002": {
+      "label": "Tenant Service",
+      "onAutoForward": "silent"
+    },
+    "8003": {
+      "label": "Service Setting",
+      "onAutoForward": "silent"
+    },
+    "8081": {
+      "label": "Cosmos DB Emulator",
+      "onAutoForward": "silent"
+    },
+    "10251": {
+      "label": "Cosmos DB - MongoDB",
+      "onAutoForward": "silent"
+    },
+    "10252": {
+      "label": "Cosmos DB - Cassandra",
+      "onAutoForward": "silent"
+    },
+    "10253": {
+      "label": "Cosmos DB - Tables",
+      "onAutoForward": "silent"
+    },
+    "10254": {
+      "label": "Cosmos DB - Gremlin",
+      "onAutoForward": "silent"
+    }
+  },
   "customizations": {
     "vscode": {
       "extensions": [
@@ -44,36 +88,6 @@
       }
     }
   },
-  
-  "forwardPorts": [3000, 8001, 8002, 8003, 8081, 1234],
-  "portsAttributes": {
-    "3000": {
-      "label": "Next.js Frontend",
-      "onAutoForward": "notify"
-    },
-    "8001": {
-      "label": "Auth Service",
-      "onAutoForward": "silent"
-    },
-    "8002": {
-      "label": "Tenant Service",
-      "onAutoForward": "silent"
-    },
-    "8003": {
-      "label": "Service Setting",
-      "onAutoForward": "silent"
-    },
-    "8081": {
-      "label": "Cosmos DB Emulator",
-      "onAutoForward": "silent"
-    },
-    "1234": {
-      "label": "Cosmos DB Data Explorer",
-      "onAutoForward": "silent"
-    }
-  },
-  
   "postCreateCommand": "bash .devcontainer/post-create.sh",
-  
   "remoteUser": "vscode"
 }
