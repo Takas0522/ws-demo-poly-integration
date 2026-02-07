@@ -37,14 +37,20 @@ tools:
 
 ## 対象モジュール
 
-本リポジトリは以下の構成：
+本リポジトリはPolyrepo構成を採用しており、各サービスはGit Submoduleとして管理されています。
 
-| パス | 説明 | 技術スタック |
-|------|------|--------------|
-| `src/front` | フロントエンド（BFF） | React, Next.js |
-| `src/auth-service` | 認証認可サービス | Python, FastAPI |
-| `src/tenant-management-service` | テナント管理サービス | Python, FastAPI |
-| `src/service-setting-service` | 利用サービス設定サービス | Python, FastAPI |
+| パス | 説明 | 技術スタック | サブモジュール |
+|------|------|--------------|----------------|
+| `src/front` | フロントエンド（BFF） | React, Next.js | Yes |
+| `src/auth-service` | 認証認可サービス | Python, FastAPI | Yes |
+| `src/tenant-management-service` | テナント管理サービス | Python, FastAPI | Yes |
+| `src/service-setting-service` | 利用サービス設定サービス | Python, FastAPI | Yes |
+
+### サブモジュールでの作業時の注意
+
+- 各サブモジュール内での変更は、そのサブモジュールのリポジトリ内で個別にcommit/pushする必要があります
+- 親リポジトリではサブモジュールの参照コミットを管理します
+- サブモジュール内でブランチを切り替える場合は、`cd src/{サービス名}` した上で `git checkout {ブランチ名}` を実行してください
 
 ## 実装規約
 

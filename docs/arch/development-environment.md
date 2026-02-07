@@ -229,6 +229,12 @@ echo "======================================"
 echo " DevContainer セットアップ開始"
 echo "======================================"
 
+# Git Submoduleの初期化
+echo "📦 Git Submoduleを初期化中..."
+cd /workspace
+git submodule update --init --recursive
+echo "  ✓ Submodule初期化完了"
+
 # Python依存関係インストール
 echo "📦 Python依存関係をインストール中..."
 for service in auth-service tenant-management-service service-setting-service; do
@@ -279,11 +285,12 @@ echo ""
 ```
 
 **処理内容**:
-1. Python依存関係の一括インストール
-2. Node.js依存関係のインストール
-3. .env.exampleから.envファイルを生成
-4. Git設定の初期化
-5. 起動手順の表示
+1. Git Submoduleの初期化（各サービスのコード取得）
+2. Python依存関係の一括インストール
+3. Node.js依存関係のインストール
+4. .env.exampleから.envファイルを生成
+5. Git設定の初期化
+6. 起動手順の表示
 
 ---
 
@@ -306,11 +313,11 @@ echo ""
 │   ├── main.bicep
 │   ├── modules/
 │   └── parameters/
-├── src/                        # ソースコード
-│   ├── front/                  # Next.js
-│   ├── auth-service/           # 認証認可サービス
-│   ├── tenant-management-service/
-│   └── service-setting-service/
+├── src/                        # ソースコード（各ディレクトリはGit Submodule）
+│   ├── front/                  # Next.js [サブモジュール]
+│   ├── auth-service/           # 認証認可サービス [サブモジュール]
+│   ├── tenant-management-service/ [サブモジュール]
+│   └── service-setting-service/ [サブモジュール]
 ├── .gitignore
 ├── .editorconfig
 ├── README.md

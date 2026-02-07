@@ -62,9 +62,15 @@
 ### 1. リポジトリのクローン
 
 ```bash
-git clone <repository-url>
+git clone --recursive <repository-url>
 cd ws-demo-poly-integration
 ```
+
+> ℹ️ 本リポジトリはPolyrepo構成を採用しており、各サービスはGit Submoduleとして管理されています。`--recursive` オプションを忘れた場合は以下を実行してください。
+>
+> ```bash
+> git submodule update --init --recursive
+> ```
 
 ### 2. DevContainer で開く
 
@@ -180,18 +186,21 @@ API ドキュメント: http://localhost:8003/docs
 ```
 /
 ├── .devcontainer/              # DevContainer設定
+├── .gitmodules                 # Git Submodule定義
 ├── docs/                       # ドキュメント
 │   ├── arch/                   # アーキテクチャ設計
 │   └── PoCアプリ/              # 機能仕様
 ├── infra/                      # IaC (Bicep)
-├── src/                        # ソースコード
-│   ├── front/                  # Next.jsフロントエンド
-│   ├── auth-service/           # 認証認可サービス
-│   ├── tenant-management-service/
-│   └── service-setting-service/
+├── src/                        # ソースコード（各ディレクトリはGit Submodule）
+│   ├── front/                  # Next.jsフロントエンド [サブモジュール]
+│   ├── auth-service/           # 認証認可サービス [サブモジュール]
+│   ├── tenant-management-service/ [サブモジュール]
+│   └── service-setting-service/ [サブモジュール]
 ├── docker-compose.yml          # Docker Compose設定
 └── README.md                   # このファイル
 ```
+
+> ℹ️ `src/` 配下の各サービスは独立したGitリポジトリとしてサブモジュール管理されています。各サブモジュール内での変更は、そのサブモジュールのリポジトリ内で個別にcommit/pushする必要があります。
 
 ### コーディング規約
 

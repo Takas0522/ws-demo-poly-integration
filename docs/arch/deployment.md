@@ -192,6 +192,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
       
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -235,6 +237,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
       
       - name: Login to Azure Container Registry
         uses: docker/login-action@v2

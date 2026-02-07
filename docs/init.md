@@ -108,10 +108,13 @@ Mockサービスは個別のサービスとして構築する必要はなくBFF�
 
 ## ソース構成
 
+本リポジトリはPolyrepo構成を採用しており、各サービスはGit Submoduleとして管理されています。
+クローン時は `git clone --recursive` または `git submodule update --init --recursive` が必要です。
+
 /
 /infra:IaCコードを格納
 /docs:ドキュメントを格納
-/src:実行ソースコードを格納
+/src:実行ソースコードを格納（各ディレクトリはGit Submodule）
 /src/front
 /src/auth-service
 /src/tenant-management-service

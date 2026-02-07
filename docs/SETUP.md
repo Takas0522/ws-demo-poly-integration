@@ -15,9 +15,15 @@
 ### 1. リポジトリのクローン
 
 ```bash
-git clone <repository-url>
+git clone --recursive <repository-url>
 cd <repository-name>
 ```
+
+> ℹ️ 本リポジトリはPolyrepo構成を採用しており、各サービスはGit Submoduleとして管理されています。`--recursive` オプションを忘れた場合は以下を実行してください。
+>
+> ```bash
+> git submodule update --init --recursive
+> ```
 
 ### 2. DevContainerを開く
 

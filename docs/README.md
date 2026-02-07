@@ -405,7 +405,7 @@ docs/
 
 ### サービス別 README
 
-各サービスの詳細な情報は、各サービスディレクトリの README を参照してください：
+各サービスの詳細な情報は、各サービスディレクトリの README を参照してください（各サービスはGit Submoduleとして管理）：
 
 - [Frontend README](../src/front/README.md)
 - [認証認可サービス README](../src/auth-service/README.md)

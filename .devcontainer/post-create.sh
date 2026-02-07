@@ -5,6 +5,12 @@ echo "======================================"
 echo " DevContainer セットアップ開始"
 echo "======================================"
 
+# Git Submoduleの初期化
+echo "📦 Git Submoduleを初期化中..."
+cd /workspace
+git submodule update --init --recursive
+echo "  ✓ Submodule初期化完了"
+
 # CosmosDB Emulatorを起動
 echo "🗄️ CosmosDB Emulator を起動中..."
 cd /workspace
