@@ -1,0 +1,3 @@
+[submodule "src/front"]
+	path = src/front
+	url = https://github.com/Takas0522/ws-demo-poly1.git
