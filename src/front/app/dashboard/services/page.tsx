@@ -242,9 +242,9 @@ export default function ServicesPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
-                          {service.available_roles?.map((role, idx) => (
+                          {service.available_roles?.map((role) => (
                             <span
-                              key={idx}
+                              key={role.role_code}
                               className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
                             >
                               {role.role_name}

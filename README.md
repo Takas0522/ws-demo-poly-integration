@@ -149,7 +149,7 @@ npm run dev
 #### 認証認可サービス
 
 ```bash
-cd src/auth-service
+cd src/auth-service && /
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 ```
 
@@ -158,7 +158,7 @@ API ドキュメント: http://localhost:8001/docs
 #### テナント管理サービス
 
 ```bash
-cd src/tenant-management-service
+cd src/tenant-management-service && /
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8002
 ```
 
@@ -167,7 +167,7 @@ API ドキュメント: http://localhost:8002/docs
 #### 利用サービス設定サービス
 
 ```bash
-cd src/service-setting-service
+cd src/service-setting-service && /
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8003
 ```
 

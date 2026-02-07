@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     cosmos_db_connection_verify: bool = True
 
     # JWT settings
-    jwt_secret: str = "your-secret-key-change-in-production"
+    jwt_secret: str = "your-development-secret-key-change-in-production"
     jwt_algorithm: str = "HS256"
     jwt_expiration_hours: int = 24
 

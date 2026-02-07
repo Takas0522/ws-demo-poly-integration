@@ -9,6 +9,12 @@ echo "======================================"
 echo "🗄️ CosmosDB Emulator を起動中..."
 cd /workspace
 
+# ネットワークが存在しない場合は作成（コンテナ作成前に必要）
+if ! docker network ls | grep -q workspace_poc-network; then
+  echo "  → workspace_poc-network を作成中..."
+  docker network create workspace_poc-network
+fi
+
 # 既存のコンテナを確認
 if docker ps -a | grep -q cosmosdb-emulator; then
   echo "  → 既存のCosmosDBコンテナを検出"
@@ -20,32 +26,34 @@ if docker ps -a | grep -q cosmosdb-emulator; then
   fi
 else
   echo "  → CosmosDBコンテナを新規作成・起動中..."
-  # ポート競合を避けるため、Dockerネットワーク経由のみでアクセス
+  # vnext-preview: HTTP対応、最新SDK互換
   docker run -d --name cosmosdb-emulator \
     --network workspace_poc-network \
-    -p 8081:8081 -p 10251:10251 -p 10252:10252 -p 10253:10253 -p 10254:10254 \
-    -e AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10 \
-    -e AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=false \
-    -e AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=0.0.0.0 \
+    -p 8081:8081 -p 1234:1234 \
+    -e ENABLE_EXPLORER=true \
     --tmpfs /tmp:exec \
     --memory 3g \
     --cpus 2.0 \
-    mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
-  
-  # ネットワークが存在しない場合は作成
-  if ! docker network ls | grep -q workspace_poc-network; then
-    docker network create workspace_poc-network
-  fi
+    mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
 fi
 
-# CosmosDBの起動を待機
-echo "  → CosmosDBの起動を待機中（最大2分）..."
-MAX_WAIT=120
+# DevContainerをCosmosDBと同じネットワークに接続
+# （DevContainerはデフォルトでbridgeネットワーク上にあり、CosmosDBと通信できないため）
+DEVCONTAINER_ID=$(hostname)
+if ! docker inspect "$DEVCONTAINER_ID" --format '{{json .NetworkSettings.Networks}}' 2>/dev/null | grep -q workspace_poc-network; then
+  echo "  → DevContainerを workspace_poc-network に接続中..."
+  docker network connect workspace_poc-network "$DEVCONTAINER_ID" 2>/dev/null || true
+fi
+
+# CosmosDBの起動を待機（同一ネットワーク上のホスト名で接続、vnext-previewはHTTP）
+COSMOS_HOST="cosmosdb-emulator"
+echo "  → CosmosDBの起動を待機中（最大3分）..."
+MAX_WAIT=180
 WAIT_TIME=0
 while [ $WAIT_TIME -lt $MAX_WAIT ]; do
-  if curl -k -s https://localhost:8081/ >/dev/null 2>&1; then
-    RESPONSE=$(curl -k -s https://localhost:8081/)
-    if ! echo "$RESPONSE" | grep -q "ServiceUnavailable"; then
+  if curl -s --connect-timeout 3 "http://${COSMOS_HOST}:8081/" >/dev/null 2>&1; then
+    RESPONSE=$(curl -s --connect-timeout 3 "http://${COSMOS_HOST}:8081/")
+    if echo "$RESPONSE" | grep -q "_dbs"; then
       echo "  ✓ CosmosDB Emulator 起動完了！"
       break
     fi

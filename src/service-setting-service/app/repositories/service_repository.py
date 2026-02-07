@@ -26,11 +26,17 @@ class ServiceRepository:
         try:
             self.client = CosmosClient(
                 settings.cosmos_db_endpoint,
-                settings.cosmos_db_key
+                settings.cosmos_db_key,
+                connection_verify=settings.cosmos_db_connection_verify,
+                connection_mode="Gateway",  # エミュレーター用にGatewayモードを使用
+                enable_endpoint_discovery=False  # IPリダイレクトを無効化
             )
-            self.database = self.client.get_database_client(settings.cosmos_db_database)
-            self.services_container = self.database.get_container_client("services")
-            self.tenant_services_container = self.database.get_container_client("tenant_services")
+            self.database = self.client.get_database_client(
+                settings.cosmos_db_database)
+            self.services_container = self.database.get_container_client(
+                "services")
+            self.tenant_services_container = self.database.get_container_client(
+                "tenant_services")
             logger.info("Service repository initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize service repository: {e}")
@@ -44,11 +50,10 @@ class ServiceRepository:
     async def get_all_services(self) -> List[Service]:
         """Get all services"""
         try:
-            query = "SELECT * FROM c"
+            query = "SELECT * FROM c WHERE c.type = 'service'"
             items = []
             async for item in self.services_container.query_items(
-                query=query,
-                enable_cross_partition_query=True
+                query=query
             ):
                 items.append(Service(**item))
             return items
@@ -76,15 +81,14 @@ class ServiceRepository:
             # Get tenant service assignments
             query = "SELECT * FROM c WHERE c.tenant_id = @tenant_id"
             parameters = [{"name": "@tenant_id", "value": tenant_id}]
-            
+
             tenant_services = []
             async for item in self.tenant_services_container.query_items(
                 query=query,
-                parameters=parameters,
-                enable_cross_partition_query=True
+                parameters=parameters
             ):
                 tenant_services.append(TenantService(**item))
-            
+
             # Get service details
             result = []
             for ts in tenant_services:
@@ -96,7 +100,7 @@ class ServiceRepository:
                         "assigned_at": ts.assigned_at.isoformat(),
                         "assigned_by": ts.assigned_by
                     })
-            
+
             return result
         except Exception as e:
             logger.error(f"Failed to get tenant services for {tenant_id}: {e}")
@@ -116,15 +120,14 @@ class ServiceRepository:
                 {"name": "@tenant_id", "value": tenant_id},
                 {"name": "@service_id", "value": service_id}
             ]
-            
+
             async for item in self.tenant_services_container.query_items(
                 query=query,
-                parameters=parameters,
-                enable_cross_partition_query=True
+                parameters=parameters
             ):
                 # Already assigned
                 return TenantService(**item)
-            
+
             # Create new assignment
             tenant_service = TenantService(
                 tenant_id=tenant_id,
@@ -132,15 +135,15 @@ class ServiceRepository:
                 assigned_at=datetime.utcnow(),
                 assigned_by=assigned_by
             )
-            
+
             item_dict = tenant_service.dict()
             item_dict["id"] = f"{tenant_id}_{service_id}"
-            
+
             await self.tenant_services_container.create_item(body=item_dict)
-            
+
             logger.info(f"Service {service_id} assigned to tenant {tenant_id}")
             return tenant_service
-            
+
         except Exception as e:
             logger.error(f"Failed to assign service to tenant: {e}")
             raise
@@ -157,7 +160,8 @@ class ServiceRepository:
                 item=item_id,
                 partition_key=tenant_id
             )
-            logger.info(f"Service {service_id} unassigned from tenant {tenant_id}")
+            logger.info(
+                f"Service {service_id} unassigned from tenant {tenant_id}")
             return True
         except exceptions.CosmosResourceNotFoundError:
             return False

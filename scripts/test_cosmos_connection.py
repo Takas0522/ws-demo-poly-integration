@@ -26,8 +26,8 @@ if not os.getenv("COSMOS_DB_ENDPOINT"):
 # SSL警告を無効化（エミュレーター使用時のみ）
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# 環境変数から設定を取得（デフォルトはDevContainer内のホスト名）
-ENDPOINT = os.getenv("COSMOS_DB_ENDPOINT", "https://cosmosdb:8081")
+# 環境変数から設定を取得（デフォルトはDevContainer内のDocker DNS名）
+ENDPOINT = os.getenv("COSMOS_DB_ENDPOINT", "http://cosmosdb-emulator:8081")
 KEY = os.getenv("COSMOS_DB_KEY",
                 "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==")
 
@@ -47,7 +47,12 @@ def test_connection():
 
     for attempt in range(1, max_retries + 1):
         try:
-            client = CosmosClient(ENDPOINT, KEY, connection_verify=False)
+            client = CosmosClient(
+                ENDPOINT, KEY,
+                connection_verify=False,
+                connection_mode="Gateway",
+                enable_endpoint_discovery=False
+            )
             # 接続確認のために軽い操作を実行
             list(client.list_databases())
             print("   ✓ クライアント作成成功")
