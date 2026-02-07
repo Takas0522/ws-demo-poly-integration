@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { MainLayout } from '@/components/layouts/MainLayout';
-import { Button } from '@/components/ui/Button';
-import { Alert } from '@/components/ui/Alert';
+import { MainLayout } from "@/components/layouts/MainLayout";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 
 interface Tenant {
   tenant_id: string;
@@ -28,16 +28,16 @@ export default function TenantsPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/tenants');
-      
+      const response = await fetch("/api/tenants");
+
       if (!response.ok) {
-        throw new Error('テナントの取得に失敗しました');
+        throw new Error("テナントの取得に失敗しました");
       }
-      
+
       const data = await response.json();
       setTenants(data.tenants || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : "エラーが発生しました");
     } finally {
       setLoading(false);
     }
@@ -45,26 +45,26 @@ export default function TenantsPage() {
 
   const handleDelete = async (tenantId: string, isPrivileged: boolean) => {
     if (isPrivileged) {
-      alert('特権テナントは削除できません');
+      alert("特権テナントは削除できません");
       return;
     }
 
-    if (!confirm('このテナントを削除してもよろしいですか？')) {
+    if (!confirm("このテナントを削除してもよろしいですか？")) {
       return;
     }
 
     try {
       const response = await fetch(`/api/tenants/${tenantId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
-        throw new Error('テナントの削除に失敗しました');
+        throw new Error("テナントの削除に失敗しました");
       }
 
       await fetchTenants();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : "エラーが発生しました");
     }
   };
 
@@ -86,7 +86,7 @@ export default function TenantsPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">テナント管理</h1>
-          <Button onClick={() => router.push('/dashboard/tenants/new')}>
+          <Button onClick={() => router.push("/dashboard/tenants/new")}>
             新規テナント作成
           </Button>
         </div>
@@ -116,7 +116,10 @@ export default function TenantsPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {tenants.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-4 text-center text-gray-600">
+                  <td
+                    colSpan={4}
+                    className="px-6 py-4 text-center text-gray-600"
+                  >
                     テナントがありません
                   </td>
                 </tr>
@@ -143,21 +146,25 @@ export default function TenantsPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {new Date(tenant.created_at).toLocaleString('ja-JP')}
+                      {new Date(tenant.created_at).toLocaleString("ja-JP")}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                       <button
-                        onClick={() => router.push(`/dashboard/tenants/${tenant.tenant_id}`)}
+                        onClick={() =>
+                          router.push(`/dashboard/tenants/${tenant.tenant_id}`)
+                        }
                         className="text-blue-600 hover:text-blue-900"
                       >
                         詳細
                       </button>
                       <button
-                        onClick={() => handleDelete(tenant.tenant_id, tenant.is_privileged)}
+                        onClick={() =>
+                          handleDelete(tenant.tenant_id, tenant.is_privileged)
+                        }
                         className={`${
                           tenant.is_privileged
-                            ? 'text-gray-400 cursor-not-allowed'
-                            : 'text-red-600 hover:text-red-900'
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-red-600 hover:text-red-900"
                         }`}
                         disabled={tenant.is_privileged}
                       >

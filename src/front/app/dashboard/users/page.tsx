@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { MainLayout } from '@/components/layouts/MainLayout';
-import { Button } from '@/components/ui/Button';
-import { Alert } from '@/components/ui/Alert';
+import { MainLayout } from "@/components/layouts/MainLayout";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 
 interface User {
   user_id: string;
@@ -34,38 +34,38 @@ export default function UsersPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/users');
-      
+      const response = await fetch("/api/users");
+
       if (!response.ok) {
-        throw new Error('ユーザーの取得に失敗しました');
+        throw new Error("ユーザーの取得に失敗しました");
       }
-      
+
       const data = await response.json();
       setUsers(data.users || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : "エラーが発生しました");
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (userId: string) => {
-    if (!confirm('このユーザーを削除してもよろしいですか？')) {
+    if (!confirm("このユーザーを削除してもよろしいですか？")) {
       return;
     }
 
     try {
       const response = await fetch(`/api/users/${userId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
-        throw new Error('ユーザーの削除に失敗しました');
+        throw new Error("ユーザーの削除に失敗しました");
       }
 
       await fetchUsers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : "エラーが発生しました");
     }
   };
 
@@ -87,7 +87,7 @@ export default function UsersPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">ユーザー管理</h1>
-          <Button onClick={() => router.push('/dashboard/users/new')}>
+          <Button onClick={() => router.push("/dashboard/users/new")}>
             新規ユーザー作成
           </Button>
         </div>
@@ -120,7 +120,10 @@ export default function UsersPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-600">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-4 text-center text-gray-600"
+                  >
                     ユーザーがありません
                   </td>
                 </tr>
@@ -156,11 +159,13 @@ export default function UsersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {new Date(user.created_at).toLocaleString('ja-JP')}
+                      {new Date(user.created_at).toLocaleString("ja-JP")}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                       <button
-                        onClick={() => router.push(`/dashboard/users/${user.user_id}`)}
+                        onClick={() =>
+                          router.push(`/dashboard/users/${user.user_id}`)
+                        }
                         className="text-blue-600 hover:text-blue-900"
                       >
                         詳細

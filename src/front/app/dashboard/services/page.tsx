@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { MainLayout } from '@/components/layouts/MainLayout';
-import { Alert } from '@/components/ui/Alert';
-import { useEffect, useState } from 'react';
+import { MainLayout } from "@/components/layouts/MainLayout";
+import { Alert } from "@/components/ui/Alert";
+import { useEffect, useState } from "react";
 
 interface Service {
   service_id: string;
@@ -29,7 +29,7 @@ interface TenantService {
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [selectedTenant, setSelectedTenant] = useState<string>('');
+  const [selectedTenant, setSelectedTenant] = useState<string>("");
   const [tenantServices, setTenantServices] = useState<TenantService[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,16 +50,16 @@ export default function ServicesPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/services');
+      const response = await fetch("/api/services");
 
       if (!response.ok) {
-        throw new Error('サービスの取得に失敗しました');
+        throw new Error("サービスの取得に失敗しました");
       }
 
       const data = await response.json();
       setServices(data.services || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : "エラーが発生しました");
     } finally {
       setLoading(false);
     }
@@ -67,13 +67,13 @@ export default function ServicesPage() {
 
   const fetchTenants = async () => {
     try {
-      const response = await fetch('/api/tenants');
+      const response = await fetch("/api/tenants");
       if (response.ok) {
         const data = await response.json();
         setTenants(data.tenants || []);
       }
     } catch (err) {
-      console.error('Failed to fetch tenants:', err);
+      console.error("Failed to fetch tenants:", err);
     }
   };
 
@@ -86,39 +86,41 @@ export default function ServicesPage() {
         setTenantServices(data.services || []);
       }
     } catch (err) {
-      console.error('Failed to fetch tenant services:', err);
+      console.error("Failed to fetch tenant services:", err);
       setTenantServices([]);
     }
   };
 
   const isServiceAssigned = (serviceId: string): boolean => {
-    return tenantServices.some(ts => ts.service_id === serviceId);
+    return tenantServices.some((ts) => ts.service_id === serviceId);
   };
 
   const handleAssignService = async (serviceId: string) => {
     if (!selectedTenant) {
-      setError('テナントを選択してください');
+      setError("テナントを選択してください");
       return;
     }
 
     try {
       const response = await fetch(`/api/tenants/${selectedTenant}/services`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ service_id: serviceId }),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error?.message || 'サービスの割り当てに失敗しました');
+        throw new Error(
+          data.error?.message || "サービスの割り当てに失敗しました",
+        );
       }
 
-      setSuccess('サービスを割り当てました');
+      setSuccess("サービスを割り当てました");
       await fetchTenantServices(selectedTenant);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : "エラーが発生しました");
     }
   };
 
@@ -127,24 +129,29 @@ export default function ServicesPage() {
       return;
     }
 
-    if (!confirm('このサービスの割り当てを解除してもよろしいですか？')) {
+    if (!confirm("このサービスの割り当てを解除してもよろしいですか？")) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/tenants/${selectedTenant}/services/${serviceId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `/api/tenants/${selectedTenant}/services/${serviceId}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error?.message || 'サービスの割り当て解除に失敗しました');
+        throw new Error(
+          data.error?.message || "サービスの割り当て解除に失敗しました",
+        );
       }
 
-      setSuccess('サービスの割り当てを解除しました');
+      setSuccess("サービスの割り当てを解除しました");
       await fetchTenantServices(selectedTenant);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : "エラーが発生しました");
     }
   };
 
@@ -173,12 +180,19 @@ export default function ServicesPage() {
         )}
 
         {success && (
-          <Alert type="success" message={success} onClose={() => setSuccess(null)} />
+          <Alert
+            type="success"
+            message={success}
+            onClose={() => setSuccess(null)}
+          />
         )}
 
         {/* Tenant Selector */}
         <div className="bg-white shadow-md rounded-lg p-6">
-          <label htmlFor="tenant_select" className="block text-sm font-medium text-gray-700 mb-2">
+          <label
+            htmlFor="tenant_select"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
             テナントを選択
           </label>
           <select
@@ -199,7 +213,9 @@ export default function ServicesPage() {
         {/* Services List */}
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
           <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">利用可能なサービス</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              利用可能なサービス
+            </h2>
           </div>
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -221,7 +237,10 @@ export default function ServicesPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {services.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-4 text-center text-gray-600">
+                  <td
+                    colSpan={4}
+                    className="px-6 py-4 text-center text-gray-600"
+                  >
                     サービスがありません
                   </td>
                 </tr>
@@ -264,27 +283,32 @@ export default function ServicesPage() {
                             </span>
                           )
                         ) : (
-                          <span className="text-xs text-gray-600">テナント未選択</span>
+                          <span className="text-xs text-gray-600">
+                            テナント未選択
+                          </span>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        {selectedTenant && (
-                          assigned ? (
+                        {selectedTenant &&
+                          (assigned ? (
                             <button
-                              onClick={() => handleUnassignService(service.service_id)}
+                              onClick={() =>
+                                handleUnassignService(service.service_id)
+                              }
                               className="text-red-600 hover:text-red-900"
                             >
                               割り当て解除
                             </button>
                           ) : (
                             <button
-                              onClick={() => handleAssignService(service.service_id)}
+                              onClick={() =>
+                                handleAssignService(service.service_id)
+                              }
                               className="text-blue-600 hover:text-blue-900"
                             >
                               割り当て
                             </button>
-                          )
-                        )}
+                          ))}
                       </td>
                     </tr>
                   );
@@ -314,7 +338,8 @@ export default function ServicesPage() {
                         {service.service_name}
                       </span>
                       <span className="ml-2 text-xs text-gray-600">
-                        割り当て日: {new Date(service.assigned_at).toLocaleString('ja-JP')}
+                        割り当て日:{" "}
+                        {new Date(service.assigned_at).toLocaleString("ja-JP")}
                       </span>
                     </div>
                   </div>

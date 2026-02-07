@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { MainLayout } from '@/components/layouts/MainLayout';
-import { Button } from '@/components/ui/Button';
-import { Alert } from '@/components/ui/Alert';
+import { MainLayout } from "@/components/layouts/MainLayout";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { useParams, useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
 interface User {
   user_id: string;
@@ -33,7 +33,7 @@ export default function UserDetailPage() {
   const router = useRouter();
   const params = useParams();
   const userId = params.id as string;
-  
+
   const [user, setUser] = useState<User | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,16 +55,16 @@ export default function UserDetailPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await fetch(`/api/users/${userId}`);
-      
+
       if (!response.ok) {
-        throw new Error('ユーザー情報の取得に失敗しました');
+        throw new Error("ユーザー情報の取得に失敗しました");
       }
-      
+
       const data = await response.json();
       setUser(data);
-      
+
       // Initialize role changes with current roles
       const currentRoles: Record<string, string> = {};
       data.roles?.forEach((role: { service_id: string; role_code: string }) => {
@@ -72,7 +72,7 @@ export default function UserDetailPage() {
       });
       setRoleChanges(currentRoles);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : "エラーが発生しました");
     } finally {
       setLoading(false);
     }
@@ -80,13 +80,13 @@ export default function UserDetailPage() {
 
   const fetchServices = async () => {
     try {
-      const response = await fetch('/api/services');
+      const response = await fetch("/api/services");
       if (response.ok) {
         const data = await response.json();
         setServices(data.services || []);
       }
     } catch (err) {
-      console.error('Failed to fetch services:', err);
+      console.error("Failed to fetch services:", err);
     }
   };
 
@@ -103,32 +103,32 @@ export default function UserDetailPage() {
     try {
       setSaving(true);
       setError(null);
-      
+
       const roles = Object.entries(roleChanges)
-        .filter(([, roleCode]) => roleCode !== '')
+        .filter(([, roleCode]) => roleCode !== "")
         .map(([serviceId, roleCode]) => ({
           service_id: serviceId,
           role_code: roleCode,
         }));
 
       const response = await fetch(`/api/users/${userId}/roles`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ roles }),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error?.message || 'ロールの更新に失敗しました');
+        throw new Error(data.error?.message || "ロールの更新に失敗しました");
       }
 
-      setSuccess('ロール情報を更新しました');
+      setSuccess("ロール情報を更新しました");
       setIsEditing(false);
       await fetchUser();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : "エラーが発生しました");
     } finally {
       setSaving(false);
     }
@@ -169,45 +169,55 @@ export default function UserDetailPage() {
             <h1 className="text-3xl font-bold text-gray-900">ユーザー詳細</h1>
           </div>
           {!isEditing && (
-            <Button onClick={() => setIsEditing(true)}>
-              ロール編集
-            </Button>
+            <Button onClick={() => setIsEditing(true)}>ロール編集</Button>
           )}
         </div>
 
         {error && (
           <Alert type="error" message={error} onClose={() => setError(null)} />
         )}
-        
+
         {success && (
-          <Alert type="success" message={success} onClose={() => setSuccess(null)} />
+          <Alert
+            type="success"
+            message={success}
+            onClose={() => setSuccess(null)}
+          />
         )}
 
         <div className="bg-white shadow-md rounded-lg p-6 space-y-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-600">ユーザーID</label>
+              <label className="block text-sm font-medium text-gray-600">
+                ユーザーID
+              </label>
               <p className="mt-1 text-sm text-gray-900">{user.user_id}</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-600">テナント</label>
+              <label className="block text-sm font-medium text-gray-600">
+                テナント
+              </label>
               <p className="mt-1 text-sm text-gray-900">
                 {user.tenant_name || user.tenant_id}
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-600">作成日時</label>
+              <label className="block text-sm font-medium text-gray-600">
+                作成日時
+              </label>
               <p className="mt-1 text-sm text-gray-900">
-                {new Date(user.created_at).toLocaleString('ja-JP')}
+                {new Date(user.created_at).toLocaleString("ja-JP")}
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-600">更新日時</label>
+              <label className="block text-sm font-medium text-gray-600">
+                更新日時
+              </label>
               <p className="mt-1 text-sm text-gray-900">
-                {new Date(user.updated_at).toLocaleString('ja-JP')}
+                {new Date(user.updated_at).toLocaleString("ja-JP")}
               </p>
             </div>
           </div>
@@ -215,18 +225,25 @@ export default function UserDetailPage() {
           <hr />
 
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">ロール設定</h2>
-            
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              ロール設定
+            </h2>
+
             {isEditing ? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 {services.map((service) => (
-                  <div key={service.service_id} className="border border-gray-200 rounded-md p-3">
+                  <div
+                    key={service.service_id}
+                    className="border border-gray-200 rounded-md p-3"
+                  >
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {service.service_name}
                     </label>
                     <select
-                      value={roleChanges[service.service_id] || ''}
-                      onChange={(e) => handleRoleChange(service.service_id, e.target.value)}
+                      value={roleChanges[service.service_id] || ""}
+                      onChange={(e) =>
+                        handleRoleChange(service.service_id, e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">なし</option>
@@ -266,7 +283,10 @@ export default function UserDetailPage() {
               <div className="space-y-2">
                 {user.roles && user.roles.length > 0 ? (
                   user.roles.map((role, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
+                    >
                       <span className="text-sm font-medium text-gray-900">
                         {role.service_name}
                       </span>
@@ -276,7 +296,9 @@ export default function UserDetailPage() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-gray-600">ロールが割り当てられていません</p>
+                  <p className="text-sm text-gray-600">
+                    ロールが割り当てられていません
+                  </p>
                 )}
               </div>
             )}
