@@ -186,26 +186,26 @@ export default function UserDetailPage() {
         <div className="bg-white shadow-md rounded-lg p-6 space-y-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-500">ユーザーID</label>
+              <label className="block text-sm font-medium text-gray-600">ユーザーID</label>
               <p className="mt-1 text-sm text-gray-900">{user.user_id}</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-500">テナント</label>
+              <label className="block text-sm font-medium text-gray-600">テナント</label>
               <p className="mt-1 text-sm text-gray-900">
                 {user.tenant_name || user.tenant_id}
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-500">作成日時</label>
+              <label className="block text-sm font-medium text-gray-600">作成日時</label>
               <p className="mt-1 text-sm text-gray-900">
                 {new Date(user.created_at).toLocaleString('ja-JP')}
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-500">更新日時</label>
+              <label className="block text-sm font-medium text-gray-600">更新日時</label>
               <p className="mt-1 text-sm text-gray-900">
                 {new Date(user.updated_at).toLocaleString('ja-JP')}
               </p>
@@ -227,7 +227,7 @@ export default function UserDetailPage() {
                     <select
                       value={roleChanges[service.service_id] || ''}
                       onChange={(e) => handleRoleChange(service.service_id, e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">なし</option>
                       {service.available_roles?.map((role) => (
@@ -276,7 +276,7 @@ export default function UserDetailPage() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-gray-500">ロールが割り当てられていません</p>
+                  <p className="text-sm text-gray-600">ロールが割り当てられていません</p>
                 )}
               </div>
             )}

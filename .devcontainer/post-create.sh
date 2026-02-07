@@ -116,6 +116,37 @@ for service in front auth-service tenant-management-service service-setting-serv
   fi
 done
 
+# CosmosDB データベース・コンテナ作成 & シードデータ投入
+if [ $WAIT_TIME -lt $MAX_WAIT ]; then
+  echo "🗄️ CosmosDB データベースをセットアップ中..."
+  cd /workspace
+
+  # 環境変数を設定（create_database.py / seed_database.py が参照）
+  export COSMOS_DB_ENDPOINT="http://cosmosdb-emulator:8081"
+  export COSMOS_DB_KEY="C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+  export COSMOS_DB_CONNECTION_VERIFY="false"
+
+  # データベース・コンテナ作成
+  if python scripts/create_database.py; then
+    echo "  ✓ データベース・コンテナ作成完了"
+  else
+    echo "  ⚠️  データベース作成に失敗しました。後で手動実行してください:"
+    echo "     python scripts/create_database.py"
+  fi
+
+  # シードデータ投入
+  if python scripts/seed_database.py; then
+    echo "  ✓ シードデータ投入完了"
+  else
+    echo "  ⚠️  シードデータ投入に失敗しました。後で手動実行してください:"
+    echo "     python scripts/seed_database.py"
+  fi
+else
+  echo "⚠️  CosmosDBが起動していないため、DBセットアップをスキップしました。"
+  echo "   起動後に以下を手動実行してください:"
+  echo "     bash scripts/setup_database.sh"
+fi
+
 # Git設定
 echo "🔧 Git設定を確認中..."
 if [ ! -f ~/.gitconfig ]; then
@@ -133,19 +164,14 @@ echo ""
 echo "🐍 Python仮想環境の有効化:"
 echo "  source /workspace/.venv/bin/activate"
 echo ""
-echo "🗄️ CosmosDB 接続テスト:"
-echo "  python scripts/test_cosmos_connection.py"
-echo ""
-echo "🗄️ CosmosDB セットアップ (初回のみ):"
-echo "  python scripts/create_database.py"
-echo "  python scripts/seed_database.py"
-echo "  python scripts/seed_sample_data.py  # サンプルデータ投入（任意）"
-echo ""
 echo "🚀 サービス起動:"
 echo "  1. フロントエンド起動: cd src/front && npm run dev"
 echo "  2. 認証サービス起動: cd src/auth-service && uvicorn app.main:app --reload --host 0.0.0.0 --port 8001"
 echo "  3. テナントサービス起動: cd src/tenant-management-service && uvicorn app.main:app --reload --host 0.0.0.0 --port 8002"
 echo "  4. サービス設定起動: cd src/service-setting-service && uvicorn app.main:app --reload --host 0.0.0.0 --port 8003"
+echo ""
+echo "🗄️ サンプルデータ投入（任意）:"
+echo "  python scripts/seed_sample_data.py"
 echo ""
 echo "🔍 CosmosDB状態確認:"
 echo "  docker ps | grep cosmosdb"

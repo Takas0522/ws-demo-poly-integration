@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Alert } from '@/components/ui/Alert';
+import { useEffect, useState } from 'react';
 
 interface Service {
   service_id: string;
@@ -51,11 +51,11 @@ export default function ServicesPage() {
       setLoading(true);
       setError(null);
       const response = await fetch('/api/services');
-      
+
       if (!response.ok) {
         throw new Error('サービスの取得に失敗しました');
       }
-      
+
       const data = await response.json();
       setServices(data.services || []);
     } catch (err) {
@@ -80,7 +80,7 @@ export default function ServicesPage() {
   const fetchTenantServices = async (tenantId: string) => {
     try {
       const response = await fetch(`/api/tenants/${tenantId}/services`);
-      
+
       if (response.ok) {
         const data = await response.json();
         setTenantServices(data.services || []);
@@ -185,7 +185,7 @@ export default function ServicesPage() {
             id="tenant_select"
             value={selectedTenant}
             onChange={(e) => setSelectedTenant(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">テナントを選択してください</option>
             {tenants.map((tenant) => (
@@ -204,16 +204,16 @@ export default function ServicesPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   サービス名
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   利用可能なロール
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   ステータス
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
                   操作
                 </th>
               </tr>
@@ -221,7 +221,7 @@ export default function ServicesPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {services.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={4} className="px-6 py-4 text-center text-gray-600">
                     サービスがありません
                   </td>
                 </tr>
@@ -235,7 +235,7 @@ export default function ServicesPage() {
                           {service.service_name}
                         </div>
                         {service.description && (
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-gray-600">
                             {service.description}
                           </div>
                         )}
@@ -264,7 +264,7 @@ export default function ServicesPage() {
                             </span>
                           )
                         ) : (
-                          <span className="text-xs text-gray-400">テナント未選択</span>
+                          <span className="text-xs text-gray-600">テナント未選択</span>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -313,7 +313,7 @@ export default function ServicesPage() {
                       <span className="text-sm font-medium text-gray-900">
                         {service.service_name}
                       </span>
-                      <span className="ml-2 text-xs text-gray-500">
+                      <span className="ml-2 text-xs text-gray-600">
                         割り当て日: {new Date(service.assigned_at).toLocaleString('ja-JP')}
                       </span>
                     </div>

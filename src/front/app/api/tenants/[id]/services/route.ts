@@ -1,65 +1,83 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
-import { apiClient } from '@/lib/api-client';
-import { cookies } from 'next/headers';
+import { apiClient } from "@/lib/api-client";
+import { getSession } from "@/lib/auth";
+import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
+
+// バックエンド→フロントエンド: テナントサービスデータのフィールド名変換
+function transformTenantServiceResponse(service: Record<string, unknown>) {
+  return {
+    service_id: service.id,
+    service_name: service.name,
+    assigned_at: service.assigned_at,
+    assigned_by: service.assigned_by,
+  };
+}
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession();
-  
+
   if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  
+
   try {
     const { id } = await params;
     const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
+    const token = cookieStore.get("auth_token")?.value;
     if (!token) {
-      return NextResponse.json({ error: 'No token found' }, { status: 401 });
+      return NextResponse.json({ error: "No token found" }, { status: 401 });
     }
-    const services = await apiClient.getTenantServices(id, token);
-    
-    return NextResponse.json(services);
+    const data = await apiClient.getTenantServices(id, token);
+
+    // バックエンドは { tenant_id, services: [...] } を返す
+    const services = (data.services || []).map(transformTenantServiceResponse);
+    return NextResponse.json({ services });
   } catch (error: unknown) {
-    console.error('Get tenant services error:', error);
-    const err = error as { response?: { data?: { detail?: string }; status?: number } };
+    console.error("Get tenant services error:", error);
+    const err = error as {
+      response?: { data?: { detail?: string }; status?: number };
+    };
     return NextResponse.json(
-      { error: err.response?.data?.detail || 'Failed to fetch tenant services' },
-      { status: err.response?.status || 500 }
+      {
+        error: err.response?.data?.detail || "Failed to fetch tenant services",
+      },
+      { status: err.response?.status || 500 },
     );
   }
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession();
-  
+
   if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  
+
   try {
     const { id } = await params;
-    const data = await request.json();
+    const body = await request.json();
     const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
+    const token = cookieStore.get("auth_token")?.value;
     if (!token) {
-      return NextResponse.json({ error: 'No token found' }, { status: 401 });
+      return NextResponse.json({ error: "No token found" }, { status: 401 });
     }
-    const result = await apiClient.assignService(id, data.service_id, token);
-    
+    const result = await apiClient.assignService(id, body.service_id, token);
+
     return NextResponse.json(result, { status: 201 });
   } catch (error: unknown) {
-    console.error('Assign service error:', error);
-    const err = error as { response?: { data?: { detail?: string }; status?: number } };
+    console.error("Assign service error:", error);
+    const err = error as {
+      response?: { data?: { detail?: string }; status?: number };
+    };
     return NextResponse.json(
-      { error: err.response?.data?.detail || 'Failed to assign service' },
-      { status: err.response?.status || 500 }
+      { error: err.response?.data?.detail || "Failed to assign service" },
+      { status: err.response?.status || 500 },
     );
   }
 }

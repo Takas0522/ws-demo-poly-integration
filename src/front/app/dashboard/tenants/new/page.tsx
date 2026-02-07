@@ -69,7 +69,7 @@ export default function NewTenantPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="tenant_name" className="block text-sm font-medium text-gray-700 mb-2">
-                テナント名 <span className="text-red-500">*</span>
+                テナント名 <span className="text-red-700">*</span>
               </label>
               <Input
                 id="tenant_name"

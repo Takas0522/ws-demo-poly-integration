@@ -152,7 +152,7 @@ export default function TenantDetailPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="tenant_name" className="block text-sm font-medium text-gray-700 mb-2">
-                  テナント名 <span className="text-red-500">*</span>
+                  テナント名 <span className="text-red-700">*</span>
                 </label>
                 <Input
                   id="tenant_name"
@@ -184,17 +184,17 @@ export default function TenantDetailPage() {
           ) : (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-500">テナントID</label>
+                <label className="block text-sm font-medium text-gray-600">テナントID</label>
                 <p className="mt-1 text-sm text-gray-900">{tenant.tenant_id}</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-500">テナント名</label>
+                <label className="block text-sm font-medium text-gray-600">テナント名</label>
                 <p className="mt-1 text-sm text-gray-900">{tenant.tenant_name}</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-500">特権テナント</label>
+                <label className="block text-sm font-medium text-gray-600">特権テナント</label>
                 <p className="mt-1">
                   {tenant.is_privileged ? (
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
@@ -209,14 +209,14 @@ export default function TenantDetailPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-500">作成日時</label>
+                <label className="block text-sm font-medium text-gray-600">作成日時</label>
                 <p className="mt-1 text-sm text-gray-900">
                   {new Date(tenant.created_at).toLocaleString('ja-JP')}
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-500">更新日時</label>
+                <label className="block text-sm font-medium text-gray-600">更新日時</label>
                 <p className="mt-1 text-sm text-gray-900">
                   {new Date(tenant.updated_at).toLocaleString('ja-JP')}
                 </p>

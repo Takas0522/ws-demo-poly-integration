@@ -142,7 +142,7 @@ export default function NewUserPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="user_id" className="block text-sm font-medium text-gray-700 mb-2">
-                ユーザーID <span className="text-red-500">*</span>
+                ユーザーID <span className="text-red-700">*</span>
               </label>
               <Input
                 id="user_id"
@@ -156,7 +156,7 @@ export default function NewUserPage() {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                パスワード <span className="text-red-500">*</span>
+                パスワード <span className="text-red-700">*</span>
               </label>
               <Input
                 id="password"
@@ -170,13 +170,13 @@ export default function NewUserPage() {
 
             <div>
               <label htmlFor="tenant_id" className="block text-sm font-medium text-gray-700 mb-2">
-                テナント <span className="text-red-500">*</span>
+                テナント <span className="text-red-700">*</span>
               </label>
               <select
                 id="tenant_id"
                 value={formData.tenant_id}
                 onChange={(e) => setFormData({ ...formData, tenant_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
                 <option value="">選択してください</option>
@@ -201,7 +201,7 @@ export default function NewUserPage() {
                     <select
                       value={formData.roles.find(r => r.service_id === service.service_id)?.role_code || ''}
                       onChange={(e) => handleRoleChange(service.service_id, e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">なし</option>
                       {service.available_roles?.map((role) => (

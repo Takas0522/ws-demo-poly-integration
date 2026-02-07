@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance } from "axios";
 
 // 型定義
 export interface LoginResponse {
@@ -27,10 +27,8 @@ export interface UserData {
 }
 
 export interface TenantData {
-  tenant_name: string;
-  display_name?: string;
-  description?: string;
-  is_active?: boolean;
+  name: string;
+  domains?: string[];
 }
 
 export interface ServiceSettings {
@@ -61,7 +59,7 @@ class APIClient {
 
   // 認証サービス
   async login(userId: string, password: string) {
-    const response = await this.authClient.post('/api/v1/auth/login', {
+    const response = await this.authClient.post("/api/v1/auth/login", {
       user_id: userId,
       password,
     });
@@ -69,7 +67,7 @@ class APIClient {
   }
 
   async verifyToken(token: string) {
-    const response = await this.authClient.post('/api/v1/auth/verify', {
+    const response = await this.authClient.post("/api/v1/auth/verify", {
       token,
     });
     return response.data;
@@ -77,7 +75,7 @@ class APIClient {
 
   // ユーザー管理
   async getUsers(token: string) {
-    const response = await this.authClient.get('/api/v1/users', {
+    const response = await this.authClient.get("/api/v1/users", {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -91,16 +89,20 @@ class APIClient {
   }
 
   async createUser(userData: UserData, token: string) {
-    const response = await this.authClient.post('/api/v1/users', userData, {
+    const response = await this.authClient.post("/api/v1/users", userData, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   }
 
   async updateUser(userId: string, userData: Partial<UserData>, token: string) {
-    const response = await this.authClient.put(`/api/v1/users/${userId}`, userData, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await this.authClient.put(
+      `/api/v1/users/${userId}`,
+      userData,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
     return response.data;
   }
 
@@ -113,59 +115,83 @@ class APIClient {
 
   // テナントサービス
   async getTenants(token: string) {
-    const response = await this.tenantClient.get('/api/v1/tenants', {
+    const response = await this.tenantClient.get("/api/v1/tenants", {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   }
 
   async getTenant(tenantId: string, token: string) {
-    const response = await this.tenantClient.get(`/api/v1/tenants/${tenantId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await this.tenantClient.get(
+      `/api/v1/tenants/${tenantId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
     return response.data;
   }
 
   async createTenant(tenantData: TenantData, token: string) {
-    const response = await this.tenantClient.post('/api/v1/tenants', tenantData, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await this.tenantClient.post(
+      "/api/v1/tenants",
+      tenantData,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
     return response.data;
   }
 
-  async updateTenant(tenantId: string, tenantData: Partial<TenantData>, token: string) {
-    const response = await this.tenantClient.put(`/api/v1/tenants/${tenantId}`, tenantData, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  async updateTenant(
+    tenantId: string,
+    tenantData: Partial<TenantData>,
+    token: string,
+  ) {
+    const response = await this.tenantClient.put(
+      `/api/v1/tenants/${tenantId}`,
+      tenantData,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
     return response.data;
   }
 
   async deleteTenant(tenantId: string, token: string) {
-    const response = await this.tenantClient.delete(`/api/v1/tenants/${tenantId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await this.tenantClient.delete(
+      `/api/v1/tenants/${tenantId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
     return response.data;
   }
 
   // サービス設定サービス
   async getServices(token: string) {
-    const response = await this.serviceClient.get('/api/v1/services', {
+    const response = await this.serviceClient.get("/api/v1/services", {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   }
 
   async getService(serviceId: string, token: string) {
-    const response = await this.serviceClient.get(`/api/v1/services/${serviceId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await this.serviceClient.get(
+      `/api/v1/services/${serviceId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
     return response.data;
   }
 
   async getTenantServices(tenantId: string, token: string) {
-    const response = await this.serviceClient.get(`/api/v1/tenants/${tenantId}/services`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await this.serviceClient.get(
+      `/api/v1/tenants/${tenantId}/services`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
     return response.data;
   }
 
@@ -175,7 +201,7 @@ class APIClient {
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
     );
     return response.data;
   }
@@ -186,18 +212,44 @@ class APIClient {
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
     );
     return response.data;
   }
 
-  async updateServiceSettings(tenantId: string, serviceId: string, settings: ServiceSettings, token: string) {
+  async updateServiceSettings(
+    tenantId: string,
+    serviceId: string,
+    settings: ServiceSettings,
+    token: string,
+  ) {
     const response = await this.serviceClient.put(
       `/api/v1/tenants/${tenantId}/services/${serviceId}/settings`,
       settings,
       {
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
+    );
+    return response.data;
+  }
+
+  async assignService(tenantId: string, serviceId: string, token: string) {
+    const response = await this.serviceClient.post(
+      `/api/v1/tenants/${tenantId}/services`,
+      { service_id: serviceId },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    return response.data;
+  }
+
+  async unassignService(tenantId: string, serviceId: string, token: string) {
+    const response = await this.serviceClient.delete(
+      `/api/v1/tenants/${tenantId}/services/${serviceId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
     );
     return response.data;
   }

@@ -18,14 +18,14 @@ def generate_timestamp(days_ago=0):
 # サンプルテナント（10件）
 SAMPLE_TENANTS = [
     {
-        "id": f"tenant-{str(uuid.UUID(int=i)).split('-')[0]}",
+        "id": f"tenant-sample-{i:03d}",
         "type": "tenant",
         "name": name,
         "domains": domains,
         "isPrivileged": False,
         "createdAt": generate_timestamp(days_ago=random.randint(30, 180)),
         "updatedAt": generate_timestamp(days_ago=random.randint(0, 30)),
-        "partitionKey": f"tenant-{str(uuid.UUID(int=i)).split('-')[0]}"
+        "partitionKey": f"tenant-sample-{i:03d}"
     }
     for i, (name, domains) in enumerate([
         ("株式会社サンプルコーポレーション", ["sample-corp.co.jp", "sample-corp.com"]),
@@ -66,20 +66,20 @@ user_counter = 1
 for tenant_idx, tenant_id in enumerate(TENANT_IDS):
     # 各テナントに3-5名のユーザーを追加
     num_users = random.randint(3, 5)
-    
+
     for i in range(num_users):
         if user_counter > 40:  # 最大40名まで
             break
-            
+
         name, username_base = USER_TEMPLATES[i % len(USER_TEMPLATES)]
-        
+
         # テナント固有のドメインでメールアドレスを生成
         tenant = SAMPLE_TENANTS[tenant_idx]
         email_domain = tenant["domains"][0]
-        
-        user_id = f"user-{str(uuid.UUID(int=user_counter)).split('-')[0]}"
+
+        user_id = f"user-sample-{user_counter:03d}"
         user_email = f"{username_base}{tenant_idx+1}@{email_domain}"
-        
+
         # ユーザー作成
         user = {
             "id": user_id,
@@ -95,7 +95,7 @@ for tenant_idx, tenant_id in enumerate(TENANT_IDS):
             "partitionKey": user_id
         }
         SAMPLE_USERS.append(user)
-        
+
         # テナント-ユーザー紐付け
         tenant_user = {
             "id": generate_id(),
@@ -107,7 +107,7 @@ for tenant_idx, tenant_id in enumerate(TENANT_IDS):
             "partitionKey": tenant_id
         }
         SAMPLE_TENANT_USERS.append(tenant_user)
-        
+
         user_counter += 1
 
 # サービスIDの定義（initial_data.pyから）
@@ -190,7 +190,7 @@ for idx, user in enumerate(SAMPLE_USERS):
     # パターン選択（重み付き）
     weights = [0.2, 0.3, 0.3, 0.2]
     pattern = random.choices(role_patterns, weights=weights)[0]
-    
+
     for service_key, role_key in pattern:
         user_role = {
             "id": generate_id(),
@@ -223,16 +223,16 @@ service_groups = [
 for tenant_idx, tenant_id in enumerate(TENANT_IDS):
     # パッケージ選択
     selected_services = random.choice(service_groups)
-    
+
     for service_key in selected_services:
+        service_id = SERVICE_IDS[service_key]
         tenant_service = {
-            "id": generate_id(),
-            "type": "tenant_service",
-            "tenantId": tenant_id,
-            "serviceId": SERVICE_IDS[service_key],
-            "assignedAt": generate_timestamp(days_ago=random.randint(10, 150)),
-            "assignedBy": "admin-user-001",
-            "partitionKey": tenant_id
+            "id": f"{tenant_id}_{service_id}",
+            "tenant_id": tenant_id,
+            "service_id": service_id,
+            "tenantId": tenant_id,  # パーティションキー用
+            "assigned_at": generate_timestamp(days_ago=random.randint(10, 150)),
+            "assigned_by": "admin-user-001",
         }
         SAMPLE_TENANT_SERVICES.append(tenant_service)
 

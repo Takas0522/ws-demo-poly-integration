@@ -136,8 +136,10 @@ class ServiceRepository:
                 assigned_by=assigned_by
             )
 
-            item_dict = tenant_service.dict()
+            # mode='json' で datetime を ISO文字列に変換（Cosmos DB SDK は json.dumps を使用するため）
+            item_dict = tenant_service.model_dump(mode='json')
             item_dict["id"] = f"{tenant_id}_{service_id}"
+            item_dict["tenantId"] = tenant_id  # パーティションキー用
 
             await self.tenant_services_container.create_item(body=item_dict)
 

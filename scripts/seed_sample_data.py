@@ -138,7 +138,7 @@ class SampleDataSeeder:
         print("=" * 60)
 
         client = CosmosDBClient(database_name="service_management")
-        container = client.get_container("services")
+        container = client.get_container("tenant_services")
 
         service_count = 0
         for tenant_service in SAMPLE_TENANT_SERVICES:
