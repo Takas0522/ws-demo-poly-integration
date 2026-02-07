@@ -1,10 +1,32 @@
+// =============================================================================
+// メインテンプレート - 複数サービス管理アプリケーション PoC
+// =============================================================================
+//
+// アーキテクチャ:
+//   - Frontend: Azure App Service (Next.js)
+//   - Backend: Azure Container Apps (Python FastAPI × 3)
+//   - Database: Azure Cosmos DB (Serverless, 3 databases)
+//   - Registry: Azure Container Registry
+//   - Monitoring: Application Insights + Log Analytics
+//   - Secrets: Azure Key Vault
+//
+// 参照: docs/arch/deployment.md
+// =============================================================================
+
 targetScope = 'subscription'
+
+// =============================================================================
+// パラメータ
+// =============================================================================
 
 @description('環境名 (dev, staging, production)')
 param environment string
 
 @description('リージョン')
 param location string = 'japaneast'
+
+@description('リソース名プレフィックス')
+param resourcePrefix string = 'poly-integration'
 
 @description('共通タグ')
 param tags object = {
@@ -22,27 +44,106 @@ param jwtSecretKey string
 param serviceSharedSecret string
 
 @description('Cosmos DB許可IPアドレス範囲（CIDR形式）')
-// セキュリティのため、ローカル開発環境とAzure App Serviceからのアクセスのみ許可してください
-// 例: ['203.0.113.0/24', '198.51.100.0/24']
-// Azure App Serviceの送信IPは自動的にAzureサービス経由でアクセス可能です
-param cosmosDbAllowedIpRanges array = [
-  // 開発環境のIP範囲を追加してください
-  // Azure App Serviceの送信IPは自動的にAzureサービス経由でアクセス可能です
-]
+param cosmosDbAllowedIpRanges array = []
 
-// リソースグループ作成
+@description('Container Apps 最小レプリカ数')
+param containerAppsMinReplicas int = 0
+
+@description('Container Apps 最大レプリカ数')
+param containerAppsMaxReplicas int = 3
+
+// =============================================================================
+// Resource Group
+// =============================================================================
+
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: 'rg-management-app-${environment}'
+  name: 'rg-${resourcePrefix}-${environment}'
   location: location
   tags: tags
 }
 
-// App Service Plan
+// =============================================================================
+// 1. Monitoring (Log Analytics + Application Insights)
+// =============================================================================
+
+module monitoring 'modules/monitoring.bicep' = {
+  scope: rg
+  name: 'monitoring-deployment'
+  params: {
+    resourcePrefix: resourcePrefix
+    environment: environment
+    location: location
+    tags: tags
+  }
+}
+
+// =============================================================================
+// 2. Container Registry
+// =============================================================================
+
+module containerRegistry 'modules/container-registry.bicep' = {
+  scope: rg
+  name: 'container-registry-deployment'
+  params: {
+    resourcePrefix: resourcePrefix
+    environment: environment
+    location: location
+    tags: tags
+  }
+}
+
+// =============================================================================
+// 3. Cosmos DB (3 databases: auth/tenant/service)
+// =============================================================================
+
+module cosmosDb 'modules/cosmos-db.bicep' = {
+  scope: rg
+  name: 'cosmos-db-deployment'
+  params: {
+    resourcePrefix: resourcePrefix
+    environment: environment
+    location: location
+    tags: tags
+    allowedIpRanges: cosmosDbAllowedIpRanges
+    useServerless: true
+  }
+}
+
+// =============================================================================
+// 4. Container Apps (3 Backend Services)
+// =============================================================================
+
+module containerApps 'modules/container-apps.bicep' = {
+  scope: rg
+  name: 'container-apps-deployment'
+  params: {
+    resourcePrefix: resourcePrefix
+    environment: environment
+    location: location
+    tags: tags
+    logAnalyticsCustomerId: monitoring.outputs.logAnalyticsCustomerId
+    logAnalyticsSharedKey: monitoring.outputs.logAnalyticsSharedKey
+    containerRegistryLoginServer: containerRegistry.outputs.loginServer
+    containerRegistryName: containerRegistry.outputs.name
+    appInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
+    cosmosDbEndpoint: cosmosDb.outputs.endpoint
+    cosmosDbKey: cosmosDb.outputs.primaryKey
+    jwtSecretKey: jwtSecretKey
+    serviceSharedSecret: serviceSharedSecret
+    minReplicas: containerAppsMinReplicas
+    maxReplicas: containerAppsMaxReplicas
+  }
+}
+
+// =============================================================================
+// 5. App Service (Frontend - Next.js)
+// =============================================================================
+
 module appServicePlan 'modules/app-service-plan.bicep' = {
   scope: rg
-  name: 'appServicePlan'
+  name: 'app-service-plan-deployment'
   params: {
-    name: 'plan-management-app-${environment}'
+    name: 'plan-${resourcePrefix}-${environment}'
     location: location
     sku: {
       name: 'B1'
@@ -53,232 +154,77 @@ module appServicePlan 'modules/app-service-plan.bicep' = {
   }
 }
 
-// Application Insights（Key Vaultより先に作成）
-module appInsights 'modules/app-insights.bicep' = {
-  scope: rg
-  name: 'appInsights'
-  params: {
-    name: 'appi-management-app-${environment}'
-    location: location
-    tags: tags
-  }
-}
-
-// Cosmos DB（Key Vaultより先に作成）
-module cosmosDb 'modules/cosmos-db.bicep' = {
-  scope: rg
-  name: 'cosmosDb'
-  params: {
-    name: 'cosmos-management-app-${environment}'
-    location: location
-    databaseName: 'management-app'
-    containers: [
-      { name: 'auth', partitionKey: '/tenantId' }
-      { name: 'tenant', partitionKey: '/tenantId' }
-      { name: 'service-setting', partitionKey: '/tenantId' }
-      { name: 'file-service', partitionKey: '/tenantId' }
-      { name: 'messaging-service', partitionKey: '/tenantId' }
-      { name: 'api-service', partitionKey: '/tenantId' }
-      { name: 'backup-service', partitionKey: '/tenantId' }
-    ]
-    allowedIpRanges: cosmosDbAllowedIpRanges
-    tags: tags
-  }
-}
-
-// Frontend App Service
 module frontendApp 'modules/app-service.bicep' = {
   scope: rg
-  name: 'frontendApp'
+  name: 'frontend-app-deployment'
   params: {
-    name: 'app-frontend-${environment}'
+    name: 'app-${resourcePrefix}-frontend-${environment}'
     location: location
     planId: appServicePlan.outputs.id
     runtime: 'node'
     runtimeVersion: '20-lts'
     tags: tags
-    environmentVariables: []
-    // FrontendはブラウザからアクセスされるためCORS設定不要
+    environmentVariables: [
+      {
+        name: 'NODE_ENV'
+        value: 'production'
+      }
+      {
+        name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+        value: monitoring.outputs.appInsightsConnectionString
+      }
+      {
+        name: 'AUTH_SERVICE_URL'
+        value: 'https://${containerApps.outputs.authServiceFqdn}'
+      }
+      {
+        name: 'TENANT_SERVICE_URL'
+        value: 'https://${containerApps.outputs.tenantServiceFqdn}'
+      }
+      {
+        name: 'SERVICE_SETTING_URL'
+        value: 'https://${containerApps.outputs.serviceSettingFqdn}'
+      }
+    ]
     allowedOrigins: []
   }
 }
 
-// Auth Service App Service
-module authServiceApp 'modules/app-service.bicep' = {
-  scope: rg
-  name: 'authServiceApp'
-  params: {
-    name: 'app-auth-${environment}'
-    location: location
-    planId: appServicePlan.outputs.id
-    runtime: 'python'
-    runtimeVersion: '3.11'
-    tags: tags
-    environmentVariables: []
-    // Frontend URLからのCORSアクセスを許可
-    allowedOrigins: [
-      'https://${frontendApp.outputs.defaultHostName}'
-    ]
-  }
-}
+// =============================================================================
+// 6. Key Vault (シークレット管理)
+// =============================================================================
 
-// Tenant Management Service App Service
-module tenantServiceApp 'modules/app-service.bicep' = {
-  scope: rg
-  name: 'tenantServiceApp'
-  params: {
-    name: 'app-tenant-${environment}'
-    location: location
-    planId: appServicePlan.outputs.id
-    runtime: 'python'
-    runtimeVersion: '3.11'
-    tags: tags
-    environmentVariables: []
-    // Frontend URLからのCORSアクセスを許可
-    allowedOrigins: [
-      'https://${frontendApp.outputs.defaultHostName}'
-    ]
-  }
-}
-
-// Service Setting Service App Service
-module serviceSettingApp 'modules/app-service.bicep' = {
-  scope: rg
-  name: 'serviceSettingApp'
-  params: {
-    name: 'app-service-setting-${environment}'
-    location: location
-    planId: appServicePlan.outputs.id
-    runtime: 'python'
-    runtimeVersion: '3.11'
-    tags: tags
-    environmentVariables: []
-    // Frontend URLからのCORSアクセスを許可
-    allowedOrigins: [
-      'https://${frontendApp.outputs.defaultHostName}'
-    ]
-  }
-}
-
-// File Service App Service (Mock)
-module fileServiceApp 'modules/app-service.bicep' = {
-  scope: rg
-  name: 'fileServiceApp'
-  params: {
-    name: 'app-file-service-${environment}'
-    location: location
-    planId: appServicePlan.outputs.id
-    runtime: 'python'
-    runtimeVersion: '3.11'
-    tags: tags
-    environmentVariables: []
-    // Frontend URLからのCORSアクセスを許可
-    allowedOrigins: [
-      'https://${frontendApp.outputs.defaultHostName}'
-    ]
-  }
-}
-
-// Messaging Service App Service (Mock)
-module messagingServiceApp 'modules/app-service.bicep' = {
-  scope: rg
-  name: 'messagingServiceApp'
-  params: {
-    name: 'app-messaging-service-${environment}'
-    location: location
-    planId: appServicePlan.outputs.id
-    runtime: 'python'
-    runtimeVersion: '3.11'
-    tags: tags
-    environmentVariables: []
-    // Frontend URLからのCORSアクセスを許可
-    allowedOrigins: [
-      'https://${frontendApp.outputs.defaultHostName}'
-    ]
-  }
-}
-
-// API Service App Service (Mock)
-module apiServiceApp 'modules/app-service.bicep' = {
-  scope: rg
-  name: 'apiServiceApp'
-  params: {
-    name: 'app-api-service-${environment}'
-    location: location
-    planId: appServicePlan.outputs.id
-    runtime: 'python'
-    runtimeVersion: '3.11'
-    tags: tags
-    environmentVariables: []
-    // Frontend URLからのCORSアクセスを許可
-    allowedOrigins: [
-      'https://${frontendApp.outputs.defaultHostName}'
-    ]
-  }
-}
-
-// Backup Service App Service (Mock)
-module backupServiceApp 'modules/app-service.bicep' = {
-  scope: rg
-  name: 'backupServiceApp'
-  params: {
-    name: 'app-backup-service-${environment}'
-    location: location
-    planId: appServicePlan.outputs.id
-    runtime: 'python'
-    runtimeVersion: '3.11'
-    tags: tags
-    environmentVariables: []
-    // Frontend URLからのCORSアクセスを許可
-    allowedOrigins: [
-      'https://${frontendApp.outputs.defaultHostName}'
-    ]
-  }
-}
-
-// Key Vault（すべてのApp Serviceの後に作成し、プリンシパルIDを取得）
 module keyVault 'modules/key-vault.bicep' = {
   scope: rg
-  name: 'keyVault'
+  name: 'key-vault-deployment'
   params: {
-    name: 'kv-mgmt-app-${environment}-${uniqueString(rg.id)}'
+    name: 'kv-${resourcePrefix}-${environment}'
     location: location
     tags: tags
     cosmosDbConnectionString: cosmosDb.outputs.connectionString
-    appInsightsInstrumentationKey: appInsights.outputs.instrumentationKey
+    appInsightsInstrumentationKey: monitoring.outputs.appInsightsInstrumentationKey
     jwtSecretKey: jwtSecretKey
     serviceSharedSecret: serviceSharedSecret
     appServicePrincipalIds: [
       frontendApp.outputs.principalId
       frontendApp.outputs.stagingPrincipalId
-      authServiceApp.outputs.principalId
-      authServiceApp.outputs.stagingPrincipalId
-      tenantServiceApp.outputs.principalId
-      tenantServiceApp.outputs.stagingPrincipalId
-      serviceSettingApp.outputs.principalId
-      serviceSettingApp.outputs.stagingPrincipalId
-      fileServiceApp.outputs.principalId
-      fileServiceApp.outputs.stagingPrincipalId
-      messagingServiceApp.outputs.principalId
-      messagingServiceApp.outputs.stagingPrincipalId
-      apiServiceApp.outputs.principalId
-      apiServiceApp.outputs.stagingPrincipalId
-      backupServiceApp.outputs.principalId
-      backupServiceApp.outputs.stagingPrincipalId
     ]
   }
 }
 
+// =============================================================================
+// Outputs
+// =============================================================================
+
 output resourceGroupName string = rg.name
+output frontendUrl string = 'https://${frontendApp.outputs.defaultHostName}'
+output authServiceUrl string = 'https://${containerApps.outputs.authServiceFqdn}'
+output tenantServiceUrl string = 'https://${containerApps.outputs.tenantServiceFqdn}'
+output serviceSettingUrl string = 'https://${containerApps.outputs.serviceSettingFqdn}'
+output containerRegistryLoginServer string = containerRegistry.outputs.loginServer
 output keyVaultName string = keyVault.outputs.name
 output keyVaultUri string = keyVault.outputs.vaultUri
-output frontendUrl string = frontendApp.outputs.defaultHostName
-output authServiceUrl string = authServiceApp.outputs.defaultHostName
+output cosmosDbName string = cosmosDb.outputs.name
 
 // セキュリティのため、シークレット情報は出力しません
-// App Serviceの環境変数は、Key Vault参照を使用して自動的に設定されます
-// 手動で環境変数を設定する場合は、以下のKey Vaultシークレット名を使用してください：
-//   - cosmos-db-connection-string
-//   - app-insights-instrumentation-key
-//   - jwt-secret-key
-//   - service-shared-secret
+// シークレットは Key Vault に保存されています

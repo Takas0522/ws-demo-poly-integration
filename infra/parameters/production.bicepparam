@@ -2,6 +2,7 @@ using '../main.bicep'
 
 param environment = 'production'
 param location = 'japaneast'
+param resourcePrefix = 'poly-integration'
 param tags = {
   Environment: 'production'
   Project: 'ManagementApp'
@@ -25,3 +26,7 @@ param tags = {
 param cosmosDbAllowedIpRanges = [
   // 本番環境のIP範囲を指定してください
 ]
+
+// Container Apps スケーリング設定（本番は常時稼働）
+param containerAppsMinReplicas = 1
+param containerAppsMaxReplicas = 5

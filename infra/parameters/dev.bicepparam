@@ -2,6 +2,7 @@ using '../main.bicep'
 
 param environment = 'dev'
 param location = 'japaneast'
+param resourcePrefix = 'poly-integration'
 param tags = {
   Environment: 'dev'
   Project: 'ManagementApp'
@@ -20,4 +21,8 @@ param serviceSharedSecret = 'dev-service-shared-secret-change-in-production-use-
 
 // Cosmos DBネットワーク設定（開発環境では全て許可）
 param cosmosDbAllowedIpRanges = []
+
+// Container Apps スケーリング設定（開発環境は最小構成）
+param containerAppsMinReplicas = 0
+param containerAppsMaxReplicas = 1
 

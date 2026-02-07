@@ -36,7 +36,7 @@ if [ $# -ne 1 ]; then
 fi
 
 ENVIRONMENT=$1
-RESOURCE_GROUP="rg-management-app-${ENVIRONMENT}"
+RESOURCE_GROUP="rg-poly-integration-${ENVIRONMENT}"
 
 # 環境の検証
 if [[ ! "$ENVIRONMENT" =~ ^(dev|staging|production)$ ]]; then

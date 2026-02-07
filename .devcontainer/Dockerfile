@@ -27,8 +27,14 @@ RUN groupadd -g 989 docker || true \
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
 
-# Azure CLI インストール
-RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+# Azure CLI インストール（Debian trixie対応）
+RUN pip install --break-system-packages azure-cli
+
+# Azure Developer CLI (azd) インストール
+RUN curl -fsSL https://aka.ms/install-azd.sh | bash
+
+# Bicep CLI インストール（Azure CLI拡張として）
+RUN az bicep install
 
 # GitHub CLI インストール
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
