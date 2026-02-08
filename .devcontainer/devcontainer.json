@@ -48,7 +48,8 @@
         "ms-azuretools.vscode-bicep",
         "ms-azuretools.vscode-azureresourcegroups",
         "redhat.vscode-yaml",
-        "ms-azuretools.vscode-docker"
+        "ms-azuretools.vscode-docker",
+        "bierner.markdown-mermaid"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
