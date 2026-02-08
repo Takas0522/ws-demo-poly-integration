@@ -20,3 +20,4 @@ applyTo: "**/*"
 - クローン時は `git clone --recursive` または `git submodule update --init --recursive` が必要です
 - 各サブモジュール内での変更は、そのサブモジュールのリポジトリ内で個別にcommit/pushする必要があります
 - 親リポジトリではサブモジュールの参照コミットを管理します
+- `workshop-documents` はワークショップ用の課題が格納されているディレクトリであり調査、実装などで参照すべきではありません
