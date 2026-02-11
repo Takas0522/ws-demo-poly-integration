@@ -24,11 +24,13 @@
 ### 1.1 デプロイメント戦略
 
 **PoCアプリケーションの方針**:
+
 - **シンプル**: 最小限のリソース構成
 - **低コスト**: 開発・検証に適したスケール
 - **マネージド**: 運用負荷を最小化
 
 **環境構成**:
+
 - **Development**: DevContainerによるローカル開発環境（詳細: [開発環境設計](./development-environment.md)）
 - **Production**: Azure上の本番環境（本ドキュメント）
 
@@ -37,52 +39,52 @@
 ```mermaid
 graph TB
     Internet((Internet))
-    
+
     subgraph "Azure"
         subgraph "Resource Group: rg-poly-integration-poc"
-            
+
             subgraph "Frontend"
                 AppService[Azure App Service<br/>Next.js Frontend]
             end
-            
+
             subgraph "Container Apps Environment"
                 ContainerEnv[Container Apps Environment]
                 AuthContainer[Container App<br/>認証認可サービス]
                 TenantContainer[Container App<br/>テナント管理サービス]
                 ServiceContainer[Container App<br/>利用サービス設定サービス]
             end
-            
+
             subgraph "Data"
                 CosmosDB[(Cosmos DB<br/>NoSQL)]
             end
-            
+
             subgraph "Monitoring"
                 AppInsights[Application Insights]
                 LogWorkspace[Log Analytics Workspace]
             end
-            
+
             subgraph "Container Registry"
                 ACR[Azure Container Registry]
             end
         end
     end
-    
+
     Internet -->|HTTPS| AppService
     AppService -->|HTTP| AuthContainer
     AppService -->|HTTP| TenantContainer
     AppService -->|HTTP| ServiceContainer
-    
+
     AuthContainer -->|SDK| CosmosDB
     TenantContainer -->|SDK| CosmosDB
     ServiceContainer -->|SDK| CosmosDB
-    
+
     AppService --> AppInsights
     AuthContainer --> AppInsights
     TenantContainer --> AppInsights
     ServiceContainer --> AppInsights
-    
+
     AppInsights --> LogWorkspace
-    
+
     AuthContainer -.Pull Image.-> ACR
     TenantContainer -.Pull Image.-> ACR
     ServiceContainer -.Pull Image.-> ACR
@@ -94,25 +96,26 @@ graph TB
 
 ### 2.1 リソース一覧
 
-| リソース種別 | リソース名 | SKU/Tier | 用途 |
-|------------|-----------|----------|------|
-| Resource Group | rg-poly-integration-poc | - | リソース管理 |
-| App Service Plan | plan-poly-frontend | B1 (Basic) | フロントエンドホスティング |
-| App Service | app-poly-frontend | - | Next.js アプリ |
-| Container Apps Environment | cae-poly-backend | Consumption | コンテナホスティング環境 |
-| Container App | ca-auth-service | - | 認証認可サービス |
-| Container App | ca-tenant-service | - | テナント管理サービス |
-| Container App | ca-service-setting | - | サービス設定サービス |
-| Cosmos DB Account | cosmos-poly-poc | Standard (400 RU/s) | データベース |
-| Container Registry | acrpolypoc | Basic | コンテナイメージ管理 |
-| Application Insights | appi-poly-poc | - | 監視・ログ |
-| Log Analytics Workspace | log-poly-poc | - | ログ集約 |
+| リソース種別               | リソース名              | SKU/Tier            | 用途                       |
+| -------------------------- | ----------------------- | ------------------- | -------------------------- |
+| Resource Group             | rg-poly-integration-poc | -                   | リソース管理               |
+| App Service Plan           | plan-poly-frontend      | B1 (Basic)          | フロントエンドホスティング |
+| App Service                | app-poly-frontend       | -                   | Next.js アプリ             |
+| Container Apps Environment | cae-poly-backend        | Consumption         | コンテナホスティング環境   |
+| Container App              | ca-auth-service         | -                   | 認証認可サービス           |
+| Container App              | ca-tenant-service       | -                   | テナント管理サービス       |
+| Container App              | ca-service-setting      | -                   | サービス設定サービス       |
+| Cosmos DB Account          | cosmos-poly-poc         | Standard (400 RU/s) | データベース               |
+| Container Registry         | acrpolypoc              | Basic               | コンテナイメージ管理       |
+| Application Insights       | appi-poly-poc           | -                   | 監視・ログ                 |
+| Log Analytics Workspace    | log-poly-poc            | -                   | ログ集約                   |
 
 ### 2.2 リージョン
 
 **プライマリリージョン**: Japan East（東日本）
 
 **理由**:
+
 - PoCのため単一リージョン
 - 日本国内アクセスを想定
 - コスト最適化
@@ -128,17 +131,18 @@ PoCのため、シンプルな構成を採用：
 ```mermaid
 graph LR
     Internet((Internet))
-    
+
     subgraph "Public Access"
         AppService[App Service<br/>Frontend]
         ContainerApps[Container Apps<br/>Backend Services]
     end
-    
+
     Internet -->|HTTPS| AppService
     AppService -->|HTTP Internal| ContainerApps
 ```
 
 **特徴**:
+
 - パブリックアクセス（認証必須）
 - VNet統合なし（PoCのため）
 - HTTPS強制
@@ -154,11 +158,11 @@ PoCのため、Azureデフォルトドメインを使用：
 
 #### 3.3.1 ネットワークセキュリティ
 
-| レイヤー | 設定 |
-|---------|------|
-| **App Service** | HTTPS のみ許可 |
+| レイヤー           | 設定                                      |
+| ------------------ | ----------------------------------------- |
+| **App Service**    | HTTPS のみ許可                            |
 | **Container Apps** | 内部通信は HTTP、外部からのアクセスは制限 |
-| **Cosmos DB** | パブリックアクセス（接続文字列で保護） |
+| **Cosmos DB**      | パブリックアクセス（接続文字列で保護）    |
 
 #### 3.3.2 認証・認可
 
@@ -182,36 +186,36 @@ on:
     branches:
       - main
     paths:
-      - 'src/front/**'
-      - '.github/workflows/deploy-frontend.yml'
+      - "src/front/**"
+      - ".github/workflows/deploy-frontend.yml"
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           submodules: recursive
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
-      
+          node-version: "18"
+
       - name: Install dependencies
         working-directory: ./src/front
         run: npm ci
-      
+
       - name: Build Next.js app
         working-directory: ./src/front
         run: npm run build
-      
+
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'app-poly-frontend'
+          app-name: "app-poly-frontend"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ./src/front
 ```
@@ -227,32 +231,32 @@ on:
     branches:
       - main
     paths:
-      - 'src/auth-service/**'
-      - '.github/workflows/deploy-auth-service.yml'
+      - "src/auth-service/**"
+      - ".github/workflows/deploy-auth-service.yml"
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           submodules: recursive
-      
+
       - name: Login to Azure Container Registry
         uses: docker/login-action@v2
         with:
           registry: acrpolypoc.azurecr.io
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
-      
+
       - name: Build and push Docker image
         working-directory: ./src/auth-service
         run: |
           docker build -t acrpolypoc.azurecr.io/auth-service:${{ github.sha }} .
           docker push acrpolypoc.azurecr.io/auth-service:${{ github.sha }}
-      
+
       - name: Deploy to Container App
         uses: azure/container-apps-deploy-action@v1
         with:
@@ -270,10 +274,10 @@ sequenceDiagram
     participant Actions as GitHub Actions
     participant ACR as Container Registry
     participant Azure
-    
+
     Dev->>GitHub: git push (main branch)
     GitHub->>Actions: Trigger workflow
-    
+
     alt Frontend
         Actions->>Actions: Build Next.js
         Actions->>Azure: Deploy to App Service
@@ -282,7 +286,7 @@ sequenceDiagram
         Actions->>ACR: Push image
         Actions->>Azure: Deploy to Container App
     end
-    
+
     Azure-->>Dev: Deployment complete
 ```
 
@@ -306,6 +310,7 @@ JWT_SECRET=<KeyVault参照またはシークレット>
 #### 5.1.2 Container Apps (Backend Services)
 
 **認証認可サービス**:
+
 ```bash
 SERVICE_NAME=auth-service
 PORT=8001
@@ -318,6 +323,7 @@ JWT_EXPIRATION_HOURS=24
 ```
 
 **テナント管理サービス**:
+
 ```bash
 SERVICE_NAME=tenant-management-service
 PORT=8002
@@ -327,6 +333,7 @@ COSMOS_DB_DATABASE=tenant_management
 ```
 
 **利用サービス設定サービス**:
+
 ```bash
 SERVICE_NAME=service-setting-service
 PORT=8003
@@ -338,6 +345,7 @@ COSMOS_DB_DATABASE=service_management
 ### 5.2 シークレット管理
 
 **PoCでの方針**:
+
 - 環境変数で管理（Azure Portal または Bicep で設定）
 - 本番運用では Azure Key Vault 推奨
 
@@ -348,18 +356,35 @@ COSMOS_DB_DATABASE=service_management
 ### 6.1 ディレクトリ構造
 
 ```
-infra/
-├── main.bicep                    # メインテンプレート
+infra/                                        # 統合リポジトリ（共有リソース）
+├── main.bicep                                # メインテンプレート（オーケストレーション）
 ├── modules/
-│   ├── app-service.bicep         # App Service モジュール
-│   ├── container-apps.bicep      # Container Apps モジュール
-│   ├── cosmos-db.bicep           # Cosmos DB モジュール
-│   ├── container-registry.bicep  # ACR モジュール
-│   └── monitoring.bicep          # Application Insights モジュール
-└── parameters/
-    ├── dev.parameters.json       # 開発環境パラメータ
-    └── prod.parameters.json      # 本番環境パラメータ
+│   ├── container-apps-env.bicep              # Container Apps Environment（共有）
+│   ├── cosmos-db.bicep                       # Cosmos DB（共有）
+│   ├── container-registry.bicep              # ACR（共有）
+│   ├── monitoring.bicep                      # Log Analytics + App Insights（共有）
+│   └── key-vault.bicep                       # Key Vault（共有）
+├── parameters/
+│   ├── dev.bicepparam                        # Dev環境パラメータ
+│   ├── staging.bicepparam                    # Staging環境パラメータ
+│   └── production.bicepparam                 # Production環境パラメータ
+└── scripts/
+
+src/auth-service/infra/                       # 認証認可サービス固有
+└── container-app.bicep
+
+src/tenant-management-service/infra/          # テナント管理サービス固有
+└── container-app.bicep
+
+src/service-setting-service/infra/            # 利用サービス設定サービス固有
+└── container-app.bicep
+
+src/front/infra/                              # フロントエンド固有
+├── app-service-plan.bicep
+└── app-service.bicep
 ```
+
+> **設計方針**: 共有リソース（CosmosDB, ACR, Monitoring, Key Vault, Container Apps Environment）は統合リポジトリで管理し、各サービス固有のコンピューティングリソース（Container App, App Service）は各サービスリポジトリの `infra/` に配置。`main.bicep` が両方を参照してオーケストレーションします。
 
 ### 6.2 main.bicep
 
@@ -792,6 +817,7 @@ az deployment group create \
 ### 7.1 監視
 
 **Application Insights**で以下を監視：
+
 - APIレスポンスタイム
 - エラーレート
 - 依存関係の失敗
@@ -806,6 +832,7 @@ az deployment group create \
 ### 7.3 アラート（オプション）
 
 PoCのため未設定だが、本番では推奨：
+
 - HTTPエラー率 > 5%
 - レスポンスタイム > 3秒
 - Cosmos DB RU消費率 > 80%
@@ -816,14 +843,14 @@ PoCのため未設定だが、本番では推奨：
 
 ### 8.1 月額コスト概算（Japan East）
 
-| リソース | SKU/構成 | 月額概算 |
-|---------|---------|---------|
-| App Service | B1 (1 instance) | ¥1,800 |
-| Container Apps | 0.25 vCPU × 3 apps | ¥3,000 |
-| Cosmos DB | Serverless (最小使用) | ¥2,000 |
-| Container Registry | Basic | ¥600 |
-| Application Insights | 最小使用 | ¥500 |
-| **合計** | | **約 ¥7,900/月** |
+| リソース             | SKU/構成              | 月額概算         |
+| -------------------- | --------------------- | ---------------- |
+| App Service          | B1 (1 instance)       | ¥1,800           |
+| Container Apps       | 0.25 vCPU × 3 apps    | ¥3,000           |
+| Cosmos DB            | Serverless (最小使用) | ¥2,000           |
+| Container Registry   | Basic                 | ¥600             |
+| Application Insights | 最小使用              | ¥500             |
+| **合計**             |                       | **約 ¥7,900/月** |
 
 ※ 2024年1月時点の概算。実際のコストは使用量により変動します。
 
@@ -840,6 +867,7 @@ PoCのため未設定だが、本番では推奨：
 ### 9.2 将来的な拡張
 
 本番運用時の推奨：
+
 - オートスケール設定
 - マルチリージョン展開
 - CDNの導入
@@ -874,7 +902,7 @@ PoCのため未設定だが、本番では推奨：
 
 ## 変更履歴
 
-| バージョン | 日付 | 変更内容 | 作成者 |
-|-----------|------|---------|-------|
-| 1.0.1 | 2024 | 開発環境へのリンク追加 | Architecture Agent |
-| 1.0.0 | 2024 | 初版作成 | Architecture Agent |
+| バージョン | 日付 | 変更内容               | 作成者             |
+| ---------- | ---- | ---------------------- | ------------------ |
+| 1.0.1      | 2024 | 開発環境へのリンク追加 | Architecture Agent |
+| 1.0.0      | 2024 | 初版作成               | Architecture Agent |

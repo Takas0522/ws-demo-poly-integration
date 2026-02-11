@@ -82,29 +82,27 @@ docs/
 
 ---
 
-#### 2.2 [コンポーネント設計](./arch/components/README.md)
+#### 2.2 [コンポーネント設計（横断事項）](./arch/components/README.md)
 
 **内容**:
 
-- Frontend (Next.js) の詳細設計
-  - ディレクトリ構造
-  - BFF API Routes
-  - UIコンポーネント設計
-  - 認証フロー
-- 各バックエンドサービスの詳細設計
-  - 認証認可サービス
-  - テナント管理サービス
-  - 利用サービス設定サービス
-- モックサービスの実装方法
-- コンポーネント間通信
+- サービス間通信パターン
+- 共通依存関係
+- 開発ガイドライン
+
+> **注**: サービス固有のコンポーネント設計は各サービスリポジトリに移動しました：
+>
+> - [フロントエンド](../src/front/docs/component-design.md)
+> - [認証認可サービス](../src/auth-service/docs/component-design.md)
+> - [テナント管理サービス](../src/tenant-management-service/docs/component-design.md)
+> - [利用サービス設定サービス](../src/service-setting-service/docs/component-design.md)
 
 **対象読者**: 開発者、テクニカルリード
 
 **こんな時に読む**:
 
-- 特定のサービスを実装する時
 - サービス間の連携方法を確認したい時
-- ディレクトリ構造を理解したい時
+- 共通の開発規約を確認したい時
 
 ---
 
@@ -133,24 +131,27 @@ docs/
 
 ---
 
-#### 2.4 [API設計仕様書](./arch/api/api-specification.md)
+#### 2.4 [API設計仕様書（共通仕様）](./arch/api/api-specification.md)
 
 **内容**:
 
-- 共通仕様（認証、エラーレスポンス、ページネーション）
-- 認証認可サービス API
-- テナント管理サービス API
-- 利用サービス設定サービス API
-- BFF API (Next.js)
-- モックサービス API
+- 共通仕様（認証、エラーレスポンス、ページネーション、バージョニング）
+- ヘルスチェック仕様
+- レートリミット仕様
+
+> **注**: サービス固有のAPI仕様は各サービスリポジトリに移動しました：
+>
+> - [認証認可サービス API](../src/auth-service/docs/api-specification.md)
+> - [テナント管理サービス API](../src/tenant-management-service/docs/api-specification.md)
+> - [利用サービス設定サービス API](../src/service-setting-service/docs/api-specification.md)
+> - [BFF API](../src/front/docs/api-specification.md)
 
 **対象読者**: 開発者、QAエンジニア、フロントエンド/バックエンド開発者
 
 **こんな時に読む**:
 
-- APIエンドポイントを実装する時
-- フロントエンドとバックエンドを統合する時
-- APIテストを作成する時
+- API共通仕様を確認する時
+- 各サービスのAPIエンドポイントを実装する時（→ 各サービスのAPI仕様を参照）
 
 ---
 
@@ -284,8 +285,8 @@ docs/
 
 **読むべきドキュメント**:
 
-1. [コンポーネント設計 - Frontend セクション](./arch/components/README.md#1-frontend-nextjs)
-2. [API設計仕様書 - BFF API](./arch/api/api-specification.md#5-bff-api-nextjs)
+1. [フロントエンド コンポーネント設計](../src/front/docs/component-design.md)
+2. [BFF API仕様](../src/front/docs/api-specification.md)
 3. [データ設計](./arch/data/data-model.md)（データ構造理解のため）
 
 **開発フロー**:
@@ -300,9 +301,10 @@ docs/
 
 **読むべきドキュメント**:
 
-1. [コンポーネント設計 - 担当サービス](./arch/components/README.md)
+1. 担当サービスのコンポーネント設計（各 `src/{service}/docs/component-design.md`）
 2. [データ設計](./arch/data/data-model.md)
-3. [API設計仕様書 - 担当サービスAPI](./arch/api/api-specification.md)
+3. 担当サービスのAPI仕様（各 `src/{service}/docs/api-specification.md`）
+4. [API共通仕様](./arch/api/api-specification.md)
 
 **開発フロー**:
 
@@ -339,9 +341,9 @@ docs/
 | システム全体を理解したい           | [アーキテクチャ概要](./arch/overview.md)                                                  |
 | サービスの役割を確認したい         | [プロジェクト概要](./init.md)                                                             |
 | CosmosDBの使い方を知りたい         | [CosmosDBクイックスタート](./cosmos-db-quickstart.md)                                     |
-| 新しいAPIを実装したい              | [API設計仕様書](./arch/api/api-specification.md)                                          |
+| 新しいAPIを実装したい              | 各サービスの `docs/api-specification.md` + [API共通仕様](./arch/api/api-specification.md) |
 | データベーススキーマを確認したい   | [データ設計](./arch/data/data-model.md)                                                   |
-| コンポーネントの実装方法を知りたい | [コンポーネント設計](./arch/components/README.md)                                         |
+| コンポーネントの実装方法を知りたい | 各サービスの `docs/component-design.md` + [横断事項](./arch/components/README.md)         |
 | デプロイ方法を知りたい             | [デプロイ手順書](./デプロイ手順書.md)                                                     |
 | 運用方法を知りたい                 | [運用保守ガイド](./運用保守ガイド.md)                                                     |
 | よくある問題を解決したい           | [FAQ](./FAQ.md)                                                                           |
@@ -358,10 +360,10 @@ docs/
 
 以下の変更を行う際は、該当ドキュメントの更新が必要です：
 
-- **新しいAPIエンドポイント追加** → [API設計仕様書](./arch/api/api-specification.md)
+- **新しいAPIエンドポイント追加** → 各サービスの `docs/api-specification.md`
 - **データモデル変更** → [データ設計](./arch/data/data-model.md)
-- **新しいサービス追加** → [コンポーネント設計](./arch/components/README.md)、[アーキテクチャ概要](./arch/overview.md)
-- **インフラ構成変更** → [デプロイメント設計](./arch/deployment.md)
+- **新しいサービス追加** → 各サービスの `docs/component-design.md`、[アーキテクチャ概要](./arch/overview.md)
+- **インフラ構成変更** → [デプロイメント設計](./arch/deployment.md) + 各サービスの `infra/`
 - **認証・認可の変更** → [アーキテクチャ概要](./arch/overview.md)
 
 ### 更新手順

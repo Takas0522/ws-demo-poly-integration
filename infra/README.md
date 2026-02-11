@@ -18,29 +18,42 @@ Internet → App Service (Next.js Frontend)
 ## ディレクトリ構成
 
 ```
-infra/
-├── main.bicep                        # メインテンプレート（エントリポイント）
+infra/                                        # 統合リポジトリ（共有リソース）
+├── main.bicep                                # メインテンプレート（オーケストレーション）
 ├── modules/
-│   ├── monitoring.bicep              # Log Analytics + Application Insights
-│   ├── container-registry.bicep      # Azure Container Registry
-│   ├── container-apps.bicep          # Container Apps Environment + 3 Services
-│   ├── cosmos-db.bicep               # Cosmos DB (3 databases)
-│   ├── app-service-plan.bicep        # App Service Plan
-│   ├── app-service.bicep             # App Service (Frontend)
-│   └── key-vault.bicep               # Key Vault (Secrets)
+│   ├── container-apps-env.bicep              # Container Apps Environment（共有ホスティング環境）
+│   ├── cosmos-db.bicep                       # Cosmos DB (3 databases)
+│   ├── container-registry.bicep              # Azure Container Registry
+│   ├── monitoring.bicep                      # Log Analytics + Application Insights
+│   └── key-vault.bicep                       # Key Vault (Secrets)
 ├── parameters/
-│   ├── dev.bicepparam                # Dev環境パラメータ
-│   ├── staging.bicepparam            # Staging環境パラメータ
-│   └── production.bicepparam         # Production環境パラメータ
+│   ├── dev.bicepparam                        # Dev環境パラメータ
+│   ├── staging.bicepparam                    # Staging環境パラメータ
+│   └── production.bicepparam                 # Production環境パラメータ
 ├── scripts/
-│   ├── deploy.sh                     # デプロイスクリプト
-│   ├── destroy.sh                    # リソース削除スクリプト
-│   ├── validate.sh                   # テンプレート検証スクリプト
-│   ├── validate-env.sh               # 環境変数検証スクリプト
-│   └── generate-secrets.sh           # シークレット生成スクリプト
-├── outputs/                          # デプロイ出力値（自動生成）
-└── tests/                            # インフラテスト
+│   ├── deploy.sh                             # デプロイスクリプト
+│   ├── destroy.sh                            # リソース削除スクリプト
+│   ├── validate.sh                           # テンプレート検証スクリプト
+│   ├── validate-env.sh                       # 環境変数検証スクリプト
+│   └── generate-secrets.sh                   # シークレット生成スクリプト
+├── outputs/                                  # デプロイ出力値（自動生成）
+└── tests/                                    # インフラテスト
+
+src/auth-service/infra/                       # 認証認可サービス固有
+└── container-app.bicep                       # Container App 定義
+
+src/tenant-management-service/infra/          # テナント管理サービス固有
+└── container-app.bicep                       # Container App 定義
+
+src/service-setting-service/infra/            # 利用サービス設定サービス固有
+└── container-app.bicep                       # Container App 定義
+
+src/front/infra/                              # フロントエンド固有
+├── app-service-plan.bicep                    # App Service Plan
+└── app-service.bicep                         # App Service (Frontend)
 ```
+
+> **設計方針**: 共有リソース（CosmosDB, ACR, Monitoring, Key Vault, Container Apps Environment）は `infra/modules/` で管理。各サービス固有のコンピューティングリソース（Container App, App Service）は各サービスの `infra/` に配置。`main.bicep` が両方を参照してオーケストレーションします。
 
 ## 構築されるリソース
 
