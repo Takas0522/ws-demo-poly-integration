@@ -1,0 +1,265 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+env:
+  AZURE_RESOURCE_GROUP: rg-poly-integration-poc
+  AZURE_LOCATION: japaneast
+  ACR_NAME: acrpolypoc
+  FRONTEND_APP_NAME: app-poly-frontend
+  AUTH_SERVICE_APP_NAME: ca-auth-service
+  TENANT_SERVICE_APP_NAME: ca-tenant-service
+  SERVICE_SETTING_APP_NAME: ca-service-setting
+
+jobs:
+  # ========================================
+  # Infrastructure Deployment (Bicep)
+  # ========================================
+  deploy-infrastructure:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    outputs:
+      cosmos_endpoint: ${{ steps.deploy.outputs.cosmosEndpoint }}
+      acr_login_server: ${{ steps.deploy.outputs.acrLoginServer }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Deploy Bicep templates
+        id: deploy
+        run: |
+          # Deploy main infrastructure
+          az deployment sub create \
+            --location ${{ env.AZURE_LOCATION }} \
+            --template-file infra/main.bicep \
+            --parameters environmentName=${{ github.event.inputs.environment || 'dev' }} \
+            --parameters location=${{ env.AZURE_LOCATION }} \
+            --parameters resourcePrefix=poly-integration \
+            --name "deploy-$(date +%Y%m%d-%H%M%S)" \
+            --output json > deployment_output.json
+          
+          # Extract outputs
+          COSMOS_ENDPOINT=$(jq -r '.properties.outputs.cosmosEndpoint.value' deployment_output.json)
+          ACR_LOGIN_SERVER=$(jq -r '.properties.outputs.acrLoginServer.value' deployment_output.json)
+          
+          echo "cosmosEndpoint=$COSMOS_ENDPOINT" >> $GITHUB_OUTPUT
+          echo "acrLoginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          
+          echo "✅ Infrastructure deployment completed"
+          echo "Cosmos DB Endpoint: $COSMOS_ENDPOINT"
+          echo "ACR Login Server: $ACR_LOGIN_SERVER"
+  
+  # ========================================
+  # Backend Services Deployment
+  # ========================================
+  build-and-push-images:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    needs: deploy-infrastructure
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    
+    strategy:
+      matrix:
+        service:
+          - name: auth-service
+            path: ./src/auth-service
+            port: 8001
+          - name: tenant-management-service
+            path: ./src/tenant-management-service
+            port: 8002
+          - name: service-setting-service
+            path: ./src/service-setting-service
+            port: 8003
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Login to Azure Container Registry
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+      
+      - name: Build and Push Docker Image
+        run: |
+          IMAGE_TAG=${{ env.ACR_NAME }}.azurecr.io/${{ matrix.service.name }}:${{ github.sha }}
+          IMAGE_LATEST=${{ env.ACR_NAME }}.azurecr.io/${{ matrix.service.name }}:latest
+          
+          cd ${{ matrix.service.path }}
+          docker build -t $IMAGE_TAG -t $IMAGE_LATEST .
+          docker push $IMAGE_TAG
+          docker push $IMAGE_LATEST
+          
+          echo "✅ Docker image built and pushed: $IMAGE_TAG"
+  
+  deploy-backend-services:
+    name: Deploy Backend Services
+    runs-on: ubuntu-latest
+    needs: build-and-push-images
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    
+    strategy:
+      matrix:
+        service:
+          - name: auth-service
+            app_name: ca-auth-service
+            database: auth_management
+          - name: tenant-management-service
+            app_name: ca-tenant-service
+            database: tenant_management
+          - name: service-setting-service
+            app_name: ca-service-setting
+            database: service_management
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Deploy to Container App
+        run: |
+          IMAGE=${{ env.ACR_NAME }}.azurecr.io/${{ matrix.service.name }}:${{ github.sha }}
+          
+          az containerapp update \
+            --name ${{ matrix.service.app_name }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --image $IMAGE \
+            --set-env-vars \
+              COSMOS_DB_ENDPOINT=secretref:cosmos-endpoint \
+              COSMOS_DB_KEY=secretref:cosmos-key \
+              COSMOS_DB_DATABASE=${{ matrix.service.database }} \
+              JWT_SECRET=secretref:jwt-secret \
+              APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:appinsights-connection
+          
+          echo "✅ ${{ matrix.service.app_name }} deployed successfully"
+  
+  # ========================================
+  # Frontend Deployment
+  # ========================================
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: deploy-backend-services
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    
+    defaults:
+      run:
+        working-directory: ./src/front
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: ./src/front/package-lock.json
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build Next.js application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_AUTH_SERVICE_URL: https://ca-auth-service.internal.azurecontainerapps.io
+          NEXT_PUBLIC_TENANT_SERVICE_URL: https://ca-tenant-service.internal.azurecontainerapps.io
+          NEXT_PUBLIC_SERVICE_SETTING_URL: https://ca-service-setting.internal.azurecontainerapps.io
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.FRONTEND_APP_NAME }}
+          package: ./src/front
+      
+      - name: Check deployment status
+        run: |
+          echo "✅ Frontend deployed to Azure App Service"
+          echo "🌐 URL: https://${{ env.FRONTEND_APP_NAME }}.azurewebsites.net"
+  
+  # ========================================
+  # Deployment Summary
+  # ========================================
+  deployment-summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs:
+      - deploy-infrastructure
+      - deploy-backend-services
+      - deploy-frontend
+    if: always() && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+    
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment**: ${{ github.event.inputs.environment || 'dev' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Infrastructure | ${{ needs.deploy-infrastructure.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend Services | ${{ needs.deploy-backend-services.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.deploy-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Access URLs" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend**: https://${{ env.FRONTEND_APP_NAME }}.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **Auth Service**: https://${{ env.AUTH_SERVICE_APP_NAME }}.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tenant Service**: https://${{ env.TENANT_SERVICE_APP_NAME }}.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service Setting**: https://${{ env.SERVICE_SETTING_APP_NAME }}.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.deploy-infrastructure.result }}" == "success" ]] && \
+             [[ "${{ needs.deploy-backend-services.result }}" == "success" ]] && \
+             [[ "${{ needs.deploy-frontend.result }}" == "success" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Deployment completed successfully!**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Deployment failed. Please check the logs.**" >> $GITHUB_STEP_SUMMARY
+          fi
