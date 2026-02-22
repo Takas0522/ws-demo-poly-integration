@@ -23,7 +23,7 @@ docs/
 │   │   └── data-model.md
 │   └── api/                     # API設計
 │       └── api-specification.md
-└── PoCアプリ/                   # その他のプロジェクト資料
+└── 工程5_完了レポート.md         # 初期構築完了レポート
 ```
 
 ---

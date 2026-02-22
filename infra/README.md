@@ -216,5 +216,4 @@ az containerapp update --name ca-auth-dev \
 - [デプロイメント設計](../docs/arch/deployment.md)
 - [アーキテクチャ概要](../docs/arch/overview.md)
 - [データ設計](../docs/arch/data/data-model.md)
-- [タスク02: インフラ構築](../docs/PoCアプリ/初期構築/02-インフラ構築.md)
 - [Azure Bicep ドキュメント](https://learn.microsoft.com/azure/azure-resource-manager/bicep/)
