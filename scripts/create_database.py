@@ -64,7 +64,7 @@ def create_service_database():
     client.create_database()
     
     # services コンテナ
-    client.create_container("services", partition_key_path="/id")
+    client.create_container("services", partition_key_path="/partitionKey")
     
     # tenant_services コンテナ（テナント-サービス紐付け）
     client.create_container("tenant_services", partition_key_path="/tenantId")

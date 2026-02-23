@@ -29,7 +29,8 @@ from seed_data.initial_data import (
     TENANT_USER_RELATION,
     SERVICES,
     ROLES,
-    ADMIN_USER_ROLES
+    ADMIN_USER_ROLES,
+    SERVICE_FEATURES,
 )
 
 
@@ -111,6 +112,32 @@ def seed_service_data():
         except Exception as e:
             print(f"⚠ サービスは既に存在: {service['name']}")
 
+    # サービス機能マスターデータ
+    for feature in SERVICE_FEATURES:
+        try:
+            container.create_item(feature)
+            print(f"✓ サービス機能作成: {feature['feature_name']}")
+        except Exception as e:
+            print(f"⚠ サービス機能は既に存在: {feature['feature_name']}")
+
+
+def seed_sample_tenant_service_features():
+    """テナント別サービス機能サンプルデータ投入"""
+    print("\n=== テナント別サービス機能サンプルデータ投入 ===")
+
+    from seed_data.sample_data import SAMPLE_TENANT_SERVICE_FEATURES
+
+    client = CosmosDBClient(database_name="service_management")
+    client.create_database()
+    container = client.get_container("tenant_services")
+
+    for feature in SAMPLE_TENANT_SERVICE_FEATURES:
+        try:
+            container.create_item(feature)
+            print(f"✓ テナント機能設定作成: {feature['tenant_id']} - {feature['feature_key']}")
+        except Exception as e:
+            print(f"⚠ テナント機能設定は既に存在: {feature['tenant_id']} - {feature['feature_key']}")
+
 
 if __name__ == "__main__":
     print("=== シードデータ投入開始 ===\n")
@@ -120,6 +147,7 @@ if __name__ == "__main__":
         seed_user_data()
         seed_role_data()
         seed_service_data()
+        seed_sample_tenant_service_features()
         
         print("\n=== シードデータ投入完了 ===")
         print("\n初期ログイン情報:")

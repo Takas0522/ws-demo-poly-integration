@@ -356,3 +356,147 @@ ADMIN_USER_ROLES = [
         "partitionKey": "admin-user-001"
     }
 ]
+
+# サービス機能マスターデータ
+SERVICE_FEATURES = [
+    # service-001: テナント管理サービス
+    {
+        "id": "feature-service-001-01", "type": "service_feature",
+        "service_id": "service-001", "feature_key": "audit_log",
+        "feature_name": "監査ログ", "description": "テナント操作の監査ログを記録・保存する機能",
+        "default_enabled": True, "partitionKey": "service-001",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    {
+        "id": "feature-service-001-02", "type": "service_feature",
+        "service_id": "service-001", "feature_key": "auto_backup",
+        "feature_name": "自動バックアップ", "description": "テナントデータを定期的に自動バックアップする機能",
+        "default_enabled": False, "partitionKey": "service-001",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    # service-002: 認証認可サービス
+    {
+        "id": "feature-service-002-01", "type": "service_feature",
+        "service_id": "service-002", "feature_key": "mfa",
+        "feature_name": "多要素認証 (MFA)", "description": "ログイン時にMFAを要求する機能",
+        "default_enabled": False, "partitionKey": "service-002",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    {
+        "id": "feature-service-002-02", "type": "service_feature",
+        "service_id": "service-002", "feature_key": "password_policy",
+        "feature_name": "強化パスワードポリシー", "description": "パスワードの複雑さ要件を強化する機能",
+        "default_enabled": True, "partitionKey": "service-002",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    {
+        "id": "feature-service-002-03", "type": "service_feature",
+        "service_id": "service-002", "feature_key": "session_audit",
+        "feature_name": "セッション監査", "description": "ユーザーセッションの監査ログを記録する機能",
+        "default_enabled": False, "partitionKey": "service-002",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    # service-003: 利用サービス設定サービス
+    {
+        "id": "feature-service-003-01", "type": "service_feature",
+        "service_id": "service-003", "feature_key": "service_report",
+        "feature_name": "サービス利用レポート", "description": "テナントのサービス利用状況レポートを生成する機能",
+        "default_enabled": True, "partitionKey": "service-003",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    {
+        "id": "feature-service-003-02", "type": "service_feature",
+        "service_id": "service-003", "feature_key": "auto_provisioning",
+        "feature_name": "自動プロビジョニング", "description": "新規テナントに対してサービスを自動的にプロビジョニングする機能",
+        "default_enabled": False, "partitionKey": "service-003",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    # service-004: ファイル管理サービス
+    {
+        "id": "feature-service-004-01", "type": "service_feature",
+        "service_id": "service-004", "feature_key": "version_control",
+        "feature_name": "バージョン管理", "description": "ファイルのバージョン履歴を管理する機能",
+        "default_enabled": True, "partitionKey": "service-004",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    {
+        "id": "feature-service-004-02", "type": "service_feature",
+        "service_id": "service-004", "feature_key": "file_sharing",
+        "feature_name": "ファイル外部共有", "description": "組織外へのファイル共有リンクを生成・管理する機能",
+        "default_enabled": False, "partitionKey": "service-004",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    {
+        "id": "feature-service-004-03", "type": "service_feature",
+        "service_id": "service-004", "feature_key": "auto_backup",
+        "feature_name": "自動バックアップ", "description": "ファイルデータを定期的に自動バックアップする機能",
+        "default_enabled": True, "partitionKey": "service-004",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    # service-005: メッセージングサービス
+    {
+        "id": "feature-service-005-01", "type": "service_feature",
+        "service_id": "service-005", "feature_key": "email_notification",
+        "feature_name": "メール通知", "description": "メールによる通知を送信する機能",
+        "default_enabled": True, "partitionKey": "service-005",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    {
+        "id": "feature-service-005-02", "type": "service_feature",
+        "service_id": "service-005", "feature_key": "sms_notification",
+        "feature_name": "SMS通知", "description": "SMSによる通知を送信する機能",
+        "default_enabled": False, "partitionKey": "service-005",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    {
+        "id": "feature-service-005-03", "type": "service_feature",
+        "service_id": "service-005", "feature_key": "push_notification",
+        "feature_name": "プッシュ通知", "description": "プッシュ通知を送信する機能",
+        "default_enabled": False, "partitionKey": "service-005",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    # service-006: API利用サービス
+    {
+        "id": "feature-service-006-01", "type": "service_feature",
+        "service_id": "service-006", "feature_key": "usage_analytics",
+        "feature_name": "利用分析エクスポート", "description": "API利用状況の分析データをエクスポートする機能",
+        "default_enabled": True, "partitionKey": "service-006",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    {
+        "id": "feature-service-006-02", "type": "service_feature",
+        "service_id": "service-006", "feature_key": "rate_limiting",
+        "feature_name": "レートリミット設定", "description": "APIのレートリミットをカスタム設定する機能",
+        "default_enabled": True, "partitionKey": "service-006",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    {
+        "id": "feature-service-006-03", "type": "service_feature",
+        "service_id": "service-006", "feature_key": "api_audit_log",
+        "feature_name": "API監査ログ", "description": "API呼び出しの監査ログを記録する機能",
+        "default_enabled": False, "partitionKey": "service-006",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    # service-007: バックアップサービス
+    {
+        "id": "feature-service-007-01", "type": "service_feature",
+        "service_id": "service-007", "feature_key": "incremental_backup",
+        "feature_name": "増分バックアップ", "description": "変更されたデータのみをバックアップする機能",
+        "default_enabled": True, "partitionKey": "service-007",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    {
+        "id": "feature-service-007-02", "type": "service_feature",
+        "service_id": "service-007", "feature_key": "cross_region_backup",
+        "feature_name": "クロスリージョンバックアップ", "description": "別リージョンへのバックアップレプリケーション機能",
+        "default_enabled": False, "partitionKey": "service-007",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+    {
+        "id": "feature-service-007-03", "type": "service_feature",
+        "service_id": "service-007", "feature_key": "auto_schedule",
+        "feature_name": "自動スケジュール", "description": "バックアップの自動スケジュールを設定する機能",
+        "default_enabled": True, "partitionKey": "service-007",
+        "created_at": "2026-01-01T00:00:00Z",
+    },
+]
