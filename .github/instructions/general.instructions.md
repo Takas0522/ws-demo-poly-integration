@@ -20,6 +20,7 @@ applyTo: "**/*"
   - `src/service-setting-service` — 利用サービス設定サービス（FastAPI）
 - クローン時は `git clone --recursive` または `git submodule update --init --recursive` が必要です
 - 各サブモジュール内での変更は、そのサブモジュールのリポジトリ内で個別にcommit/pushする必要があります
+- 開発時は親リポジトリと同じブランチ名でサブモジュールもブランチを切って管理する必要があります
 - 親リポジトリではサブモジュールの参照コミットを管理します
 - `workshop-documents` はワークショップ用の課題が格納されているディレクトリであり調査、実装などで参照すべきではありません
 - 開発中の追加機能に関わるドキュメントは `docs/PoCアプリ/Specs/{開発名}` に格納されます
