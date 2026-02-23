@@ -125,3 +125,5 @@ test-results.json
 /playwright/.cache/
 /test-results/
 /playwright-report/
+
+.venv
