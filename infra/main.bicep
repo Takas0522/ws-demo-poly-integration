@@ -220,8 +220,8 @@ module appServicePlan '../src/front/infra/app-service-plan.bicep' = {
     name: 'plan-${resourcePrefix}-${environment}'
     location: location
     sku: {
-      name: 'B1'
-      tier: 'Basic'
+      name: 'S1'
+      tier: 'Standard'
       capacity: 1
     }
     tags: tags
