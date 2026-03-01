@@ -15,6 +15,10 @@ on:
           - dev
           - prod
 
+permissions:
+  id-token: write
+  contents: read
+
 env:
   AZURE_RESOURCE_GROUP: rg-poly-integration-poc
   AZURE_LOCATION: japaneast
@@ -41,9 +45,11 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       
       - name: Deploy Bicep templates
         id: deploy
@@ -98,9 +104,11 @@ jobs:
           submodules: recursive
       
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       
       - name: Login to Azure Container Registry
         run: |
@@ -129,41 +137,29 @@ jobs:
         service:
           - name: auth-service
             app_name: ca-auth-service
-            database: auth_management
           - name: tenant-management-service
             app_name: ca-tenant-service
-            database: tenant_management
           - name: service-setting-service
             app_name: ca-service-setting
-            database: service_management
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       
-      - name: Deploy to Container App
+      - name: Update Container App Image
         run: |
           IMAGE=${{ env.ACR_NAME }}.azurecr.io/${{ matrix.service.name }}:${{ github.sha }}
           
           az containerapp update \
             --name ${{ matrix.service.app_name }} \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --image $IMAGE \
-            --set-env-vars \
-              COSMOS_DB_ENDPOINT=secretref:cosmos-endpoint \
-              COSMOS_DB_KEY=secretref:cosmos-key \
-              COSMOS_DB_DATABASE=${{ matrix.service.database }} \
-              JWT_SECRET=secretref:jwt-secret \
-              APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:appinsights-connection
+            --image $IMAGE
           
-          echo "✅ ${{ matrix.service.app_name }} deployed successfully"
+          echo "✅ ${{ matrix.service.app_name }} updated with image: $IMAGE"
   
   # ========================================
   # Frontend Deployment
@@ -203,9 +199,11 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
       
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v2
