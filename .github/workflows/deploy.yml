@@ -172,9 +172,23 @@ jobs:
             --parameters resourcePrefix=${{ env.RESOURCE_PREFIX }} \
             --parameters jwtSecretKey=${{ secrets.JWT_SECRET }} \
             --parameters serviceSharedSecret=${{ secrets.SERVICE_SHARED_SECRET }} \
+            --parameters entraClientId=${{ secrets.ENTRA_CLIENT_ID }} \
+            --parameters entraClientSecret=${{ secrets.ENTRA_CLIENT_SECRET }} \
             --name "deploy-$(date +%Y%m%d-%H%M%S)"
 
           echo "✅ Infrastructure deployment completed"
+
+      - name: Update Entra ID redirect URI
+        run: |
+          FRONTEND_FQDN=$(az containerapp show \
+            --name ca-frontend-${{ needs.setup.outputs.environment }} \
+            --resource-group ${{ needs.setup.outputs.resource_group }} \
+            --query 'properties.configuration.ingress.fqdn' -o tsv)
+          REDIRECT_URI="https://${FRONTEND_FQDN}/.auth/login/aad/callback"
+          az ad app update \
+            --id ${{ secrets.ENTRA_CLIENT_ID }} \
+            --web-redirect-uris "${REDIRECT_URI}"
+          echo "✅ Entra ID redirect URI updated to: ${REDIRECT_URI}"
 
   # ========================================
   # 4. サービスのイメージ更新

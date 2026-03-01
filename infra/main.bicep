@@ -52,6 +52,13 @@ param jwtSecretKey string
 @secure()
 param serviceSharedSecret string
 
+@description('Entra ID アプリケーション (クライアント) ID')
+param entraClientId string
+
+@description('Entra ID クライアントシークレット')
+@secure()
+param entraClientSecret string
+
 @description('Cosmos DB許可IPアドレス範囲（CIDR形式）')
 param cosmosDbAllowedIpRanges array = []
 
@@ -227,6 +234,9 @@ module frontendApp '../src/front/infra/container-app.bicep' = {
     authServiceFqdn: authService.outputs.fqdn
     tenantServiceFqdn: tenantService.outputs.fqdn
     serviceSettingServiceFqdn: serviceSettingService.outputs.fqdn
+    entraClientId: entraClientId
+    entraClientSecret: entraClientSecret
+    entraTenantId: tenant().tenantId
     minReplicas: containerAppsMinReplicas
     maxReplicas: containerAppsMaxReplicas
   }
