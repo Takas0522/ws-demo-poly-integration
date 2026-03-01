@@ -43,6 +43,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       
       - name: Azure Login
         uses: azure/login@v2
@@ -58,9 +60,11 @@ jobs:
           az deployment sub create \
             --location ${{ env.AZURE_LOCATION }} \
             --template-file infra/main.bicep \
-            --parameters environmentName=${{ github.event.inputs.environment || 'dev' }} \
+            --parameters environment=${{ github.event.inputs.environment || 'dev' }} \
             --parameters location=${{ env.AZURE_LOCATION }} \
             --parameters resourcePrefix=poly-integration \
+            --parameters jwtSecretKey=${{ secrets.JWT_SECRET }} \
+            --parameters serviceSharedSecret=${{ secrets.SERVICE_SHARED_SECRET }} \
             --name "deploy-$(date +%Y%m%d-%H%M%S)" \
             --output json > deployment_output.json
           
