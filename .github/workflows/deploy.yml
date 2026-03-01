@@ -179,6 +179,7 @@ jobs:
           echo "✅ Infrastructure deployment completed"
 
       - name: Update Entra ID redirect URI
+        continue-on-error: true
         run: |
           FRONTEND_FQDN=$(az containerapp show \
             --name ca-frontend-${{ needs.setup.outputs.environment }} \
