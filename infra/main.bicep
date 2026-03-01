@@ -209,58 +209,26 @@ module serviceSettingService '../src/service-setting-service/infra/container-app
 }
 
 // =============================================================================
-// 8. サービス: Frontend App Service (Next.js)
-//    定義元: src/front/infra/app-service.bicep, app-service-plan.bicep
+// 8. サービス: Frontend Container App (Next.js)
+//    定義元: src/front/infra/container-app.bicep
 // =============================================================================
 
-module appServicePlan '../src/front/infra/app-service-plan.bicep' = {
-  scope: rg
-  name: 'app-service-plan-deployment'
-  params: {
-    name: 'plan-${resourcePrefix}-${environment}'
-    location: location
-    sku: {
-      name: 'F1'
-      tier: 'Free'
-      capacity: 1
-    }
-    tags: tags
-  }
-}
-
-module frontendApp '../src/front/infra/app-service.bicep' = {
+module frontendApp '../src/front/infra/container-app.bicep' = {
   scope: rg
   name: 'frontend-app-deployment'
   params: {
-    name: 'app-${resourcePrefix}-frontend-${environment}'
+    environment: environment
     location: location
-    planId: appServicePlan.outputs.id
-    runtime: 'node'
-    runtimeVersion: '20-lts'
     tags: tags
-    environmentVariables: [
-      {
-        name: 'NODE_ENV'
-        value: 'production'
-      }
-      {
-        name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-        value: monitoring.outputs.appInsightsConnectionString
-      }
-      {
-        name: 'AUTH_SERVICE_URL'
-        value: 'https://${authService.outputs.fqdn}'
-      }
-      {
-        name: 'TENANT_SERVICE_URL'
-        value: 'https://${tenantService.outputs.fqdn}'
-      }
-      {
-        name: 'SERVICE_SETTING_URL'
-        value: 'https://${serviceSettingService.outputs.fqdn}'
-      }
-    ]
-    allowedOrigins: []
+    containerAppsEnvironmentId: containerAppsEnv.outputs.id
+    containerRegistryLoginServer: containerRegistry.outputs.loginServer
+    containerRegistryName: containerRegistry.outputs.name
+    appInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
+    authServiceFqdn: authService.outputs.fqdn
+    tenantServiceFqdn: tenantService.outputs.fqdn
+    serviceSettingServiceFqdn: serviceSettingService.outputs.fqdn
+    minReplicas: containerAppsMinReplicas
+    maxReplicas: containerAppsMaxReplicas
   }
 }
 
@@ -279,10 +247,7 @@ module keyVault 'modules/key-vault.bicep' = {
     appInsightsInstrumentationKey: monitoring.outputs.appInsightsInstrumentationKey
     jwtSecretKey: jwtSecretKey
     serviceSharedSecret: serviceSharedSecret
-    appServicePrincipalIds: [
-      frontendApp.outputs.principalId
-      frontendApp.outputs.stagingPrincipalId
-    ]
+    appServicePrincipalIds: []
   }
 }
 
@@ -291,7 +256,7 @@ module keyVault 'modules/key-vault.bicep' = {
 // =============================================================================
 
 output resourceGroupName string = rg.name
-output frontendUrl string = 'https://${frontendApp.outputs.defaultHostName}'
+output frontendUrl string = 'https://${frontendApp.outputs.fqdn}'
 output authServiceUrl string = 'https://${authService.outputs.fqdn}'
 output tenantServiceUrl string = 'https://${tenantService.outputs.fqdn}'
 output serviceSettingUrl string = 'https://${serviceSettingService.outputs.fqdn}'

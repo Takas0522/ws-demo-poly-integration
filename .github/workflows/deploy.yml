@@ -23,7 +23,7 @@ env:
   AZURE_RESOURCE_GROUP: rg-poly-integration-poc
   AZURE_LOCATION: japaneast
   ACR_NAME: acrpolypoc
-  FRONTEND_APP_NAME: app-poly-frontend
+  FRONTEND_APP_NAME: ca-frontend-dev
   AUTH_SERVICE_APP_NAME: ca-auth-service
   TENANT_SERVICE_APP_NAME: ca-tenant-service
   SERVICE_SETTING_APP_NAME: ca-service-setting
@@ -93,13 +93,12 @@ jobs:
         service:
           - name: auth-service
             path: ./src/auth-service
-            port: 8001
           - name: tenant-management-service
             path: ./src/tenant-management-service
-            port: 8002
           - name: service-setting-service
             path: ./src/service-setting-service
-            port: 8003
+          - name: frontend
+            path: ./src/front
     
     steps:
       - name: Checkout code
@@ -174,34 +173,7 @@ jobs:
     needs: deploy-backend-services
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     
-    defaults:
-      run:
-        working-directory: ./src/front
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: ./src/front/package-lock.json
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Build Next.js application
-        run: npm run build
-        env:
-          NEXT_PUBLIC_AUTH_SERVICE_URL: https://ca-auth-service.internal.azurecontainerapps.io
-          NEXT_PUBLIC_TENANT_SERVICE_URL: https://ca-tenant-service.internal.azurecontainerapps.io
-          NEXT_PUBLIC_SERVICE_SETTING_URL: https://ca-service-setting.internal.azurecontainerapps.io
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -209,16 +181,16 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       
-      - name: Deploy to Azure App Service
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: ${{ env.FRONTEND_APP_NAME }}
-          package: ./src/front
-      
-      - name: Check deployment status
+      - name: Update Frontend Container App Image
         run: |
-          echo "✅ Frontend deployed to Azure App Service"
-          echo "🌐 URL: https://${{ env.FRONTEND_APP_NAME }}.azurewebsites.net"
+          IMAGE=${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }}
+          
+          az containerapp update \
+            --name ${{ env.FRONTEND_APP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --image $IMAGE
+          
+          echo "✅ Frontend Container App updated with image: $IMAGE"
   
   # ========================================
   # Deployment Summary
@@ -251,7 +223,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Access URLs" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Frontend**: https://${{ env.FRONTEND_APP_NAME }}.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend**: https://${{ env.FRONTEND_APP_NAME }}.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
           echo "- **Auth Service**: https://${{ env.AUTH_SERVICE_APP_NAME }}.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
           echo "- **Tenant Service**: https://${{ env.TENANT_SERVICE_APP_NAME }}.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
           echo "- **Service Setting**: https://${{ env.SERVICE_SETTING_APP_NAME }}.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
