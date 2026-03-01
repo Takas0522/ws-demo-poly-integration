@@ -20,74 +20,83 @@ permissions:
   contents: read
 
 env:
-  AZURE_RESOURCE_GROUP: rg-poly-integration-poc
   AZURE_LOCATION: japaneast
-  ACR_NAME: acrpolypoc
-  FRONTEND_APP_NAME: ca-frontend-dev
-  AUTH_SERVICE_APP_NAME: ca-auth-service
-  TENANT_SERVICE_APP_NAME: ca-tenant-service
-  SERVICE_SETTING_APP_NAME: ca-service-setting
+  RESOURCE_PREFIX: poly-integration
 
 jobs:
   # ========================================
-  # Infrastructure Deployment (Bicep)
+  # 環境変数の計算
   # ========================================
-  deploy-infrastructure:
-    name: Deploy Infrastructure
+  setup:
+    name: Setup Environment
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     outputs:
-      cosmos_endpoint: ${{ steps.deploy.outputs.cosmosEndpoint }}
-      acr_login_server: ${{ steps.deploy.outputs.acrLoginServer }}
-    
+      environment: ${{ steps.vars.outputs.environment }}
+      resource_group: ${{ steps.vars.outputs.resource_group }}
+      acr_name: ${{ steps.vars.outputs.acr_name }}
+      auth_app_name: ${{ steps.vars.outputs.auth_app_name }}
+      tenant_app_name: ${{ steps.vars.outputs.tenant_app_name }}
+      service_setting_app_name: ${{ steps.vars.outputs.service_setting_app_name }}
+      frontend_app_name: ${{ steps.vars.outputs.frontend_app_name }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      
+      - name: Compute resource names
+        id: vars
+        run: |
+          ENV="${{ github.event.inputs.environment || 'dev' }}"
+          PREFIX="${{ env.RESOURCE_PREFIX }}"
+          echo "environment=${ENV}" >> $GITHUB_OUTPUT
+          echo "resource_group=rg-${PREFIX}-${ENV}" >> $GITHUB_OUTPUT
+          # ACR名: Bicepと同じロジック (ハイフン除去)
+          ACR_NAME=$(echo "acr${PREFIX}${ENV}" | tr -d '-')
+          echo "acr_name=${ACR_NAME}" >> $GITHUB_OUTPUT
+          echo "auth_app_name=ca-auth-${ENV}" >> $GITHUB_OUTPUT
+          echo "tenant_app_name=ca-tenant-${ENV}" >> $GITHUB_OUTPUT
+          echo "service_setting_app_name=ca-service-setting-${ENV}" >> $GITHUB_OUTPUT
+          echo "frontend_app_name=ca-frontend-${ENV}" >> $GITHUB_OUTPUT
+
+  # ========================================
+  # 1. ACR先行デプロイ (イメージプッシュに必要)
+  # ========================================
+  deploy-acr:
+    name: Deploy Container Registry
+    runs-on: ubuntu-latest
+    needs: setup
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+
+    steps:
       - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      
-      - name: Deploy Bicep templates
-        id: deploy
+
+      - name: Create Resource Group and ACR
         run: |
-          # Deploy main infrastructure
-          az deployment sub create \
-            --location ${{ env.AZURE_LOCATION }} \
-            --template-file infra/main.bicep \
-            --parameters environment=${{ github.event.inputs.environment || 'dev' }} \
-            --parameters location=${{ env.AZURE_LOCATION }} \
-            --parameters resourcePrefix=poly-integration \
-            --parameters jwtSecretKey=${{ secrets.JWT_SECRET }} \
-            --parameters serviceSharedSecret=${{ secrets.SERVICE_SHARED_SECRET }} \
-            --name "deploy-$(date +%Y%m%d-%H%M%S)" \
-            --output json > deployment_output.json
-          
-          # Extract outputs
-          COSMOS_ENDPOINT=$(jq -r '.properties.outputs.cosmosEndpoint.value' deployment_output.json)
-          ACR_LOGIN_SERVER=$(jq -r '.properties.outputs.acrLoginServer.value' deployment_output.json)
-          
-          echo "cosmosEndpoint=$COSMOS_ENDPOINT" >> $GITHUB_OUTPUT
-          echo "acrLoginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
-          
-          echo "✅ Infrastructure deployment completed"
-          echo "Cosmos DB Endpoint: $COSMOS_ENDPOINT"
-          echo "ACR Login Server: $ACR_LOGIN_SERVER"
-  
+          RG="${{ needs.setup.outputs.resource_group }}"
+          ACR="${{ needs.setup.outputs.acr_name }}"
+
+          az group create --name "$RG" --location ${{ env.AZURE_LOCATION }} --output none
+
+          az acr create \
+            --resource-group "$RG" \
+            --name "$ACR" \
+            --sku Basic \
+            --admin-enabled true \
+            --output none 2>/dev/null || echo "ACR already exists"
+
+          echo "✅ ACR ready: ${ACR}.azurecr.io"
+
   # ========================================
-  # Backend Services Deployment
+  # 2. Dockerイメージのビルド & プッシュ
   # ========================================
   build-and-push-images:
     name: Build and Push Docker Images
     runs-on: ubuntu-latest
-    needs: deploy-infrastructure
+    needs: [setup, deploy-acr]
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    
+
     strategy:
       matrix:
         service:
@@ -99,52 +108,95 @@ jobs:
             path: ./src/service-setting-service
           - name: frontend
             path: ./src/front
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           submodules: recursive
-      
+
       - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      
+
       - name: Login to Azure Container Registry
         run: |
-          az acr login --name ${{ env.ACR_NAME }}
-      
+          az acr login --name ${{ needs.setup.outputs.acr_name }}
+
       - name: Build and Push Docker Image
         run: |
-          IMAGE_TAG=${{ env.ACR_NAME }}.azurecr.io/${{ matrix.service.name }}:${{ github.sha }}
-          IMAGE_LATEST=${{ env.ACR_NAME }}.azurecr.io/${{ matrix.service.name }}:latest
-          
+          ACR="${{ needs.setup.outputs.acr_name }}"
+          IMAGE_TAG="${ACR}.azurecr.io/${{ matrix.service.name }}:${{ github.sha }}"
+          IMAGE_LATEST="${ACR}.azurecr.io/${{ matrix.service.name }}:latest"
+
           cd ${{ matrix.service.path }}
-          docker build -t $IMAGE_TAG -t $IMAGE_LATEST .
-          docker push $IMAGE_TAG
-          docker push $IMAGE_LATEST
-          
+          docker build -t "$IMAGE_TAG" -t "$IMAGE_LATEST" .
+          docker push "$IMAGE_TAG"
+          docker push "$IMAGE_LATEST"
+
           echo "✅ Docker image built and pushed: $IMAGE_TAG"
-  
-  deploy-backend-services:
-    name: Deploy Backend Services
+
+  # ========================================
+  # 3. フルインフラデプロイ (Bicep)
+  # ========================================
+  deploy-infrastructure:
+    name: Deploy Infrastructure
     runs-on: ubuntu-latest
-    needs: build-and-push-images
+    needs: [setup, build-and-push-images]
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Bicep templates
+        id: deploy
+        run: |
+          az deployment sub create \
+            --location ${{ env.AZURE_LOCATION }} \
+            --template-file infra/main.bicep \
+            --parameters environment=${{ needs.setup.outputs.environment }} \
+            --parameters location=${{ env.AZURE_LOCATION }} \
+            --parameters resourcePrefix=${{ env.RESOURCE_PREFIX }} \
+            --parameters jwtSecretKey=${{ secrets.JWT_SECRET }} \
+            --parameters serviceSharedSecret=${{ secrets.SERVICE_SHARED_SECRET }} \
+            --name "deploy-$(date +%Y%m%d-%H%M%S)"
+
+          echo "✅ Infrastructure deployment completed"
+
+  # ========================================
+  # 4. サービスのイメージ更新
+  # ========================================
+  deploy-services:
+    name: Deploy Services
+    runs-on: ubuntu-latest
+    needs: [setup, deploy-infrastructure]
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+
     strategy:
       matrix:
-        service:
-          - name: auth-service
-            app_name: ca-auth-service
-          - name: tenant-management-service
-            app_name: ca-tenant-service
-          - name: service-setting-service
+        include:
+          - image_name: auth-service
+            app_name: ca-auth
+          - image_name: tenant-management-service
+            app_name: ca-tenant
+          - image_name: service-setting-service
             app_name: ca-service-setting
-    
+          - image_name: frontend
+            app_name: ca-frontend
+
     steps:
       - name: Azure Login
         uses: azure/login@v2
@@ -152,46 +204,21 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      
+
       - name: Update Container App Image
         run: |
-          IMAGE=${{ env.ACR_NAME }}.azurecr.io/${{ matrix.service.name }}:${{ github.sha }}
-          
+          ACR="${{ needs.setup.outputs.acr_name }}"
+          ENV="${{ needs.setup.outputs.environment }}"
+          APP_NAME="${{ matrix.app_name }}-${ENV}"
+          IMAGE="${ACR}.azurecr.io/${{ matrix.image_name }}:${{ github.sha }}"
+
           az containerapp update \
-            --name ${{ matrix.service.app_name }} \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --image $IMAGE
-          
-          echo "✅ ${{ matrix.service.app_name }} updated with image: $IMAGE"
-  
-  # ========================================
-  # Frontend Deployment
-  # ========================================
-  deploy-frontend:
-    name: Deploy Frontend
-    runs-on: ubuntu-latest
-    needs: deploy-backend-services
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    
-    steps:
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      
-      - name: Update Frontend Container App Image
-        run: |
-          IMAGE=${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }}
-          
-          az containerapp update \
-            --name ${{ env.FRONTEND_APP_NAME }} \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --image $IMAGE
-          
-          echo "✅ Frontend Container App updated with image: $IMAGE"
-  
+            --name "$APP_NAME" \
+            --resource-group "${{ needs.setup.outputs.resource_group }}" \
+            --image "$IMAGE"
+
+          echo "✅ ${APP_NAME} updated with image: $IMAGE"
+
   # ========================================
   # Deployment Summary
   # ========================================
@@ -199,17 +226,17 @@ jobs:
     name: Deployment Summary
     runs-on: ubuntu-latest
     needs:
+      - setup
       - deploy-infrastructure
-      - deploy-backend-services
-      - deploy-frontend
+      - deploy-services
     if: always() && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
-    
+
     steps:
       - name: Generate Summary
         run: |
           echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Environment**: ${{ github.event.inputs.environment || 'dev' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment**: ${{ needs.setup.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "**Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -218,19 +245,17 @@ jobs:
           echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Infrastructure | ${{ needs.deploy-infrastructure.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend Services | ${{ needs.deploy-backend-services.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend | ${{ needs.deploy-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Services | ${{ needs.deploy-services.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Access URLs" >> $GITHUB_STEP_SUMMARY
+          echo "### Container Apps" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Frontend**: https://${{ env.FRONTEND_APP_NAME }}.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
-          echo "- **Auth Service**: https://${{ env.AUTH_SERVICE_APP_NAME }}.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tenant Service**: https://${{ env.TENANT_SERVICE_APP_NAME }}.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
-          echo "- **Service Setting**: https://${{ env.SERVICE_SETTING_APP_NAME }}.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
-          
+          echo "- **Frontend**: ${{ needs.setup.outputs.frontend_app_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Auth Service**: ${{ needs.setup.outputs.auth_app_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tenant Service**: ${{ needs.setup.outputs.tenant_app_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service Setting**: ${{ needs.setup.outputs.service_setting_app_name }}" >> $GITHUB_STEP_SUMMARY
+
           if [[ "${{ needs.deploy-infrastructure.result }}" == "success" ]] && \
-             [[ "${{ needs.deploy-backend-services.result }}" == "success" ]] && \
-             [[ "${{ needs.deploy-frontend.result }}" == "success" ]]; then
+             [[ "${{ needs.deploy-services.result }}" == "success" ]]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "✅ **Deployment completed successfully!**" >> $GITHUB_STEP_SUMMARY
           else
