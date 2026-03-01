@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.41.2.15936",
-      "templateHash": "8318576621999773223"
+      "templateHash": "427230546188808229"
     }
   },
   "parameters": {
@@ -1756,7 +1756,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.41.2.15936",
-              "templateHash": "14313106292858376444"
+              "templateHash": "1805028563256948707"
             }
           },
           "parameters": {
@@ -1921,15 +1921,15 @@
                           "value": "0.0.0.0"
                         },
                         {
-                          "name": "AUTH_SERVICE_URL",
+                          "name": "NEXT_PUBLIC_AUTH_SERVICE_URL",
                           "value": "[format('https://{0}', parameters('authServiceFqdn'))]"
                         },
                         {
-                          "name": "TENANT_SERVICE_URL",
+                          "name": "NEXT_PUBLIC_TENANT_SERVICE_URL",
                           "value": "[format('https://{0}', parameters('tenantServiceFqdn'))]"
                         },
                         {
-                          "name": "SERVICE_SETTING_URL",
+                          "name": "NEXT_PUBLIC_SERVICE_SETTING_URL",
                           "value": "[format('https://{0}', parameters('serviceSettingServiceFqdn'))]"
                         },
                         {
