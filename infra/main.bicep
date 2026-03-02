@@ -237,6 +237,7 @@ module frontendApp '../src/front/infra/container-app.bicep' = {
     entraClientId: entraClientId
     entraClientSecret: entraClientSecret
     entraTenantId: tenant().tenantId
+    jwtSecretKey: jwtSecretKey
     minReplicas: containerAppsMinReplicas
     maxReplicas: containerAppsMaxReplicas
   }

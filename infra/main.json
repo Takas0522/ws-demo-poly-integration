@@ -193,9 +193,7 @@
                 "publicNetworkAccessForIngestion": "Enabled",
                 "publicNetworkAccessForQuery": "Enabled"
               },
-              "dependsOn": [
-                "logAnalyticsWorkspace"
-              ]
+              "dependsOn": ["logAnalyticsWorkspace"]
             }
           },
           "outputs": {
@@ -234,9 +232,7 @@
           }
         }
       },
-      "dependsOn": [
-        "rg"
-      ]
+      "dependsOn": ["rg"]
     },
     "containerRegistry": {
       "type": "Microsoft.Resources/deployments",
@@ -352,9 +348,7 @@
           }
         }
       },
-      "dependsOn": [
-        "rg"
-      ]
+      "dependsOn": ["rg"]
     },
     "cosmosDb": {
       "type": "Microsoft.Resources/deployments",
@@ -503,9 +497,7 @@
                 "resource": {
                   "id": "users",
                   "partitionKey": {
-                    "paths": [
-                      "/id"
-                    ],
+                    "paths": ["/id"],
                     "kind": "Hash"
                   },
                   "indexingPolicy": {
@@ -528,9 +520,7 @@
                   "uniqueKeyPolicy": {
                     "uniqueKeys": [
                       {
-                        "paths": [
-                          "/userId"
-                        ]
+                        "paths": ["/userId"]
                       }
                     ]
                   }
@@ -548,9 +538,7 @@
                 "resource": {
                   "id": "roles",
                   "partitionKey": {
-                    "paths": [
-                      "/serviceId"
-                    ],
+                    "paths": ["/serviceId"],
                     "kind": "Hash"
                   },
                   "indexingPolicy": {
@@ -589,9 +577,7 @@
                 "resource": {
                   "id": "tenants",
                   "partitionKey": {
-                    "paths": [
-                      "/id"
-                    ],
+                    "paths": ["/id"],
                     "kind": "Hash"
                   },
                   "indexingPolicy": {
@@ -630,9 +616,7 @@
                 "resource": {
                   "id": "services",
                   "partitionKey": {
-                    "paths": [
-                      "/id"
-                    ],
+                    "paths": ["/id"],
                     "kind": "Hash"
                   },
                   "indexingPolicy": {
@@ -658,9 +642,7 @@
                 "resource": {
                   "id": "tenant_services",
                   "partitionKey": {
-                    "paths": [
-                      "/id"
-                    ],
+                    "paths": ["/id"],
                     "kind": "Hash"
                   },
                   "indexingPolicy": {
@@ -703,9 +685,7 @@
           }
         }
       },
-      "dependsOn": [
-        "rg"
-      ]
+      "dependsOn": ["rg"]
     },
     "containerAppsEnv": {
       "type": "Microsoft.Resources/deployments",
@@ -820,10 +800,7 @@
           }
         }
       },
-      "dependsOn": [
-        "monitoring",
-        "rg"
-      ]
+      "dependsOn": ["monitoring", "rg"]
     },
     "authService": {
       "type": "Microsoft.Resources/deployments",
@@ -993,9 +970,7 @@
                     "transport": "http",
                     "allowInsecure": false,
                     "corsPolicy": {
-                      "allowedOrigins": [
-                        "*"
-                      ],
+                      "allowedOrigins": ["*"],
                       "allowCredentials": true,
                       "allowedMethods": [
                         "GET",
@@ -1005,9 +980,7 @@
                         "PATCH",
                         "OPTIONS"
                       ],
-                      "allowedHeaders": [
-                        "*"
-                      ]
+                      "allowedHeaders": ["*"]
                     }
                   },
                   "registries": [
@@ -1286,9 +1259,7 @@
                     "transport": "http",
                     "allowInsecure": false,
                     "corsPolicy": {
-                      "allowedOrigins": [
-                        "*"
-                      ],
+                      "allowedOrigins": ["*"],
                       "allowCredentials": true,
                       "allowedMethods": [
                         "GET",
@@ -1298,9 +1269,7 @@
                         "PATCH",
                         "OPTIONS"
                       ],
-                      "allowedHeaders": [
-                        "*"
-                      ]
+                      "allowedHeaders": ["*"]
                     }
                   },
                   "registries": [
@@ -1563,9 +1532,7 @@
                     "transport": "http",
                     "allowInsecure": false,
                     "corsPolicy": {
-                      "allowedOrigins": [
-                        "*"
-                      ],
+                      "allowedOrigins": ["*"],
                       "allowCredentials": true,
                       "allowedMethods": [
                         "GET",
@@ -1575,9 +1542,7 @@
                         "PATCH",
                         "OPTIONS"
                       ],
-                      "allowedHeaders": [
-                        "*"
-                      ]
+                      "allowedHeaders": ["*"]
                     }
                   },
                   "registries": [
@@ -1965,11 +1930,12 @@
                     "registration": {
                       "clientId": "[parameters('entraClientId')]",
                       "clientSecretSettingName": "microsoft-provider-authentication-secret",
-                      "openIdIssuer": "[format('https://sts.windows.net/{0}/v2.0', parameters('entraTenantId'))]"
+                      "openIdIssuer": "[format('https://login.microsoftonline.com/{0}/v2.0', parameters('entraTenantId'))]"
                     },
                     "validation": {
                       "allowedAudiences": [
-                        "[format('api://{0}', parameters('entraClientId'))]"
+                        "[format('api://{0}', parameters('entraClientId'))]",
+                        "[parameters('entraClientId')]"
                       ]
                     }
                   }
@@ -2274,10 +2240,7 @@
           }
         }
       },
-      "dependsOn": [
-        "monitoring",
-        "rg"
-      ]
+      "dependsOn": ["monitoring", "rg"]
     }
   },
   "outputs": {
