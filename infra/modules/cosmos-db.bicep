@@ -203,6 +203,28 @@ resource servicesContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/c
   }
 }
 
+// Container: tenant_services (テナントサービス紐付け)
+resource tenantServicesContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = {
+  parent: serviceDatabase
+  name: 'tenant_services'
+  properties: {
+    resource: {
+      id: 'tenant_services'
+      partitionKey: {
+        paths: ['/id']
+        kind: 'Hash'
+      }
+      indexingPolicy: {
+        indexingMode: 'consistent'
+        automatic: true
+        includedPaths: [
+          { path: '/*' }
+        ]
+      }
+    }
+  }
+}
+
 // -----------------------------------------------------------------------------
 // Outputs
 // -----------------------------------------------------------------------------

@@ -159,7 +159,6 @@ module authService '../src/auth-service/infra/container-app.bicep' = {
     containerRegistryName: containerRegistry.outputs.name
     appInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
     cosmosDbEndpoint: cosmosDb.outputs.endpoint
-    cosmosDbKey: cosmosDb.outputs.primaryKey
     jwtSecretKey: jwtSecretKey
     serviceSharedSecret: serviceSharedSecret
     minReplicas: containerAppsMinReplicas
@@ -184,7 +183,6 @@ module tenantService '../src/tenant-management-service/infra/container-app.bicep
     containerRegistryName: containerRegistry.outputs.name
     appInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
     cosmosDbEndpoint: cosmosDb.outputs.endpoint
-    cosmosDbKey: cosmosDb.outputs.primaryKey
     serviceSharedSecret: serviceSharedSecret
     minReplicas: containerAppsMinReplicas
     maxReplicas: containerAppsMaxReplicas
@@ -208,7 +206,6 @@ module serviceSettingService '../src/service-setting-service/infra/container-app
     containerRegistryName: containerRegistry.outputs.name
     appInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
     cosmosDbEndpoint: cosmosDb.outputs.endpoint
-    cosmosDbKey: cosmosDb.outputs.primaryKey
     serviceSharedSecret: serviceSharedSecret
     minReplicas: containerAppsMinReplicas
     maxReplicas: containerAppsMaxReplicas
@@ -239,6 +236,24 @@ module frontendApp '../src/front/infra/container-app.bicep' = {
     entraTenantId: tenant().tenantId
     minReplicas: containerAppsMinReplicas
     maxReplicas: containerAppsMaxReplicas
+  }
+}
+
+// =============================================================================
+// 8.5. Cosmos DB RBAC ロール割り当て
+//     Container App のマネージドIDに Cosmos DB データ操作権限を付与
+// =============================================================================
+
+module cosmosDbRbac 'modules/cosmos-db-rbac.bicep' = {
+  scope: rg
+  name: 'cosmos-db-rbac-deployment'
+  params: {
+    cosmosAccountName: cosmosDb.outputs.name
+    dataContributorPrincipalIds: [
+      authService.outputs.principalId
+      tenantService.outputs.principalId
+      serviceSettingService.outputs.principalId
+    ]
   }
 }
 
