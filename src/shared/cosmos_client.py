@@ -33,14 +33,25 @@ class CosmosDBClient:
         max_retries = 12
         retry_delay = 10
 
+        kwargs = dict(
+            connection_verify=connection_verify,
+            connection_mode="Gateway",
+            enable_endpoint_discovery=False,
+        )
+
+        # キーが設定されていればキー認証、なければAzure AD認証（マネージドID）
+        if self.key:
+            credential = self.key
+        else:
+            from azure.identity import DefaultAzureCredential
+            credential = DefaultAzureCredential()
+
         for attempt in range(1, max_retries + 1):
             try:
                 self.client = CosmosClient(
                     self.endpoint,
-                    self.key,
-                    connection_verify=connection_verify,
-                    connection_mode="Gateway",
-                    enable_endpoint_discovery=False
+                    credential,
+                    **kwargs,
                 )
                 # 接続確認のために軽い操作を実行
                 list(self.client.list_databases())

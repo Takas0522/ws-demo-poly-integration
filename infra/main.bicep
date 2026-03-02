@@ -68,6 +68,9 @@ param containerAppsMinReplicas int = 0
 @description('Container Apps 最大レプリカ数')
 param containerAppsMaxReplicas int = 3
 
+@description('Cosmos DB に追加でデータ操作権限を付与するプリンシパルIDの配列（デプロイ実行者、CI/CD等）')
+param cosmosDbAdditionalPrincipalIds array = []
+
 // =============================================================================
 // Resource Group
 // =============================================================================
@@ -254,6 +257,7 @@ module cosmosDbRbac 'modules/cosmos-db-rbac.bicep' = {
       tenantService.outputs.principalId
       serviceSettingService.outputs.principalId
     ]
+    additionalDataContributorPrincipalIds: cosmosDbAdditionalPrincipalIds
   }
 }
 

@@ -30,3 +30,9 @@ param containerAppsMaxReplicas = 1
 param entraClientId = '63c11b73-8717-452e-979e-d63d2dd4a70e'
 param entraClientSecret = ''
 
+// Cosmos DB RBAC追加プリンシパル（デプロイ実行者やCI/CDのオブジェクトID）
+// ※ 以下はdev環境管理者のプリンシパルID
+param cosmosDbAdditionalPrincipalIds = [
+  '50bfd25d-1ad5-4c55-89de-2ec91673b0a8' // MOD Administrator
+]
+

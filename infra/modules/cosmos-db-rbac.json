@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.41.2.15936",
+      "templateHash": "15391990198052241856"
+    }
+  },
+  "parameters": {
+    "cosmosAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Cosmos DB アカウント名"
+      }
+    },
+    "dataContributorPrincipalIds": {
+      "type": "array",
+      "metadata": {
+        "description": "Cosmos DB データ操作を許可するプリンシパルIDの配列（Container App マネージドID）"
+      }
+    },
+    "additionalDataContributorPrincipalIds": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "追加の Cosmos DB データ操作を許可するプリンシパルIDの配列（デプロイ実行者、CI/CD等）"
+      }
+    }
+  },
+  "variables": {
+    "allPrincipalIds": "[concat(parameters('dataContributorPrincipalIds'), parameters('additionalDataContributorPrincipalIds'))]"
+  },
+  "resources": [
+    {
+      "copy": {
+        "name": "cosmosDataContributorRoleAssignment",
+        "count": "[length(variables('allPrincipalIds'))]"
+      },
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments",
+      "apiVersion": "2023-04-15",
+      "name": "[format('{0}/{1}', parameters('cosmosAccountName'), guid(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosAccountName')), variables('allPrincipalIds')[copyIndex()], '00000000-0000-0000-0000-000000000002'))]",
+      "properties": {
+        "roleDefinitionId": "[format('{0}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002', resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosAccountName')))]",
+        "principalId": "[variables('allPrincipalIds')[copyIndex()]]",
+        "scope": "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosAccountName'))]"
+      }
+    }
+  ]
+}
