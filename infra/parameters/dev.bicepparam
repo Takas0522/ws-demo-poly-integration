@@ -26,3 +26,7 @@ param cosmosDbAllowedIpRanges = []
 param containerAppsMinReplicas = 0
 param containerAppsMaxReplicas = 1
 
+// Entra ID 設定
+param entraClientId = '63c11b73-8717-452e-979e-d63d2dd4a70e'
+param entraClientSecret = ''
+

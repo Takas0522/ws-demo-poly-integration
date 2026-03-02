@@ -268,7 +268,6 @@ module keyVault 'modules/key-vault.bicep' = {
     name: 'kv-${resourcePrefix}-${environment}'
     location: location
     tags: tags
-    cosmosDbConnectionString: cosmosDb.outputs.connectionString
     appInsightsInstrumentationKey: monitoring.outputs.appInsightsInstrumentationKey
     jwtSecretKey: jwtSecretKey
     serviceSharedSecret: serviceSharedSecret

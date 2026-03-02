@@ -10,10 +10,6 @@ param tags object
 @description('App Serviceのプリンシパルに対してシークレット読み取り権限を付与')
 param appServicePrincipalIds array = []
 
-@description('Cosmos DB接続文字列')
-@secure()
-param cosmosDbConnectionString string
-
 @description('Application Insights instrumentation key')
 @secure()
 param appInsightsInstrumentationKey string
@@ -50,16 +46,6 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
       virtualNetworkRules: []
     }
     publicNetworkAccess: 'Enabled' // MVP環境のため有効化、本番では制限を検討
-  }
-}
-
-// シークレットを保存
-resource cosmosDbConnectionStringSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
-  parent: keyVault
-  name: 'cosmos-db-connection-string'
-  properties: {
-    value: cosmosDbConnectionString
-    contentType: 'text/plain'
   }
 }
 
@@ -106,7 +92,6 @@ output name string = keyVault.name
 output vaultUri string = keyVault.properties.vaultUri
 
 // シークレット参照用のURIを出力
-output cosmosDbConnectionStringSecretUri string = cosmosDbConnectionStringSecret.properties.secretUri
 output appInsightsKeySecretUri string = appInsightsKeySecret.properties.secretUri
 output jwtSecretKeySecretUri string = jwtSecretKeySecret.properties.secretUri
 output serviceSharedSecretSecretUri string = serviceSharedSecretSecret.properties.secretUri

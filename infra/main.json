@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.41.2.15936",
-      "templateHash": "17050678550192106902"
+      "templateHash": "1163088238389141624"
     }
   },
   "parameters": {
@@ -388,13 +388,12 @@
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "languageVersion": "2.0",
           "contentVersion": "1.0.0.0",
           "metadata": {
             "_generator": {
               "name": "bicep",
               "version": "0.41.2.15936",
-              "templateHash": "10609254342301245337"
+              "templateHash": "16495812213532641324"
             }
           },
           "parameters": {
@@ -440,8 +439,8 @@
           "variables": {
             "accountName": "[format('cosmos-{0}-{1}', parameters('resourcePrefix'), parameters('environment'))]"
           },
-          "resources": {
-            "cosmosAccount": {
+          "resources": [
+            {
               "type": "Microsoft.DocumentDB/databaseAccounts",
               "apiVersion": "2023-04-15",
               "name": "[variables('accountName')]",
@@ -483,7 +482,7 @@
                 "disableLocalAuth": true
               }
             },
-            "authDatabase": {
+            {
               "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
               "apiVersion": "2023-04-15",
               "name": "[format('{0}/{1}', variables('accountName'), 'auth_management')]",
@@ -493,10 +492,10 @@
                 }
               },
               "dependsOn": [
-                "cosmosAccount"
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName'))]"
               ]
             },
-            "usersContainer": {
+            {
               "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
               "apiVersion": "2023-04-15",
               "name": "[format('{0}/{1}/{2}', variables('accountName'), 'auth_management', 'users')]",
@@ -538,10 +537,10 @@
                 }
               },
               "dependsOn": [
-                "authDatabase"
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('accountName'), 'auth_management')]"
               ]
             },
-            "rolesContainer": {
+            {
               "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
               "apiVersion": "2023-04-15",
               "name": "[format('{0}/{1}/{2}', variables('accountName'), 'auth_management', 'roles')]",
@@ -566,10 +565,10 @@
                 }
               },
               "dependsOn": [
-                "authDatabase"
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('accountName'), 'auth_management')]"
               ]
             },
-            "tenantDatabase": {
+            {
               "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
               "apiVersion": "2023-04-15",
               "name": "[format('{0}/{1}', variables('accountName'), 'tenant_management')]",
@@ -579,10 +578,10 @@
                 }
               },
               "dependsOn": [
-                "cosmosAccount"
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName'))]"
               ]
             },
-            "tenantsContainer": {
+            {
               "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
               "apiVersion": "2023-04-15",
               "name": "[format('{0}/{1}/{2}', variables('accountName'), 'tenant_management', 'tenants')]",
@@ -607,10 +606,10 @@
                 }
               },
               "dependsOn": [
-                "tenantDatabase"
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('accountName'), 'tenant_management')]"
               ]
             },
-            "serviceDatabase": {
+            {
               "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
               "apiVersion": "2023-04-15",
               "name": "[format('{0}/{1}', variables('accountName'), 'service_management')]",
@@ -620,10 +619,10 @@
                 }
               },
               "dependsOn": [
-                "cosmosAccount"
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName'))]"
               ]
             },
-            "servicesContainer": {
+            {
               "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
               "apiVersion": "2023-04-15",
               "name": "[format('{0}/{1}/{2}', variables('accountName'), 'service_management', 'services')]",
@@ -648,10 +647,10 @@
                 }
               },
               "dependsOn": [
-                "serviceDatabase"
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('accountName'), 'service_management')]"
               ]
             },
-            "tenantServicesContainer": {
+            {
               "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
               "apiVersion": "2023-04-15",
               "name": "[format('{0}/{1}/{2}', variables('accountName'), 'service_management', 'tenant_services')]",
@@ -676,10 +675,10 @@
                 }
               },
               "dependsOn": [
-                "serviceDatabase"
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('accountName'), 'service_management')]"
               ]
             }
-          },
+          ],
           "outputs": {
             "id": {
               "type": "string",
@@ -691,15 +690,7 @@
             },
             "endpoint": {
               "type": "string",
-              "value": "[reference('cosmosAccount').documentEndpoint]"
-            },
-            "primaryKey": {
-              "type": "securestring",
-              "value": "[listKeys('cosmosAccount', '2023-04-15').primaryMasterKey]"
-            },
-            "connectionString": {
-              "type": "securestring",
-              "value": "[listConnectionStrings('cosmosAccount', '2023-04-15').connectionStrings[0].connectionString]"
+              "value": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName')), '2023-04-15').documentEndpoint]"
             },
             "databases": {
               "type": "object",
@@ -2103,9 +2094,6 @@
           "tags": {
             "value": "[parameters('tags')]"
           },
-          "cosmosDbConnectionString": {
-            "value": "[listOutputsWithSecureValues('cosmosDb', '2025-04-01').connectionString]"
-          },
           "appInsightsInstrumentationKey": {
             "value": "[reference('monitoring').outputs.appInsightsInstrumentationKey.value]"
           },
@@ -2126,7 +2114,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.41.2.15936",
-              "templateHash": "1941294670613182412"
+              "templateHash": "2973906580864270572"
             }
           },
           "parameters": {
@@ -2153,12 +2141,6 @@
               "defaultValue": [],
               "metadata": {
                 "description": "App Serviceのプリンシパルに対してシークレット読み取り権限を付与"
-              }
-            },
-            "cosmosDbConnectionString": {
-              "type": "securestring",
-              "metadata": {
-                "description": "Cosmos DB接続文字列"
               }
             },
             "appInsightsInstrumentationKey": {
@@ -2208,18 +2190,6 @@
                 },
                 "publicNetworkAccess": "Enabled"
               }
-            },
-            {
-              "type": "Microsoft.KeyVault/vaults/secrets",
-              "apiVersion": "2023-02-01",
-              "name": "[format('{0}/{1}', parameters('name'), 'cosmos-db-connection-string')]",
-              "properties": {
-                "value": "[parameters('cosmosDbConnectionString')]",
-                "contentType": "text/plain"
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
-              ]
             },
             {
               "type": "Microsoft.KeyVault/vaults/secrets",
@@ -2289,10 +2259,6 @@
               "type": "string",
               "value": "[reference(resourceId('Microsoft.KeyVault/vaults', parameters('name')), '2023-02-01').vaultUri]"
             },
-            "cosmosDbConnectionStringSecretUri": {
-              "type": "string",
-              "value": "[reference(resourceId('Microsoft.KeyVault/vaults/secrets', parameters('name'), 'cosmos-db-connection-string'), '2023-02-01').secretUri]"
-            },
             "appInsightsKeySecretUri": {
               "type": "string",
               "value": "[reference(resourceId('Microsoft.KeyVault/vaults/secrets', parameters('name'), 'app-insights-instrumentation-key'), '2023-02-01').secretUri]"
@@ -2309,7 +2275,6 @@
         }
       },
       "dependsOn": [
-        "cosmosDb",
         "monitoring",
         "rg"
       ]

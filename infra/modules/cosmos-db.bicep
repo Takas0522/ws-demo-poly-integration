@@ -231,10 +231,6 @@ resource tenantServicesContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatab
 output id string = cosmosAccount.id
 output name string = cosmosAccount.name
 output endpoint string = cosmosAccount.properties.documentEndpoint
-@secure()
-output primaryKey string = cosmosAccount.listKeys().primaryMasterKey
-@secure()
-output connectionString string = cosmosAccount.listConnectionStrings().connectionStrings[0].connectionString
 
 // データベース名
 output databases object = {
