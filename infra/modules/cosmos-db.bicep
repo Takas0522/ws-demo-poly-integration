@@ -62,7 +62,7 @@ resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' = {
     }]
     networkAclBypass: 'AzureServices'
     networkAclBypassResourceIds: []
-    disableLocalAuth: false // PoC環境のため接続文字列認証を許可
+    disableLocalAuth: true // AADトークン認証を使用（ローカル認証は無効）
   }
 }
 
