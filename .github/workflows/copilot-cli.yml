@@ -93,7 +93,7 @@ jobs:
           # Use a temporary file to capture output safely
           TEMP_OUTPUT=$(mktemp)
 
-          if timeout 600 copilot --agent=research-agent -p "$PROMPT" --allow-all-tools > "$TEMP_OUTPUT" 2>&1; then
+          if timeout 600 copilot --agent=research.agent -p "$PROMPT" --allow-all-tools > "$TEMP_OUTPUT" 2>&1; then
             COPILOT_RESULT=$(cat "$TEMP_OUTPUT")
             echo "Copilot CLI executed successfully"
             echo ${COPILOT_RESULT:0:500} # Print first 500 chars of the result for debugging
