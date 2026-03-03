@@ -29,11 +29,11 @@ jobs:
 
       - name: Get Issue Content
         id: issue-content
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          ISSUE_TITLE="${{ github.event.issue.title }}"
-          ISSUE_BODY="${{ github.event.issue.body }}"
-          ISSUE_NUMBER="${{ github.event.issue.number }}"
-
           # Use heredoc format for multiline strings in GitHub Output
           {
             echo "issue-title=${ISSUE_TITLE}"
@@ -76,8 +76,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_PROMPT: ${{ steps.issue-content.outputs.copilot-prompt }}
         run: |
-          PROMPT="${{ steps.issue-content.outputs.copilot-prompt }}"
+          PROMPT="$COPILOT_PROMPT"
 
           echo "Running Copilot CLI analysis..."
           echo "Prompt length: ${#PROMPT} characters"
