@@ -1,0 +1,102 @@
+[
+  {
+    "conclusion": "failure",
+    "createdAt": "2026-03-03T06:05:21Z",
+    "databaseId": 22610631254,
+    "event": "workflow_dispatch",
+    "headBranch": "main",
+    "status": "completed",
+    "updatedAt": "2026-03-03T06:05:49Z",
+    "workflowName": "Deploy to Azure"
+  },
+  {
+    "conclusion": "failure",
+    "createdAt": "2026-03-02T07:57:33Z",
+    "databaseId": 22566647577,
+    "event": "push",
+    "headBranch": "main",
+    "status": "completed",
+    "updatedAt": "2026-03-02T07:58:22Z",
+    "workflowName": "CI Pipeline"
+  },
+  {
+    "conclusion": "failure",
+    "createdAt": "2026-03-02T01:52:18Z",
+    "databaseId": 22558205711,
+    "event": "push",
+    "headBranch": "main",
+    "status": "completed",
+    "updatedAt": "2026-03-02T01:52:56Z",
+    "workflowName": "CI Pipeline"
+  },
+  {
+    "conclusion": "failure",
+    "createdAt": "2026-03-02T00:24:54Z",
+    "databaseId": 22556478093,
+    "event": "push",
+    "headBranch": "main",
+    "status": "completed",
+    "updatedAt": "2026-03-02T00:25:33Z",
+    "workflowName": "CI Pipeline"
+  },
+  {
+    "conclusion": "failure",
+    "createdAt": "2026-03-02T00:04:40Z",
+    "databaseId": 22556064405,
+    "event": "push",
+    "headBranch": "main",
+    "status": "completed",
+    "updatedAt": "2026-03-02T00:05:14Z",
+    "workflowName": "CI Pipeline"
+  },
+  {
+    "conclusion": "failure",
+    "createdAt": "2026-03-01T15:38:39Z",
+    "databaseId": 22546662789,
+    "event": "push",
+    "headBranch": "main",
+    "status": "completed",
+    "updatedAt": "2026-03-01T15:39:17Z",
+    "workflowName": "CI Pipeline"
+  },
+  {
+    "conclusion": "failure",
+    "createdAt": "2026-03-01T15:30:54Z",
+    "databaseId": 22546520650,
+    "event": "push",
+    "headBranch": "main",
+    "status": "completed",
+    "updatedAt": "2026-03-01T15:31:31Z",
+    "workflowName": "CI Pipeline"
+  },
+  {
+    "conclusion": "failure",
+    "createdAt": "2026-03-01T15:30:54Z",
+    "databaseId": 22546520651,
+    "event": "push",
+    "headBranch": "main",
+    "status": "completed",
+    "updatedAt": "2026-03-01T15:36:20Z",
+    "workflowName": "Deploy to Azure"
+  },
+  {
+    "conclusion": "failure",
+    "createdAt": "2026-03-01T15:23:11Z",
+    "databaseId": 22546375695,
+    "event": "push",
+    "headBranch": "main",
+    "status": "completed",
+    "updatedAt": "2026-03-01T15:23:48Z",
+    "workflowName": "CI Pipeline"
+  },
+  {
+    "conclusion": "failure",
+    "createdAt": "2026-03-01T15:23:11Z",
+    "databaseId": 22546375682,
+    "event": "push",
+    "headBranch": "main",
+    "status": "completed",
+    "updatedAt": "2026-03-01T15:32:41Z",
+    "workflowName": "Deploy to Azure"
+  }
+]

@@ -1,0 +1,122 @@
+name: Issue Answer
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  issue-analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: Install GitHub Copilot CLI
+        run: |
+          curl -fsSL https://gh.io/copilot-install | bash
+          # sudo rm -f /usr/bin/gh
+
+      - name: Get Issue Content
+        id: issue-content
+        run: |
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_BODY="${{ github.event.issue.body }}"
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+
+          # Use heredoc format for multiline strings in GitHub Output
+          {
+            echo "issue-title=${ISSUE_TITLE}"
+            echo "issue-number=${ISSUE_NUMBER}"
+            echo "issue-body<<EOF"
+            echo "${ISSUE_BODY}"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+          # Extract URLs from markdown links and create a cleaner format
+          PROCESSED_BODY="${ISSUE_BODY}"
+          echo "Debug: Original body:"
+          echo "${PROCESSED_BODY}"
+
+          # Extract GitHub attachment URLs and convert to plain text
+          ATTACHMENT_URLS=$(echo "${ISSUE_BODY}" | grep -oE '\[([^\]]+)\]\((https://github\.com/user-attachments/files/[^)]+)\)' | sed -E 's/\[([^\]]+)\]\(([^)]+)\)/ファイル: \1\nURL: \2/g' || echo "")
+          echo "Debug: Attachment URLs:"
+          echo "${ATTACHMENT_URLS}"
+
+          # Replace markdown links with plain text in the body
+          PROCESSED_BODY=$(echo "${ISSUE_BODY}" | sed -E 's/\[([^\]]+)\]\(https:\/\/github\.com\/user-attachments\/files\/[^)]+\)/添付ファイル: \1/g')
+          echo "Debug: Processed body:"
+          echo "${PROCESSED_BODY}"
+
+          # Create prompt for Copilot CLI using heredoc for multiline strings
+          {
+            echo "copilot-prompt<<EOF"
+            echo "以下のIssueについて分析し、解決策や回答を提供してください。"
+            echo ""
+            echo "タイトル: ${ISSUE_TITLE}"
+            echo ""
+            echo "ISSUE番号: ${ISSUE_NUMBER}"
+            echo ""
+            echo "内容: ${PROCESSED_BODY}"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Run Copilot CLI Analysis
+        id: copilot-analysis
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PROMPT="${{ steps.issue-content.outputs.copilot-prompt }}"
+
+          echo "Running Copilot CLI analysis..."
+          echo "Prompt length: ${#PROMPT} characters"
+          echo "--- Prompt Content (first 500 chars) ---"
+          echo "${PROMPT:0:500}..."
+          echo "--- End Prompt Preview ---"
+
+          # Run Copilot CLI with error handling and better output capture
+          COPILOT_RESULT=""
+          echo "Executing: copilot with the prepared prompt"
+
+          # Use a temporary file to capture output safely
+          TEMP_OUTPUT=$(mktemp)
+
+          if timeout 600 copilot --agent=research-agent -p "$PROMPT" --allow-all-tools > "$TEMP_OUTPUT" 2>&1; then
+            COPILOT_RESULT=$(cat "$TEMP_OUTPUT")
+            echo "Copilot CLI executed successfully"
+            echo ${COPILOT_RESULT:0:500} # Print first 500 chars of the result for debugging
+            echo "Result length: ${#COPILOT_RESULT} characters"
+          else
+            EXIT_CODE=$?
+            COPILOT_ERROR=$(cat "$TEMP_OUTPUT")
+            echo "Copilot CLI encountered an error (exit code: $EXIT_CODE)"
+            echo "Error output: $COPILOT_ERROR"
+            COPILOT_RESULT="申し訳ございませんが、分析中にエラーが発生しました。
+
+            エラー詳細:
+            $COPILOT_ERROR
+
+            手動での確認をお願いいたします。問題が継続する場合は、添付ファイルを直接確認してください。"
+          fi
+
+          # Clean up temporary file
+          rm -f "$TEMP_OUTPUT"
+
+          # Use heredoc format for multiline output with safe approach
+          # Write directly to file to avoid shell interpretation
+          {
+            echo "result<<EOF"
+            printf '%s\n' "$COPILOT_RESULT"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT

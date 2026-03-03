@@ -1,0 +1,17 @@
+Deploy Container Registry	Azure Login	2026-03-03T06:05:34Z	##[group]Run azure/login@v2
+Deploy Container Registry	Azure Login	2026-03-03T06:05:34Z	with:
+Deploy Container Registry	Azure Login	2026-03-03T06:05:34Z	  client-id: ***
+Deploy Container Registry	Azure Login	2026-03-03T06:05:34Z	  tenant-id: ***
+Deploy Container Registry	Azure Login	2026-03-03T06:05:34Z	  enable-AzPSSession: false
+Deploy Container Registry	Azure Login	2026-03-03T06:05:34Z	  environment: azurecloud
+Deploy Container Registry	Azure Login	2026-03-03T06:05:34Z	  allow-no-subscriptions: false
+Deploy Container Registry	Azure Login	2026-03-03T06:05:34Z	  audience: api://AzureADTokenExchange
+Deploy Container Registry	Azure Login	2026-03-03T06:05:34Z	  auth-type: SERVICE_PRINCIPAL
+Deploy Container Registry	Azure Login	2026-03-03T06:05:34Z	env:
+Deploy Container Registry	Azure Login	2026-03-03T06:05:34Z	  AZURE_LOCATION: japaneast
+Deploy Container Registry	Azure Login	2026-03-03T06:05:34Z	  RESOURCE_PREFIX: poly-integration
+Deploy Container Registry	Azure Login	2026-03-03T06:05:34Z	##[endgroup]
+Deploy Container Registry	Azure Login	2026-03-03T06:05:34Z	##[error]Login failed with Error: Ensure 'subscription-id' is supplied or 'allow-no-subscriptions' is 'true'.. Double check if the 'auth-type' is correct. Refer to https://github.com/Azure/login#readme for more information.
+Deploy Container Registry	Post Azure Login	2026-03-03T06:05:34Z	Post job cleanup.
+Deploy Container Registry	Post Azure Login	2026-03-03T06:05:34Z	Clearing azure cli accounts from the local cache.
+Deploy Container Registry	Post Azure Login	2026-03-03T06:05:34Z	[command]/usr/bin/az account clear

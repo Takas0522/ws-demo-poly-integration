@@ -1,0 +1,49 @@
+### Frontend CI - Run ESLint (failure) ###
+Frontend CI	Run ESLint	2026-03-02T07:58:08Z	##[group]Run npm run lint
+Frontend CI	Run ESLint	2026-03-02T07:58:08Z	npm run lint
+Frontend CI	Run ESLint	2026-03-02T07:58:08Z	shell: /usr/bin/bash -e {0}
+Frontend CI	Run ESLint	2026-03-02T07:58:08Z	##[endgroup]
+Frontend CI	Run ESLint	2026-03-02T07:58:08Z
+Frontend CI	Run ESLint	2026-03-02T07:58:08Z	> front@0.1.0 lint
+Frontend CI	Run ESLint	2026-03-02T07:58:08Z	> eslint
+Frontend CI	Run ESLint	2026-03-02T07:58:08Z
+Frontend CI	Run ESLint	2026-03-02T07:58:12Z
+Frontend CI	Run ESLint	2026-03-02T07:58:12Z	src/front/app/dashboard/tenants/[id]/page.tsx
+Frontend CI	Run ESLint	2026-03-02T07:58:12Z	##[warning]  38:6  warning  React Hook useEffect has a missing dependency: 'fetchTenant'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+Frontend CI	Run ESLint	2026-03-02T07:58:12Z
+Frontend CI	Run ESLint	2026-03-02T07:58:12Z	src/front/app/dashboard/users/[id]/page.tsx
+Frontend CI	Run ESLint	2026-03-02T07:58:12Z	##[warning]  52:6  warning  React Hook useEffect has a missing dependency: 'fetchUser'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+Frontend CI	Run ESLint	2026-03-02T07:58:12Z
+Frontend CI	Run ESLint	2026-03-02T07:58:12Z	src/front/lib/auth.ts
+Frontend CI	Run ESLint	2026-03-02T07:58:12Z	##[error]  27:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+Frontend CI	Run ESLint	2026-03-02T07:58:12Z
+Frontend CI	Run ESLint	2026-03-02T07:58:12Z	✖ 3 problems (1 error, 2 warnings)
+Frontend CI	Run ESLint	2026-03-02T07:58:12Z
+Frontend CI	Run ESLint	2026-03-02T07:58:12Z	##[error]Process completed with exit code 1.
+
+### Infrastructure CI - Azure Login (failure) ###
+Infrastructure CI	Azure Login	2026-03-02T07:57:46Z	##[group]Run azure/login@v1
+Infrastructure CI	Azure Login	2026-03-02T07:57:46Z	with:
+Infrastructure CI	Azure Login	2026-03-02T07:57:46Z	  enable-AzPSSession: false
+Infrastructure CI	Azure Login	2026-03-02T07:57:46Z	  environment: azurecloud
+Infrastructure CI	Azure Login	2026-03-02T07:57:46Z	  allow-no-subscriptions: false
+Infrastructure CI	Azure Login	2026-03-02T07:57:46Z	  audience: api://AzureADTokenExchange
+Infrastructure CI	Azure Login	2026-03-02T07:57:46Z	  auth-type: SERVICE_PRINCIPAL
+Infrastructure CI	Azure Login	2026-03-02T07:57:46Z	##[endgroup]
+Infrastructure CI	Azure Login	2026-03-02T07:57:46Z	##[error]Login failed with Error: Using auth-type: SERVICE_PRINCIPAL. Not all values are present. Ensure 'client-id' and 'tenant-id' are supplied.. Double check if the 'auth-type' is correct. Refer to https://github.com/Azure/login#readme for more information.
+
+### Infrastructure CI - Bicep Build Validation (failure) ###
+Infrastructure CI	Bicep Build	2026-03-02T07:57:47Z	Bicep CLI version 0.41.2 (3e403ea7c1)
+Infrastructure CI	Bicep Build	2026-03-02T07:57:47Z	##[group]Run bicep build infra/main.bicep
+Infrastructure CI	Bicep Build	2026-03-02T07:57:50Z	infra/main.bicep(153,20) : Error BCP091: An error occurred reading file. Could not find a part of the path 'src/auth-service/infra/container-app.bicep'.
+Infrastructure CI	Bicep Build	2026-03-02T07:57:50Z	infra/main.bicep(177,22) : Error BCP091: An error occurred reading file. Could not find a part of the path 'src/tenant-management-service/infra/container-app.bicep'.
+Infrastructure CI	Bicep Build	2026-03-02T07:57:50Z	infra/main.bicep(200,30) : Error BCP091: An error occurred reading file. Could not find a part of the path 'src/service-setting-service/infra/container-app.bicep'.
+Infrastructure CI	Bicep Build	2026-03-02T07:57:50Z	infra/main.bicep(223,20) : Error BCP091: An error occurred reading file. Could not find a part of the path 'src/front/infra/container-app.bicep'.
+Infrastructure CI	Bicep Build	2026-03-02T07:57:50Z	infra/main.bicep(257,7) : Error BCP062: The referenced declaration with name 'authService' is not valid.
+Infrastructure CI	Bicep Build	2026-03-02T07:57:50Z	infra/main.bicep(258,7) : Error BCP062: The referenced declaration with name 'tenantService' is not valid.
+Infrastructure CI	Bicep Build	2026-03-02T07:57:50Z	infra/main.bicep(259,7) : Error BCP062: The referenced declaration with name 'serviceSettingService' is not valid.
+Infrastructure CI	Bicep Build	2026-03-02T07:57:50Z	infra/main.bicep(288,40) : Error BCP062: The referenced declaration with name 'frontendApp' is not valid.
+Infrastructure CI	Bicep Build	2026-03-02T07:57:50Z	infra/main.bicep(289,43) : Error BCP062: The referenced declaration with name 'authService' is not valid.
+Infrastructure CI	Bicep Build	2026-03-02T07:57:50Z	infra/main.bicep(290,45) : Error BCP062: The referenced declaration with name 'tenantService' is not valid.
+Infrastructure CI	Bicep Build	2026-03-02T07:57:50Z	infra/main.bicep(291,46) : Error BCP062: The referenced declaration with name 'serviceSettingService' is not valid.
+Infrastructure CI	Bicep Build	2026-03-02T07:57:50Z	##[error]Process completed with exit code 1.

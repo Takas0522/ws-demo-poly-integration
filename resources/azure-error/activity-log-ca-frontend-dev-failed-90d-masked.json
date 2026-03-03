@@ -1,0 +1,14 @@
+[
+  {
+    "time": "2026-03-02T00:45:40.0490045Z",
+    "operation": "Create or Update Container App",
+    "status": "Failed",
+    "subStatus": "Bad Request (HTTP Status Code: 400)",
+    "caller": "***@MngEnvMCAP975614.onmicrosoft.com",
+    "correlationId": "a471cb39-****-****-****-8f7bfbce82c6",
+    "resourceGroupName": "rg-poly-integration-dev",
+    "resourceId": "/subscriptions/***/resourcegroups/rg-poly-integration-dev/providers/Microsoft.App/containerApps/ca-frontend-dev",
+    "submissionTimestamp": "2026-03-02T00:47:45Z",
+    "message": "{\"error\":{\"code\":\"ContainerAppSecretInvalid\",\"message\":\"Invalid Request: Container app secret(s) with name(s) 'microsoft-provider-authentication-secret' are invalid: value or keyVaultUrl and identity should be provided.\"}}"
+  }
+]

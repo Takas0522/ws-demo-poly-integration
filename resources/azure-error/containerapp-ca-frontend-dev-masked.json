@@ -1,0 +1,100 @@
+{
+  "name": "ca-frontend-dev",
+  "location": "Japan East",
+  "resourceGroup": "rg-poly-integration-dev",
+  "id": "/subscriptions/***/resourceGroups/rg-poly-integration-dev/providers/Microsoft.App/containerapps/ca-frontend-dev",
+  "type": "Microsoft.App/containerApps",
+  "provisioningState": "Succeeded",
+  "latestRevisionName": "ca-frontend-dev--0000014",
+  "latestReadyRevisionName": "ca-frontend-dev--0000014",
+  "runningStatus": "Running",
+  "outboundIpAddresses": ["***.***.***.***"],
+  "ingress": {
+    "additionalPortMappings": null,
+    "allowInsecure": false,
+    "clientCertificateMode": null,
+    "corsPolicy": null,
+    "customDomains": null,
+    "exposedPort": 0,
+    "external": true,
+    "fqdn": "ca-frontend-dev.grayocean-4dc0b73d.japaneast.azurecontainerapps.io",
+    "ipSecurityRestrictions": null,
+    "stickySessions": null,
+    "targetPort": 3000,
+    "traffic": [
+      {
+        "latestRevision": true,
+        "weight": 100
+      }
+    ],
+    "transport": "Http"
+  },
+  "template": {
+    "containers": [
+      {
+        "env": [
+          {
+            "name": "NODE_ENV",
+            "value": "production"
+          },
+          {
+            "name": "PORT",
+            "value": "3000"
+          },
+          {
+            "name": "HOSTNAME",
+            "value": "***.***.***.***"
+          },
+          {
+            "name": "NEXT_PUBLIC_AUTH_SERVICE_URL",
+            "value": "https://ca-auth-dev.grayocean-4dc0b73d.japaneast.azurecontainerapps.io"
+          },
+          {
+            "name": "NEXT_PUBLIC_TENANT_SERVICE_URL",
+            "value": "https://ca-tenant-dev.grayocean-4dc0b73d.japaneast.azurecontainerapps.io"
+          },
+          {
+            "name": "NEXT_PUBLIC_SERVICE_SETTING_URL",
+            "value": "https://ca-service-setting-dev.grayocean-4dc0b73d.japaneast.azurecontainerapps.io"
+          },
+          {
+            "name": "JWT_SECRET",
+            "secretRef": "jwt-secret-key"
+          },
+          {
+            "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+            "value": "InstrumentationKey=c5610936-5a3f-4a69-ad28-7e01cf9fd9ae;IngestionEndpoint=https://japaneast-1.in.applicationinsights.azure.com/;LiveEndpoint=https://japaneast.livediagnostics.monitor.azure.com/;ApplicationId=46718923-4884-442d-9c35-673dcc6dbe90"
+          }
+        ],
+        "image": "acrpolyintegrationdev.azurecr.io/frontend:abf98706977f537231643d6fb87c097c0c48e111",
+        "name": "frontend",
+        "resources": {
+          "cpu": 0.25,
+          "ephemeralStorage": "1Gi",
+          "memory": "0.5Gi"
+        }
+      }
+    ],
+    "initContainers": null,
+    "revisionSuffix": "",
+    "scale": {
+      "cooldownPeriod": 300,
+      "maxReplicas": 3,
+      "minReplicas": 0,
+      "pollingInterval": 30,
+      "rules": [
+        {
+          "http": {
+            "metadata": {
+              "concurrentRequests": "50"
+            }
+          },
+          "name": "http-scaling"
+        }
+      ]
+    },
+    "serviceBinds": null,
+    "terminationGracePeriodSeconds": null,
+    "volumes": null
+  }
+}

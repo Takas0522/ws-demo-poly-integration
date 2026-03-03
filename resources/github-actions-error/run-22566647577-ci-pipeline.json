@@ -1,0 +1,208 @@
+{
+  "run_metadata": {
+    "id": 22566647577,
+    "run_number": 32,
+    "workflow_name": "CI Pipeline",
+    "head_branch": "main",
+    "head_sha": "***",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "failure",
+    "created_at": "2026-03-02T07:57:33Z",
+    "updated_at": "2026-03-02T07:58:22Z",
+    "actor": "***",
+    "triggering_actor": "***",
+    "run_attempt": 1
+  },
+  "jobs": [
+    {
+      "name": "Auth Service CI",
+      "conclusion": "success"
+    },
+    {
+      "name": "Tenant Service CI",
+      "conclusion": "success"
+    },
+    {
+      "name": "Frontend CI",
+      "conclusion": "failure",
+      "startedAt": "2026-03-02T07:57:36Z",
+      "completedAt": "2026-03-02T07:58:14Z",
+      "failed_step": "Run ESLint",
+      "steps": [
+        { "name": "Set up job", "conclusion": "success" },
+        { "name": "Checkout code", "conclusion": "success" },
+        { "name": "Setup Node.js", "conclusion": "success" },
+        { "name": "Install dependencies", "conclusion": "success" },
+        { "name": "Run ESLint", "conclusion": "failure" },
+        { "name": "Run TypeScript check", "conclusion": "skipped" },
+        { "name": "Build Next.js application", "conclusion": "skipped" }
+      ]
+    },
+    {
+      "name": "Service Setting CI",
+      "conclusion": "success"
+    },
+    {
+      "name": "Infrastructure CI",
+      "conclusion": "failure",
+      "startedAt": "2026-03-02T07:57:36Z",
+      "completedAt": "2026-03-02T07:57:57Z",
+      "failed_step": "Bicep Build",
+      "steps": [
+        { "name": "Checkout code", "conclusion": "success" },
+        {
+          "name": "Azure Login (v1)",
+          "conclusion": "failure",
+          "note": "Login failed but workflow continued"
+        },
+        { "name": "Install Bicep CLI", "conclusion": "success" },
+        { "name": "Bicep Build Validation", "conclusion": "failure" }
+      ]
+    },
+    {
+      "name": "CI Summary",
+      "conclusion": "failure",
+      "note": "Summary job exited with failure because Frontend CI and Infrastructure CI failed"
+    }
+  ],
+  "error_logs": {
+    "Frontend CI": {
+      "Run ESLint": {
+        "command": "npm run lint",
+        "node_version": "v18.20.8",
+        "npm_version": "10.8.2",
+        "eslint_results": [
+          {
+            "file": "src/front/app/dashboard/tenants/[id]/page.tsx",
+            "line": 38,
+            "column": 6,
+            "severity": "warning",
+            "rule": "react-hooks/exhaustive-deps",
+            "message": "React Hook useEffect has a missing dependency: 'fetchTenant'. Either include it or remove the dependency array"
+          },
+          {
+            "file": "src/front/app/dashboard/users/[id]/page.tsx",
+            "line": 52,
+            "column": 6,
+            "severity": "warning",
+            "rule": "react-hooks/exhaustive-deps",
+            "message": "React Hook useEffect has a missing dependency: 'fetchUser'. Either include it or remove the dependency array"
+          },
+          {
+            "file": "src/front/lib/auth.ts",
+            "line": 27,
+            "column": 39,
+            "severity": "error",
+            "rule": "@typescript-eslint/no-explicit-any",
+            "message": "Unexpected any. Specify a different type"
+          }
+        ],
+        "summary": "3 problems (1 error, 2 warnings)",
+        "exit_code": 1
+      }
+    },
+    "Infrastructure CI": {
+      "Azure Login": {
+        "action": "azure/login@v1",
+        "error_message": "Login failed with Error: Using auth-type: SERVICE_PRINCIPAL. Not all values are present. Ensure 'client-id' and 'tenant-id' are supplied. Double check if the 'auth-type' is correct. Refer to https://github.com/Azure/login#readme for more information."
+      },
+      "Bicep Build Validation": {
+        "bicep_version": "0.41.2",
+        "command": "bicep build infra/main.bicep",
+        "errors": [
+          {
+            "file": "infra/main.bicep",
+            "line": 153,
+            "column": 20,
+            "code": "BCP091",
+            "message": "An error occurred reading file. Could not find a part of the path 'src/auth-service/infra/container-app.bicep'",
+            "docs": "https://aka.ms/bicep/core-diagnostics#BCP091"
+          },
+          {
+            "file": "infra/main.bicep",
+            "line": 177,
+            "column": 22,
+            "code": "BCP091",
+            "message": "An error occurred reading file. Could not find a part of the path 'src/tenant-management-service/infra/container-app.bicep'",
+            "docs": "https://aka.ms/bicep/core-diagnostics#BCP091"
+          },
+          {
+            "file": "infra/main.bicep",
+            "line": 200,
+            "column": 30,
+            "code": "BCP091",
+            "message": "An error occurred reading file. Could not find a part of the path 'src/service-setting-service/infra/container-app.bicep'",
+            "docs": "https://aka.ms/bicep/core-diagnostics#BCP091"
+          },
+          {
+            "file": "infra/main.bicep",
+            "line": 223,
+            "column": 20,
+            "code": "BCP091",
+            "message": "An error occurred reading file. Could not find a part of the path 'src/front/infra/container-app.bicep'",
+            "docs": "https://aka.ms/bicep/core-diagnostics#BCP091"
+          },
+          {
+            "file": "infra/main.bicep",
+            "line": 257,
+            "column": 7,
+            "code": "BCP062",
+            "message": "The referenced declaration with name 'authService' is not valid",
+            "docs": "https://aka.ms/bicep/core-diagnostics#BCP062"
+          },
+          {
+            "file": "infra/main.bicep",
+            "line": 258,
+            "column": 7,
+            "code": "BCP062",
+            "message": "The referenced declaration with name 'tenantService' is not valid",
+            "docs": "https://aka.ms/bicep/core-diagnostics#BCP062"
+          },
+          {
+            "file": "infra/main.bicep",
+            "line": 259,
+            "column": 7,
+            "code": "BCP062",
+            "message": "The referenced declaration with name 'serviceSettingService' is not valid",
+            "docs": "https://aka.ms/bicep/core-diagnostics#BCP062"
+          },
+          {
+            "file": "infra/main.bicep",
+            "line": 288,
+            "column": 40,
+            "code": "BCP062",
+            "message": "The referenced declaration with name 'frontendApp' is not valid",
+            "docs": "https://aka.ms/bicep/core-diagnostics#BCP062"
+          },
+          {
+            "file": "infra/main.bicep",
+            "line": 289,
+            "column": 43,
+            "code": "BCP062",
+            "message": "The referenced declaration with name 'authService' is not valid",
+            "docs": "https://aka.ms/bicep/core-diagnostics#BCP062"
+          },
+          {
+            "file": "infra/main.bicep",
+            "line": 290,
+            "column": 45,
+            "code": "BCP062",
+            "message": "The referenced declaration with name 'tenantService' is not valid",
+            "docs": "https://aka.ms/bicep/core-diagnostics#BCP062"
+          },
+          {
+            "file": "infra/main.bicep",
+            "line": 291,
+            "column": 46,
+            "code": "BCP062",
+            "message": "The referenced declaration with name 'serviceSettingService' is not valid",
+            "docs": "https://aka.ms/bicep/core-diagnostics#BCP062"
+          }
+        ],
+        "exit_code": 1,
+        "note": "Bicep build failed because submodule directories (src/*/infra/container-app.bicep) were not checked out. The Infrastructure CI job uses 'submodules: false' in actions/checkout."
+      }
+    }
+  }
+}
